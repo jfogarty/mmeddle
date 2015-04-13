@@ -1,6 +1,6 @@
 {
   "name": "mmeddle",
-  "main": "dist\mmeddle.min.js",
+  "main": "dist/mmeddle.min.js",
   "version": "0.1.1",
   "license": "Apache",
   "homepage": "https://github.com/jfogarty/mmeddle.git",
