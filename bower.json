@@ -1,0 +1,33 @@
+{
+  "name": "mmeddle",
+  "main": "dist\mmeddle.min.js",
+  "version": "0.1.1",
+  "license": "Apache",
+  "homepage": "https://github.com/jfogarty/mmeddle.git",
+  "authors": [
+    "John Fogarty <johnhenryfogarty@gmail.com> (https://github.com/jfogarty)"
+  ],
+  "description": "A symbolic math workspace for browsers and Node.js",
+  "moduleType": [
+    "amd",
+    "node"
+  ],
+  "keywords": [
+    "math",
+    "mathematics",
+    "functions",
+    "symbolic",
+    "algebra",
+    "workspace",
+    "units"
+  ],
+  "ignore": [
+    "**/.*",
+    "doc",
+    "test",
+    "AUTHORS.txt",
+    "gulpfile.js",
+    "package.json"
+  ]
+}
+
