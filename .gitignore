@@ -1,0 +1,11 @@
+.idea
+.c9
+_site
+coverage
+node_modules
+partsbin
+dev
+docx
+testm
+*swp
+*.log
