@@ -5,7 +5,7 @@
  * mmeddle.js is a symbolic math workspace for JavaScript and Node.js.
  *
  * @version 0.1.1
- * @date    2015-04-13
+ * @date    2015-04-14
  *
  * @license
  * Copyright (C) 2015 John Fogarty <johnhenryfogarty@gmail.com> (https://github.com/jfogarty)

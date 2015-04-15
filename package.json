@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "async": "latest",
+    "coveralls": "^2.11.2",
     "del": "latest",
     "gulp": "latest",
     "gulp-bump": "latest",
@@ -44,6 +45,7 @@
     "jshint-stylish": "latest",
     "mkdirp": "latest",
     "mocha": "latest",
+    "mocha-lcov-reporter": "0.0.2",
     "mocha-phantomjs": "latest",
     "phantomjs": "latest",
     "should": "latest",

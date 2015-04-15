@@ -136,6 +136,11 @@ gulp.task('testb', ['bundle', 'minify'], gshell.task([
   'npm run-script testb',
 ]))
 
+// Run the Istanbul code coverage reporter based on the mocha tests.
+gulp.task('coverage', gshell.task([
+  'npm run-script coverage',
+]))
+
 // Run Mocha tests on all test.*js files.
 gulp.task('test', function () {
     return gulp.src(paths.tests, {read: false})
