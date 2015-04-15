@@ -1,14 +1,14 @@
 var fs        = require('fs'),
     del       = require('del'),
     gulp      = require('gulp'),
+    gbump     = require('gulp-bump'),
+    gjshint   = require('gulp-jshint'),
+    ggit      = require('gulp-git'),
+    gmocha    = require('gulp-mocha'),
+    gshell    = require('gulp-shell')
+    gsize     = require('gulp-size'),
     gutil     = require('gulp-util'),
     gwebpack  = require('gulp-webpack'),
-    gmocha    = require('gulp-mocha'),
-    gsize     = require('gulp-size'),
-    gjshint   = require('gulp-jshint'),
-    gbump     = require('gulp-bump'),
-    ggit      = require('gulp-git'),
-    gshell    = require('gulp-shell')
     path      = require('path'),
     webpack   = require('webpack'),
     uglify    = require('uglify-js');
@@ -33,13 +33,6 @@ var paths = {
 paths.MMEDDLE_JS     = path.join(paths.DIST, paths.FILE);
 paths.MMEDDLE_MIN_JS = path.join(paths.DIST, paths.FILE_MIN);
 paths.MMEDDLE_MAP_JS = path.join(paths.DIST, paths.FILE_MAP);
-  
-/* Recursive copy of entire folder structure.
-gulp.copy=function(src,dest){
-    return gulp.src(src, {base:"."})
-        .pipe(gulp.dest(dest));
-};
-*/
     
 // generate banner with today's date and correct version
 function createBanner() {
@@ -119,12 +112,6 @@ gulp.task('validate', function (cb) {
   cb();
 });
 
-gulp.task('docs', function () {
-/*
-  TODO: jsdoc.
-*/
-});
-
 gulp.task('lint', function () {
   return gulp.src(paths.src)
     .pipe(gjshint('.jshintrc'))
@@ -133,13 +120,26 @@ gulp.task('lint', function () {
 
 // Run the PhantomJS browser based tests a bit indirectly.
 gulp.task('testb', ['bundle', 'minify'], gshell.task([
-  'npm run-script testb',
+  'npm run-script testb'
 ]))
 
 // Run the Istanbul code coverage reporter based on the mocha tests.
 gulp.task('coverage', gshell.task([
-  'npm run-script coverage',
+  'npm run-script coverage'
 ]))
+
+gulp.task('docs', gshell.task([
+  'npm run-script docs'
+]))
+
+// Open generated web pages 
+gulp.task('showcoverage', gshell.task([
+  path.join('.', 'coverage', 'lcov-report', 'index.html')
+], { ignoreErrors: true }))
+
+gulp.task('showdocs', gshell.task([
+  path.join('.', 'docs', 'src', 'index.html')
+], { ignoreErrors: true }))
 
 // Run Mocha tests on all test.*js files.
 gulp.task('test', function () {
@@ -173,7 +173,7 @@ gulp.task('bump', function () {
 });
 
 // Commit, tag and push changes to the master branch in GitHub.
-gulp.task('tag', function () {
+gulp.task('commit-tag-push', function () {
   var version = require('./package.json').version;
   var v = 'v' + version;
   var message = 'Release ' + v; 
@@ -182,17 +182,13 @@ gulp.task('tag', function () {
   if (process.env.GIT_COMMIT_MESSAGE) {
     message += ' - ' + process.env.GIT_COMMIT_MESSAGE;
   }
-      
-  gutil.log('.pipe(ggit.commit(' + message +'))');
-  
-/*
-  // Too dangerous to leave this loaded gun lying around with one in the chamber.
+
+  gutil.log('Commit Tag and Push as: "' + message + '"');
   return gulp.src('./')
     .pipe(ggit.commit(message))
     .pipe(ggit.tag(v, message))
     .pipe(ggit.push('origin', 'master', '--tags'))
     .pipe(gulp.dest('./'));
- */
 });
 
 // Publish the package to NPM.
@@ -207,7 +203,7 @@ gulp.task('npm', function (done) {
 });
 
 // The default task (called when you run `gulp`)
-gulp.task('default', ['test', 'lint', 'clean', 'bundle', 'minify', 'testb']);
+gulp.task('default', ['test', 'lint', 'clean', 'bundle', 'minify', 'testb', 'docs']);
 
 // Watch task to automatically test and rebuild when the source code changes
 gulp.task('watch', ['minify'], function () {

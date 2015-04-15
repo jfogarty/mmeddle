@@ -45,7 +45,6 @@
     "jshint-stylish": "latest",
     "mkdirp": "latest",
     "mocha": "latest",
-    "mocha-lcov-reporter": "0.0.2",
     "mocha-phantomjs": "latest",
     "phantomjs": "latest",
     "should": "latest",
@@ -54,12 +53,12 @@
   },
   "main": "./index",
   "scripts": {
-    "docs": "gulp docs",
-    "test": "gulp test",
     "test2": "mocha -u bdd -r should --recursive -R list",
     "testb": "mocha-phantomjs -R list test/testMocha.html",
+    "docs": "jsdoc -r src -d docs/src -c conf.json --verbose",
     "coverage": "istanbul cover ./node_modules/mocha/bin/_mocha -- -u bdd -r should --recursive",
     "watch": "gulp watch",
+    "test": "gulp",
     "build": "gulp"
   },
   "bin": {

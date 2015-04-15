@@ -3,7 +3,7 @@
  * cli.js
  * https://github.com/jfogarty/mmeddle
  *
- * mmeddle.js is a symbolic math workspace for JavaScript and Node.js.
+ * mmeddle.js is a symbolic math workspace for browsers and Node.js.
  * It features pluggable types, operators, units, and functions.
  *
  * Usage:
@@ -104,54 +104,6 @@ function runStream (input, output) {
     rl.prompt();
   }
 
-  // TODO: automatic insertion of 'ans' before operators like +, -, *, /
-
-  rl.on('line', function(line) {
-    var expr = line.trim();
-
-    // check for exit
-    if (expr.toLowerCase() == 'exit' || expr.toLowerCase() == 'quit') {
-      // exit application
-      rl.close();
-    }
-    if (expr.toLowerCase() == 'clear') {
-      // clear memory
-      // TODO: jf - parser.clear();
-      console.log('memory cleared');
-
-      // get next input
-      if (rl.output.isTTY) {
-        rl.prompt();
-      }
-    }
-    else {
-      // evaluate expression
-      if (expr) {
-      
-        try {
-        console.log('-- Evaluate ' + expr);
-/*
-          var res = parser.eval(expr);
-          parser.set('ans', res); // TODO: in case of multi line input, set ans as the last of the expressions
-          if (!Array.isArray(res) || res.length) {
-            // TODO: how to distinguish array output from multi-line output?
-
-            console.log(math.format(res, PRECISION));
-          }
-*/
-          }
-        catch (err) {
-          console.log(err.toString());
-        }
-      }
-
-      // get next input
-      if (rl.output.isTTY) {
-        rl.prompt();
-      }
-    }
-  });
-
   rl.on('close', function() {
     console.log();
     process.exit(0);
@@ -245,15 +197,3 @@ program.parse(process.argv);
 // Process input and output, based on the command line arguments
 console.log('-parsed leaves: ' + process.argv);
 
-/*
-if (process.argv.length > 2) {
-  var arg = process.argv[2];
-
-  // run a script file
-  runStream(fs.createReadStream(arg), process.stdout);
-}
-else {
-  // run a stream, can be user input or pipe input
-  runStream(process.stdin, process.stdout);
-}
-*/
