@@ -1,6 +1,7 @@
 # mmeddle
 [![Build Status](https://travis-ci.org/jfogarty/mmeddle.svg?branch=master)](https://travis-ci.org/jfogarty/mmeddle)
 [![Coverage Status](https://coveralls.io/repos/jfogarty/mmeddle/badge.svg)](https://coveralls.io/r/jfogarty/mmeddle)
+[![Version](http://img.shields.io/npm/v/mmeddle.svg)](https://www.npmjs.org/package/mmeddle)
 
 A symbolic math workspace for browsers and Node.js. It features pluggable types, operators, units, and functions.
 

@@ -1,0 +1,16 @@
+# On Windows please use 
+#     git config core.autocrlf input
+# so all text files checked into the repository have LF as EOL.  When they
+# are pulled to your system, they will NOT be changed into CRLF.
+#
+# You must use editors such as NotePad++ which can be set up to accept and set LF
+# instead of CRLF as the line endings.
+
+* text eol=lf
+
+# Files that will always have CRLF line endings on checkout.
+*.sln text eol=crlf
+
+# Denote files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
