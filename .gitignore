@@ -33,11 +33,15 @@ node_modules
 *~
 
 # local to my system.
-/partsbin
-/dev
+/partsbin/
+/dev/
+
+/api/
 /docs/src/
 /docx/
 /testm/
+/scratch/
+/coverage/
 *.swp
 
 

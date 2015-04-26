@@ -1,19 +1,22 @@
 <head>
   <meta charset="utf-8">
   <title>mMeddle - Browser Standalone - Mocha Tests</title>
-  <link rel="stylesheet" href="libs\mocha.css" />
+  <link rel="stylesheet" href="libs/mocha.css" />
 </head>
 <body>
   <div id="mocha"></div>
-  <script src="libs\should.js"></script>
-  <script src="libs\mocha.js"></script>
+  <script src="libs/should.js"></script>
+  <script src="libs/mocha.js"></script>
   <script>mocha.setup('bdd')</script>
   
   <!-- WebPacked library(s) to test against -->
-  <script src="..\dist\mmeddle.js"></script>
+  <script src="../dist/mmeddle.js"></script>
 
   <!-- Mocha BDD test case sets -->
   <script src="test.mmeddle.js"></script>
+  <script src="util/test.Logger.js"></script>
+  <script src="util/test.SequencedObject.js"></script>
+  <script src="sal/test.users.js"></script>
 
   <!-- Add additional browser compatible test case sets here -->
 
@@ -25,6 +28,7 @@
     }
     else {
       mocha.checkLeaks();
+      mocha.setup('bdd');
       mocha.run(); 
     }
   </script>

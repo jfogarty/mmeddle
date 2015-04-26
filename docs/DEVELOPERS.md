@@ -1,6 +1,23 @@
 # mMeddle Developer's Guide
-[![Build Status](https://travis-ci.org/jfogarty/mmeddle.svg?branch=master)](https://travis-ci.org/jfogarty/mmeddle)
-[![Coverage Status](https://coveralls.io/repos/jfogarty/mmeddle/badge.svg)](https://coveralls.io/r/jfogarty/mmeddle)
+[![Build Status][travis-image]][travis-url] 
+[![Coveralls Status][coveralls-image]][coveralls-url]
+[![NPM version][npm-image]][npm-url]
+[![Dependency Status][depstat-image]][depstat-url]
+
+[npm-url]: https://www.npmjs.com/package/mmeddle
+[npm-image]: https://badge.fury.io/js/mmeddle.svg
+
+[nodeico-url]: https://nodei.co/npm/mmeddle/
+[nodeico-image]: https://nodei.co/npm/mmeddle.png?compact=true
+
+[travis-url]: https://travis-ci.org/jfogarty/mmeddle
+[travis-image]: https://img.shields.io/travis/jfogarty/mmeddle.svg?branch=master
+
+[coveralls-url]: https://coveralls.io/r/jfogarty/mmeddle
+[coveralls-image]: https://img.shields.io/coveralls/jfogarty/mmeddle.svg
+
+[depstat-url]: https://david-dm.org/jfogarty/mmeddle
+[depstat-image]: https://david-dm.org/jfogarty/mmeddle.svg
 
 [https://github.com/jfogarty/mmeddle](https://github.com/jfogarty/mmeddle)
 
@@ -9,13 +26,19 @@
 `mmeddle.js` is a symbolic math workspace for browsers and Node.js. It features pluggable types, operators, units, and functions.
 
 # mMeddle IS NOT YET OPEN FOR DEVELOPMENT
-# move along please, these aren't the droids you're looking for...
+### move along please, these aren't the droids you're looking for...
+
+[![NPM NODE ICON][nodeico-image]][nodeico-url]
 
 This library is the headless workhorse for maintaining *mMeddle* documents, 
 and performing symbolic math operations. It runs in backend servers as
 an **Express** application using a **MongoDB** database for primary storage. 
 The same engine runs in browsers as a minified script as part of the *mMeddler*
 SPA (single page application).
+
+This document provides a developer's overview for building and testing mmeddle bits.
+For code structure documents, you can read the README.md files in each source directory
+and build the `docs/src/index.html` for the generated API as described here.
 
 ## That Vision Thing
 
@@ -37,9 +60,9 @@ will be solved as a direct result of your hard work on this bucket of code.
 
 *mMeddle* is structured as a single main module `mmeddle` which contains bindings
 between the other modules. Modules within sub-directories usually contain no
-*requires* statements unless they are to a node_module (preferably one which
+*requires* statements unless they are to anode_module (preferably one which
 is in some way unique to a single module) or to a sub-directory from the one containing
-the module. `require("..\[a modulename]")` is avoided if at all possible.
+the module. `require("..\[a modulename]")` is **not** permitted in this code.
 
 Isolating the bindings between modules to a single outer level module greatly eases
 restructuring and module substitution for the various environments in which mmeddle
@@ -69,7 +92,9 @@ Task | Description
 
 Testing is primariy done with a set of **Mocha** tests using the **BDD** (behavior
 driven development) style. Developers are strongly encouraged to use this style
-for their own tests. All integrations require passing tests.
+for their own tests. All integrations require passing tests. Note the boilerplate
+code in the top of `test.*js` files to allow the same tests to run in your browser,
+the **PhantomJS** headless browser, and **node.js**.
 
 To run the **BVT**s (base verification tests) use:
 
@@ -78,8 +103,17 @@ To run the **BVT**s (base verification tests) use:
 During development continuous tests on every source change is enabled with:
 
     gulp watch
+    
+Note that `gulp watchb` does continuous PhantomJS browser based testing but is
+more annoying since the bundled mmeddle.js must be rebuilt on every source change.
+    
 
-Every test **.js** source file must start with a `test.` prefix.  
+Every test **.js** source file starts with a `test.` prefix.  
+
+##  Browser Testing
+    
+Browser BVT tests are started from `test\testMocha.html`.
+    
     
 ### Code Coverage
 
@@ -146,5 +180,55 @@ the code. The task to build the docs is:
     gulp docs
 
 Each `./src` directory contains its own **README.md** markdown document which
-provides a **short** overview on the structure and use of the source in broad terms.
-This should not restate the jsdoc and should try not be more than a page long. 
+provides a **short** overview on the structure and use of the source in broad 
+terms. This should not restate the jsdoc and should try not be more than a
+page long. 
+
+The generated docs can be accessed via [../api/index.html](../api/index.html).
+
+## Debugging
+
+Sometimes you've got no choice.
+
+### Debugging Unit Tests
+
+I debug unit tests for node using node-inspector on Chrome on a Windows system, so your experience may differ.  Start `node-inspector` in its own shell and leave it running, then:
+
+    node-debug --debug-brk node_modules\mocha\bin\_mocha -u bdd -r should
+
+The `_mocha` selects the *real* .js file for the mocha engine, instead of the stub that launches a separate test process. Note that there are a lot of checked exceptions thrown and there is a timer used by mocha that may annoy you. Often it is easier to just debug an scratch function without having the Mocha infrastructure getting in the way.
+
+**Note:** My console log always starts with the message:
+> Error: Injection failed: no require in current frame
+
+I ignore this but, nothing bad seems to happen. This may be related to 
+[node-inspector broken](https://github.com/node-inspector/node-inspector) : 
+(*Node Inspector is currently broken on Node >= v0.11.14*)
+since I am currently debugging under node 0.12.0. It is flakey, but usually
+gets the job done. Good luck.
+
+![backgound math art](../images/dev/BrowserMocha-NodeInspectorDebug.jpg)
+
+### Debugging Browser Unit Tests
+
+Debugging for the browser consists of opening `test\testMocha.html` under your favorite browser and using its script debugging tools. I prefer **Mozilla Firefox** with the **Firebug console** add-in. Don't forget to run the **gulp bundle** task first or you will be debugging an old version (I've never done that).
+
+The Mocha page is nice in that you can select and drill down into test suites anmd rerun the tests individually. Clicking a test's **it()** text shows the source of the test.
+
+## Windows Development (sigh)
+
+I write code on Windows and need to keep the development environment Windows friendly (or
+at least no more unfriendly than necessary). 
+
+In **git config** if you use Windows, you should set
+
+    git config core.autocrlf input
+
+The files in the repository should not contain CRLF endings, and you should use an
+editor on Windows that doesn't put them on by default (I use Notepad++).
+
+I use **gulp** and put some effort into making sure that any scripts are equivalent
+on Windows and *nix versions. The Travis-CI integration service helps with this.
+
+
+##.

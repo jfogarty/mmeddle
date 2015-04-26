@@ -3,13 +3,16 @@
         "allowUnknownTags": true
     },
     "source": {
-        "includePattern": ".+\\.js(doc)?$",
         "excludePattern": ""
     },
-    "plugins": [],
+    "plugins": ["plugins/markdown"],
+    "markdown": {
+        "tags": ["summary", "property"],
+        "excludeTags": ["author"]
+    },
     "templates": {
-        "cleverLinks": false,
-        "monospaceLinks": false,
+        "cleverLinks": true,
+        "monospaceLinks": true,
         "default": {
             "outputSourceFiles": true
         }

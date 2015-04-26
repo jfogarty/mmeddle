@@ -37,4 +37,5 @@ node_modules
 /dev
 /docx/
 /testm/
+/scratch/
 *.swp

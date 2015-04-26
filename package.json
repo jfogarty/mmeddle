@@ -21,13 +21,16 @@
   ],
   "dependencies": {
     "commander": "latest",
-    "config": "latest",
+    "fast-sha256": "latest",
     "lodash": "latest",
-    "mathjs": "latest"
+    "mathjs": "latest",
+    "q": "latest",
+    "q-io": "latest",
+    "sf": "latest"
   },
   "devDependencies": {
     "async": "latest",
-    "coveralls": "^2.11.2",
+    "coveralls": "latest",
     "del": "latest",
     "gulp": "latest",
     "gulp-bump": "latest",
@@ -40,6 +43,7 @@
     "gulp-uglify": "latest",
     "gulp-util": "latest",
     "gulp-webpack": "latest",
+    "ink-docstrap": "latest",
     "istanbul": "latest",
     "jsdoc": "latest",
     "jshint-stylish": "latest",
@@ -47,17 +51,21 @@
     "mocha": "latest",
     "mocha-phantomjs": "latest",
     "phantomjs": "latest",
+    "run-sequence": "latest",
     "should": "latest",
     "uglify-js": "latest",
     "webpack": "latest"
   },
   "main": "./index",
   "scripts": {
+    "docs": "jsdoc ./docs/DEVELOPERS.md -r ./src -d ./api --verbose -t ./node_modules/ink-docstrap/template -c .jsdoc.conf.json",
+    "doc2": "jsdoc -r src -d docs/src --verbose -c .jsdoc.conf.json",    
+    "coverage": "istanbul cover -x **/external/** ./node_modules/mocha/bin/_mocha -- -u bdd -r should --recursive",
+    "watch": "gulp watch",
     "test2": "mocha -u bdd -r should --recursive -R list",
     "testb": "mocha-phantomjs -R list test/testMocha.html",
-    "docs": "jsdoc -r src -d docs/src -c conf.json --verbose",
-    "coverage": "istanbul cover ./node_modules/mocha/bin/_mocha -- -u bdd -r should --recursive",
-    "watch": "gulp watch",
+    "testm": "gulp testm",
+    "lint": "gulp lint",
     "test": "gulp",
     "build": "gulp"
   },

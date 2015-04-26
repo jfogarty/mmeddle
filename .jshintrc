@@ -7,7 +7,9 @@
   "unused": "vars",
   "trailing": true,
   "asi": true,
+  "laxcomma": true,  
   "eqnull": true,
   "node": true,
-  "predef": ["describe", "it", "before", "beforeEach", "after", "afterEach"]
+  "predef": ["phantom", "navigator",
+             "describe", "it", "before", "beforeEach", "after", "afterEach"]
 }

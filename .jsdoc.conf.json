@@ -1,0 +1,32 @@
+{
+    "tags": {
+        "allowUnknownTags": true
+    },
+    "source": {
+        "excludePattern": ""
+    },
+    "plugins": ["plugins/markdown"],
+    "markdown": {
+        "tags": ["summary", "property"],
+        "excludeTags": ["author"]
+    },
+    "templates": {
+        "cleverLinks": true,
+        "monospaceLinks": true,
+        "default": {
+            "outputSourceFiles": true
+        },
+        "systemName"            : "mMeddle",
+        "footer"                : "",
+        "copyright"             : "All rights reserved - Copyright 2015",
+        "dateFormat"            : "ddd MMM Do YYYY",
+        "navType"               : "vertical",
+        "theme"                 : "cosmo",
+        "linenums"              : true,
+        "collapseSymbols"       : false,
+        "inverseNav"            : false,
+        "outputSourceFiles"     : true,
+        "highlightTutorialCode" : true,
+        "syntaxTheme"           : "default"
+    }
+}
