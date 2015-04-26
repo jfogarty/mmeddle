@@ -36,6 +36,7 @@ node_modules
 /partsbin/
 /dev/
 
+/api/
 /docs/src/
 /docx/
 /testm/

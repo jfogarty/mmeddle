@@ -47,6 +47,6 @@ For the next few months this project is closed to external developers.
 
 [Developers](docs/DEVELOPERS.md)
 
-[API](api/index.html)
+[The API is generated into ./api/index.html](api/index.html)
 
 #### End of document.
