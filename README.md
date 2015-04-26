@@ -17,7 +17,7 @@ A symbolic math workspace for browsers and Node.js. It features pluggable types,
 
 ![backgound math art](images/art/mathart1.jpg)
 
-##** NOT READY FOR PRIME TIME **
+##NOT READY FOR PRIME TIME
 
 When an alpha release is available I'll remove this message.
 For the next few months this project is closed to external developers.
@@ -43,8 +43,10 @@ For the next few months this project is closed to external developers.
 * Numeric expression evaluations retain rational forms (num/den)
 
 
-[Contributors](http://./CONTRIBUTING.md)
+[Contributors](CONTRIBUTING.md)
 
-[Developers](http://./docs/DEVELOPERS.md)
+[Developers](docs/DEVELOPERS.md)
 
-#.
+[API](api/index.html)
+
+#### End of document.

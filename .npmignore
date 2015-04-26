@@ -33,8 +33,9 @@ node_modules
 *~
 
 # local to my system.
-/partsbin
-/dev
+/partsbin/
+/coverage/
+/dev/
 /docx/
 /testm/
 /scratch/

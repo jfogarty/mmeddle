@@ -4,8 +4,8 @@
  *
  * mmeddle.js is a symbolic math workspace for JavaScript and Node.js.
  *
- * @version 0.1.1
- * @date    2015-04-25
+ * @version 0.1.3
+ * @date    2015-04-26
  *
  * @license
  * Copyright (C) 2015 John Fogarty <johnhenryfogarty@gmail.com> (https://github.com/jfogarty)
@@ -122,8 +122,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  mm.type = {};
 	  
-	  mm._ = __webpack_require__(7); // The underscore replacement utility library.
-	  mm.Q = __webpack_require__(9); // Promises compatible with node and browsers.
+	  mm._ = __webpack_require__(6); // The underscore replacement utility library.
+	  mm.Q = __webpack_require__(8); // Promises compatible with node and browsers.
 	  
 	  mm.inBrowser = inBrowser;
 	  mm.inNode    = inNode;
@@ -158,7 +158,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  
 	  /* istanbul ignore else */
 	  if (inNode) {
-	    mm.FS = __webpack_require__(8);
+	    mm.FS = __webpack_require__(18);
 	    // mmeddle.FS = require('q-io/fs-mock');
 	  }
 	  
@@ -174,7 +174,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// export the default instance
 	module.exports = mMeddle;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7), (function() { return this; }())))
 
 /***/ },
 /* 2 */
@@ -597,7 +597,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 
 	  if (format == 'inspect') {
-	    return __webpack_require__(19).inspect(obj);
+	    return __webpack_require__(20).inspect(obj);
 	  }
 
 	  if (format == 'json') {
@@ -1006,7 +1006,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	return sf;
 	}();
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
 
 /***/ },
 /* 3 */
@@ -1020,22 +1020,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	// the style. As always, I reserve the right to change my mind later.
 	//
 	module.exports = function(mm) {
-	  mm.util = __webpack_require__(19);
+	  mm.util = __webpack_require__(20);
 	  mm.obj = {};
-	  mm.obj.SequencedObject = __webpack_require__(10)(mm);  
+	  mm.obj.SequencedObject = __webpack_require__(9)(mm);  
 
-	  __webpack_require__(11)(mm.util);
-	  mm.obj.Enum = __webpack_require__(12)();
-	  mm.Logger = __webpack_require__(13)(mm);
+	  __webpack_require__(10)(mm.util);
+	  mm.obj.Enum = __webpack_require__(11)();
+	  mm.Logger = __webpack_require__(12)(mm);
 	  
-	  mm.log = __webpack_require__(14)(mm);
+	  mm.log = __webpack_require__(13)(mm);
 
 
 	  mm.obj.CoreObject = function CoreObject() {
 	    // core object prototype functions here.
 	  };
 
-	  mm.obj.SequencedObject = __webpack_require__(15)(mm);  
+	  mm.obj.SequencedObject = __webpack_require__(14)(mm);  
 	};
 
 
@@ -1045,9 +1045,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	// Insert the Services Abstraction Layer dependencies.
 	module.exports = function(mm) {
-	  mm.storage = __webpack_require__(16)(mm);
-	  mm.users = __webpack_require__(17)(mm);
-	  mm.userStorage = __webpack_require__(18)(mm);
+	  mm.storage = __webpack_require__(15)(mm);
+	  mm.users = __webpack_require__(16)(mm);
+	  mm.userStorage = __webpack_require__(17)(mm);
 
 
 	};
@@ -1064,70 +1064,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// shim for using process in browser
-
-	var process = module.exports = {};
-	var queue = [];
-	var draining = false;
-
-	function drainQueue() {
-	    if (draining) {
-	        return;
-	    }
-	    draining = true;
-	    var currentQueue;
-	    var len = queue.length;
-	    while(len) {
-	        currentQueue = queue;
-	        queue = [];
-	        var i = -1;
-	        while (++i < len) {
-	            currentQueue[i]();
-	        }
-	        len = queue.length;
-	    }
-	    draining = false;
-	}
-	process.nextTick = function (fun) {
-	    queue.push(fun);
-	    if (!draining) {
-	        setTimeout(drainQueue, 0);
-	    }
-	};
-
-	process.title = 'browser';
-	process.browser = true;
-	process.env = {};
-	process.argv = [];
-	process.version = ''; // empty string to avoid regexp issues
-	process.versions = {};
-
-	function noop() {}
-
-	process.on = noop;
-	process.addListener = noop;
-	process.once = noop;
-	process.off = noop;
-	process.removeListener = noop;
-	process.removeAllListeners = noop;
-	process.emit = noop;
-
-	process.binding = function (name) {
-	    throw new Error('process.binding is not supported');
-	};
-
-	// TODO(shtylman)
-	process.cwd = function () { return '/' };
-	process.chdir = function (dir) {
-	    throw new Error('process.chdir is not supported');
-	};
-	process.umask = function() { return 0; };
-
-
-/***/ },
-/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, global) {/**
@@ -12937,369 +12873,71 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(26)(module), (function() { return this; }())))
 
 /***/ },
-/* 8 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(process) {/**
-	 * An asynchronous local file system API, based on a subset
-	 * of the `narwhal/fs` API and the `narwhal/promise` API,
-	 * such that the method names are the same but some return
-	 * values are promises instead of fully resolved values.
-	 * @module
-	 */
+	// shim for using process in browser
 
-	/*whatsupdoc*/
+	var process = module.exports = {};
+	var queue = [];
+	var draining = false;
 
-	var FS = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())); // node
-	var Q = __webpack_require__(9);
-	var Reader = __webpack_require__(21);
-	var Writer = __webpack_require__(22);
-	var Common = __webpack_require__(23);
-	var Mock = __webpack_require__(24);
-	var Root = __webpack_require__(25);
-
-	Common.update(exports, process.cwd);
-	exports.Mock = Mock;
-	exports.Root = Root;
-
-	// facilitates AIMD (additive increase, multiplicative decrease) for backing off
-	var backOffDelay = 0;
-	var backOffFactor = 1.0001;
-	function dampen(wrapped, thisp) {
-	    var retry = function () {
-	        var args = arguments;
-	        var ready = backOffDelay ? Q.delay(backOffDelay) : Q.resolve();
-	        return ready.then(function () {
-	            return Q.when(wrapped.apply(thisp, args), function (stream) {
-	                backOffDelay = Math.max(0, backOffDelay - 1);
-	                return stream;
-	            }, function (error) {
-	                if (error.code === "EMFILE") {
-	                    backOffDelay = (backOffDelay + 1) * backOffFactor;
-	                    return retry.apply(null, args);
-	                } else {
-	                    throw error;
-	                }
-	            });
-	        });
-	    };
-	    return retry;
+	function drainQueue() {
+	    if (draining) {
+	        return;
+	    }
+	    draining = true;
+	    var currentQueue;
+	    var len = queue.length;
+	    while(len) {
+	        currentQueue = queue;
+	        queue = [];
+	        var i = -1;
+	        while (++i < len) {
+	            currentQueue[i]();
+	        }
+	        len = queue.length;
+	    }
+	    draining = false;
 	}
-
-	/**
-	 * @param {String} path
-	 * @param {Object} options (flags, mode, bufferSize, charset, begin, end)
-	 * @returns {Promise * Stream} a stream from the `q-io` module.
-	 */
-	exports.open = dampen(function (path, flags, charset, options) {
-	    var self = this;
-	    if (typeof flags == "object") {
-	        options = flags;
-	        flags = options.flags;
-	        charset = options.charset;
+	process.nextTick = function (fun) {
+	    queue.push(fun);
+	    if (!draining) {
+	        setTimeout(drainQueue, 0);
 	    }
-	    options = options || {};
-	    flags = flags || "r";
-	    var nodeFlags = flags.replace(/b/g, "") || "r";
-	    var nodeOptions = {
-	        "flags": nodeFlags
-	    };
-	    if ("bufferSize" in options) {
-	        nodeOptions.bufferSize = options.bufferSize;
-	    }
-	    if ("mode" in options) {
-	        nodeOptions.mode = options.mode;
-	    }
-	    if ("begin" in options) {
-	        nodeOptions.start = options.begin;
-	        nodeOptions.end = options.end - 1;
-	    }
-	    if (flags.indexOf("b") >= 0) {
-	        if (charset) {
-	            throw new Error("Can't open a binary file with a charset: " + charset);
-	        }
-	    } else {
-	        charset = charset || 'utf-8';
-	    }
-	    if (flags.indexOf("w") >= 0 || flags.indexOf("a") >= 0) {
-	        var stream = FS.createWriteStream(String(path), nodeOptions);
-	        return Writer(stream, charset);
-	    } else {
-	        var stream = FS.createReadStream(String(path), nodeOptions);
-	        return Reader(stream, charset);
-	    }
-	});
-
-	exports.remove = function (path) {
-	    path = String(path);
-	    var done = Q.defer();
-	    FS.unlink(path, function (error) {
-	        if (error) {
-	            error.message = "Can't remove " + JSON.stringify(path) + ": " + error.message;
-	            done.reject(error);
-	        } else {
-	            done.resolve();
-	        }
-	    });
-	    return done.promise;
 	};
 
-	exports.rename = function (source, target) {
-	    source = String(source);
-	    target = String(target);
-	    return Q.ninvoke(FS, "rename", source, target)
-	    .fail(function (error) {
-	        if (error.code === "EXDEV") {
-	            error.message = "source and target are on different devices: " + error.message;
-	            error.crossDevice = true;
-	        }
-	        error.message = (
-	            "Can't move " + JSON.stringify(source) + " to " +
-	            JSON.stringify(target) + " because " + error.message
-	        );
-	        throw error;
-	    });
+	process.title = 'browser';
+	process.browser = true;
+	process.env = {};
+	process.argv = [];
+	process.version = ''; // empty string to avoid regexp issues
+	process.versions = {};
+
+	function noop() {}
+
+	process.on = noop;
+	process.addListener = noop;
+	process.once = noop;
+	process.off = noop;
+	process.removeListener = noop;
+	process.removeAllListeners = noop;
+	process.emit = noop;
+
+	process.binding = function (name) {
+	    throw new Error('process.binding is not supported');
 	};
 
-	exports.makeDirectory = function (path, mode) {
-	    path = String(path);
-	    var done = Q.defer();
-	    if (typeof mode === "string") {
-	        mode = parseInt(mode, 8);
-	    } else if (mode === void 0) {
-	        mode = parseInt('755', 8);
-	    }
-	    FS.mkdir(path, mode, function (error) {
-	        if (error) {
-	            if (error.code === "EISDIR") {
-	                error.exists = true;
-	                error.isDirectory = true;
-	                error.message = "directory already exists: " + error.message;
-	            }
-	            if (error.code === "EEXIST") {
-	                error.exists = true;
-	                error.message = "file exists at that path: " + error.message;
-	            }
-	            error.message = "Can't makeDirectory " + JSON.stringify(path) + " with mode " + mode + ": " + error.message;
-	            done.reject(error);
-	        } else {
-	            done.resolve();
-	        }
-	    });
-	    return done.promise;
+	// TODO(shtylman)
+	process.cwd = function () { return '/' };
+	process.chdir = function (dir) {
+	    throw new Error('process.chdir is not supported');
 	};
+	process.umask = function() { return 0; };
 
-	exports.removeDirectory = function (path) {
-	    path = String(path);
-	    var done = Q.defer();
-	    FS.rmdir(path, function (error) {
-	        if (error) {
-	            error.message = "Can't removeDirectory " + JSON.stringify(path) + ": " + error.message;
-	            done.reject(error);
-	        } else {
-	            done.resolve();
-	        }
-	    });
-	    return done.promise;
-	};
-
-	/**
-	 */
-	exports.list = dampen(function (path) {
-	    path = String(path);
-	    var result = Q.defer();
-	    FS.readdir(path, function (error, list) {
-	        if (error) {
-	            error.message = "Can't list " + JSON.stringify(path) + ": " + error.message;
-	            return result.reject(error);
-	        } else {
-	            result.resolve(list);
-	        }
-	    });
-	    return result.promise;
-	});
-
-	/**
-	 * @param {String} path
-	 * @returns {Promise * Stat}
-	 */
-	exports.stat = function (path) {
-	    var self = this;
-	    path = String(path);
-	    var done = Q.defer();
-	    try {
-	        FS.stat(path, function (error, stat) {
-	            if (error) {
-	                error.message = "Can't stat " + JSON.stringify(path) + ": " + error;
-	                done.reject(error);
-	            } else {
-	                done.resolve(new self.Stats(stat));
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.statLink = function (path) {
-	    path = String(path);
-	    var done = Q.defer();
-	    try {
-	        FS.lstat(path, function (error, stat) {
-	            if (error) {
-	                error.message = "Can't statLink " + JSON.stringify(path) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve(stat);
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.statFd = function (fd) {
-	    fd = Number(fd);
-	    var done = Q.defer();
-	    try {
-	        FS.fstat(fd, function (error, stat) {
-	            if (error) {
-	                error.message = "Can't statFd file descriptor " + JSON.stringify(fd) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve(stat);
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.link = function (source, target) {
-	    source = String(source);
-	    target = String(target);
-	    var done = Q.defer();
-	    try {
-	        FS.link(source, target, function (error) {
-	            if (error) {
-	                error.message = "Can't link " + JSON.stringify(source) + " to " + JSON.stringify(target) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve();
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	// this lookup table translates the link types that Q-IO accepts (which have
-	// been normalized to full words to be consistent with the naming convention)
-	var linkTypes = {
-	    "file": "file",
-	    "directory": "dir",
-	    "junction": "junction"
-	};
-
-	exports.symbolicLink = function (target, relative, type) {
-	    if (!linkTypes.hasOwnProperty(type)) {
-	        console.warn(new Error("For Windows compatibility, symbolicLink must be called with a type argument \"file\", \"directory\", or \"junction\""));
-	    }
-	    type = linkTypes[type];
-	    target = String(target);
-	    relative = String(relative);
-	    var done = Q.defer();
-	    try {
-	        FS.symlink(relative, target, type || 'file', function (error) {
-	            if (error) {
-	                error.message = "Can't create symbolicLink " + JSON.stringify(target) + " to relative location " + JSON.stringify(relative) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve();
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.chown = function (path, uid, gid) {
-	    path = String(path);
-	    var done = Q.defer();
-	    try {
-	        FS.chown(path, uid, gid, function (error) {
-	            if (error) {
-	                error.message = "Can't chown (change owner) of " + JSON.stringify(path) + " to user " + JSON.stringify(uid) + " and group " + JSON.stringify(gid) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve();
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.chmod = function (path, mode) {
-	    path = String(path);
-	    mode = String(mode);
-	    var done = Q.defer();
-	    try {
-	        FS.chmod(path, mode, function (error) {
-	            if (error) {
-	                error.message = "Can't chmod (change permissions mode) of " + JSON.stringify(path) + " to (octal number) " + mode.toString(8) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve();
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.canonical = function (path) {
-	    var result = Q.defer();
-	    FS.realpath(path, function (error, canonicalPath) {
-	        if (error) {
-	            error.message = "Can't get canonical path of " + JSON.stringify(path) + " by way of C realpath: " + error.message;
-	            result.reject(error);
-	        } else {
-	            result.resolve(canonicalPath);
-	        }
-	    });
-	    return result.promise;
-	};
-
-	exports.readLink = function (path) {
-	    var result = Q.defer();
-	    FS.readlink(path, function (error, path) {
-	        if (error) {
-	            error.message = "Can't get link from " + JSON.stringify(path) + " by way of C readlink: " + error.message;
-	            result.reject(error);
-	        } else {
-	            result.resolve(path);
-	        }
-	    });
-	    return result.promise;
-	};
-
-	exports.mock = function (path) {
-	    return Mock.mock(this, path);
-	};
-
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6)))
 
 /***/ },
-/* 9 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process, setImmediate) {// vim:ts=4:sts=4:sw=4:
@@ -15289,10 +14927,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	});
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6), __webpack_require__(27).setImmediate))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7), __webpack_require__(27).setImmediate))
 
 /***/ },
-/* 10 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -15330,292 +14968,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }());
 
-	  /**
-	   * @summary **add Format an object argument (replacable)**
-	   * @description Used internally when objects are passed without a format.
-	   * @static
-	   * @param {*} obj the object to format
-	   * @returns the `util.inpect()` of the object
-	   */
-	  Settings.formatObject = function formatObject(obj) {
-	    if (typeof obj === 'undefined') return '(undefined)';  
-	    if (obj === null) return '(null)';
-	    if (typeof obj === 'object') {
-	      if (obj instanceof String ||
-	          obj instanceof Number ||
-	          obj instanceof Date) {
-	        return obj.toString();
-	      }
-	      else {
-	        return mm.util.inspect(obj);
-	      }
-	    }
-	    else {
-	      return obj.toString();
-	    }
-	  }
-
-	  /**
-	   * @summary **Settings string format routine**
-	   * @description Exposes the format routine used by the settings.
-	   * The first parameter is a `sf` compatible format, any remaning 
-	   * parameters are substitued into the the format.
-	   * The settings failure handler is used for bad formats.
-	   * @static
-	   * @param {...*} arguments the format string and its arguments
-	   * @returns {string} the formatted string
-	   */
-	  Settings.format = function format() {
-	    return Settings.formatArray(Array.prototype.slice.call(arguments));
-	  }
-
-	  /**
-	   * @summary **Settings string format array of arguments**
-	   * @description Exposes the format routine used by the settings.
-	   * The first entry
-	   * is a `sf` compatible format, any remaning parameters are substitued
-	   * into the the format. The settings failure handler is used for bad
-	   * formats.
-	   * @static
-	   * @param {Array} args the format string and its arguments
-	   * @returns {string} the formatted string
-	   */
-	  Settings.formatArray = function formatArray(args) {
-	    // If the output contains only one argument or the
-	    // first argument is not a format, then produce `toString()` or
-	    // `util.inspect` formatted arguments separated by spaces.
-	    if (args && args.length > 1 && args[0] && args[0].indexOf('{') > -1) {
-	      try {
-	        return format.apply(null, args);
-	      }
-	      catch (e) {
-	        Settings.failureHandler(e);
-	        // Bad formats provide comma separated outputs, not failure.
-	        return args.join(); 
-	      }      
-	    }
-	    else {
-	      var outText = '';    
-	      var separator = '';
-	      args.forEach(function(arg) {
-	        outText += separator + Settings.formatObject(arg);
-	        separator = ' ';
-	      })
-	      return outText;
-	    }
-	  }
-
-	  Settings.prototype._resetPriority = function _resetPriority() {
-	    var self = this;
-	    self.messagePriority = PRIORITY.NORMAL;
-	    return self;
-	  }
-
-	  /**
-	   * @summary **Get origin for a message (replacable)**
-	   * @description
-	   * This is usually used by Destination handlers to get
-	   * the origin "[settings name]" prefix to place on the message.
-	   * The handlers can add additional information such as a timestamp, 
-	   * or omit the origin entirely.
-	   * @returns {string} '[settings name]' by default.
-	   */
-	  Settings.prototype.origin = function origin() {
-	    var self = this;
-	    return '[' + self.name + ']';
-	  }
-
-	  /**
-	   * @summary **Add another destination handler to this settings**
-	   * @description
-	   * Destination handlers are functions which receive the text message
-	   * to log, as well as the settings which produced it, and the message
-	   * priority: `destFunc(message, settings, priority)`.
-	   * Multiple identical destinations are ignored.
-	   * @param {function} f the destination function
-	   * @returns {Settings} the settings for chaining
-	   */
-	  Settings.prototype.addDestination = function addDestination(f)
-	  { 
-	    var self = this;
-	    if (_.indexOf(self.destinations, f) < 0) {
-	      self.destinations.push(f);
-	    }
-	    return self._resetPriority();
-	  }
-
-	  /**
-	   * @summary **Remove a handler from this settings**
-	   * @description
-	   * Removes a single destination handler, or clears them all with '*'.
-	   * @param {function} the destination handler function or '*'.
-	   * @returns {Settings} the settings for chaining
-	   */
-	  Settings.prototype.removeDestination = function removeDestination(handler)
-	  { 
-	    var self = this;
-	    if (handler === '*') {
-	      self.destinations = [];
-	    }
-	    else if (_.indexOf(self.destinations, handler) >= 0) {
-	      self.destinations = _.without(self.destinations, handler);
-	    }
-	    return self._resetPriority();
-	  }
-	  
-	  /**
-	   * @summary **Log a message**
-	   * @description
-	   * This is often a `format` followed by objects, but can be a simple
-	   * text string, or a list of objects.  The message will be converted
-	   * into a text string and output to all of the destinations of this
-	   * settings and its parents, unless the message is rejected by a
-	   * filter, or the settings is disabled.
-	   * @param {...*} arguments zero or more objects, often with a leading format string.
-	   * @returns {Settings} the settings for chaining
-	   */
-	  Settings.prototype.log = function log() {
-	    var self = this;
-	    if (self.enabled) {
-	      var args = Array.prototype.slice.call(arguments);
-	      return self.logArray(args);
-	    }
-	    return self._resetPriority();
-	  }
-
-	  /**
-	   * @summary **Select the lowest priority to log**
-	   * @description
-	   * Modifies the minimumPriority to filter the logging of messages.
-	   * @param {number} v The minimum priority to log
-	   * @returns {Settings} the settings for chaining
-	   * @example
-	   *    settings.allowPrioriy(Settings.PRIORITY.LOW);
-	   */
-	  Settings.prototype.allowPrioriy = function allowPrioriy(v) {
-	    var self = this;
-	    self.minimumPriority = v;
-	    return self;
-	  }
-
-	  /**
-	   * @summary **Select priority for the next message sent**
-	   * @description
-	   * Once the message has been dispatched, the next message will
-	   * be at PRIORITY.NORMAL (1).
-	   * @param {number} v The priority to use
-	   * @returns {Settings} the settings for chaining
-	   * @example
-	   *    settings.prioriy(5).log("And now a message from our sponsors");
-	   */
-	  Settings.prototype.priority = function priority(v) {
-	    var self = this;
-	    self.messagePriority = self.enabled ? v : PRIORITY.NORMAL;
-	    return self;
-	  }
-
-	  /**
-	   * @summary **Select HIGH priority for the next message sent**
-	   * @returns {Settings} the settings for chaining
-	   */
-	  Settings.prototype.high = function high () {
-	    return this.priority(PRIORITY.HIGH);
-	  }
-
-	  /**
-	   * @summary **Select LOW priority for the next message sent**
-	   * @returns {Settings} the settings for chaining
-	   */
-	  Settings.prototype.low = function low () {
-	    return this.priority(PRIORITY.LOW);
-	  }
-
-	  /**
-	   * @summary **Select NORMAL priority for the next message sent**
-	   * @description
-	   * This is usually a no-op, but is sometimes useful as a placeholder
-	   * for substitution with high or low in the source.
-	   * @returns {Settings} the settings for chaining
-	   */
-	  Settings.prototype.norm = function norm () {
-	    return this.priority(PRIORITY.NORMAL);
-	  }
-
-	  /**
-	   * @summary **Enable the settings**
-	   * @description
-	   * When a settings is enabled then any messages with a priority greater
-	   * than or equal to the `minimumPriority` (as set by {@link allowPrioriy})
-	   * will be logged to all of the destination handlers of this settings and
-	   * its parent handlers (unless it is disabled).
-	   * @param {boolean} value optional state to set the settings to
-	   * @returns {Settings} the settings for chaining
-	   */
-	  Settings.prototype.enable = function enable(value) {
-	    var self = this;
-	    self.enabled = (arguments.length === 0 || value);
-	    return self;
-	  }
-
-	  /**
-	   * @summary **Disable this settings**
-	   * @description
-	   * When a settings is disabled then any messages sent to this settings are
-	   * discarded. This encludes messages sent from child settingss to this one.
-	   * By extension, this means that the parent to this settings will receive
-	   * no messages from this settings or its children.
-	   * @returns {Settings} the settings for chaining
-	   */
-	  Settings.prototype.disable = function disable() {
-	    return this.enable(false);
-	  }
-
-	  /**
-	   * @summary **Log an array of objects as a message**
-	   * @description
-	   * The first object can be a format.
-	   * @param {Array} args zero or more objects in an array.S
-	   * @returns {Settings} the settings for chaining
-	   */
-	  Settings.prototype.logArray = function logArray(args) {
-	    var self = this;
-	    var outText = '';    
-	    if (self.enabled) {
-	      outText = Settings.formatArray(args);
-	    }
-	    return self.logString(outText);
-	  }
-
-	  /**
-	   * @summary **Log a single string message to the settings's destinations**
-	   * @param {string} text the message to log.
-	   * @returns {Settings} the settings for chaining
-	   */
-	  Settings.prototype.logString = function logString(text) {
-	    var self = this;
-	    if (self.enabled) {    
-	      var messagePriority = self.messagePriority;
-	      var settings = self;
-	      var originSettings = self;
-	      while (settings) {
-	        if (settings.enabled) {
-	          _logString(text, originSettings, settings, messagePriority);
-	          settings = settings.parent;
-	        }
-	        else {
-	          settings = null;
-	        }
-	      }
-	    }
-	    return self._resetPriority();
-	  }
-
 	  return Settings;
 	}
 
 
 /***/ },
-/* 11 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -15657,7 +15015,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 12 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -15672,7 +15030,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 13 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -16113,7 +15471,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 14 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use srict';
@@ -16281,7 +15639,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 15 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -16445,7 +15803,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 16 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -16516,7 +15874,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 17 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -16533,7 +15891,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var SequencedObject = mm.obj.SequencedObject,
 	      Enum = mm.obj.Enum;
 	      
-	  var sha256 = __webpack_require__(31);
+	  var sha256 = __webpack_require__(29);
 
 	  var T = 10;
 	  
@@ -16782,7 +16140,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 18 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -16981,600 +16339,369 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 19 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global, process) {// Copyright Joyent, Inc. and other Node contributors.
-	//
-	// Permission is hereby granted, free of charge, to any person obtaining a
-	// copy of this software and associated documentation files (the
-	// "Software"), to deal in the Software without restriction, including
-	// without limitation the rights to use, copy, modify, merge, publish,
-	// distribute, sublicense, and/or sell copies of the Software, and to permit
-	// persons to whom the Software is furnished to do so, subject to the
-	// following conditions:
-	//
-	// The above copyright notice and this permission notice shall be included
-	// in all copies or substantial portions of the Software.
-	//
-	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-	// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-	// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-	// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-	// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-	// USE OR OTHER DEALINGS IN THE SOFTWARE.
+	/* WEBPACK VAR INJECTION */(function(process) {/**
+	 * An asynchronous local file system API, based on a subset
+	 * of the `narwhal/fs` API and the `narwhal/promise` API,
+	 * such that the method names are the same but some return
+	 * values are promises instead of fully resolved values.
+	 * @module
+	 */
 
-	var formatRegExp = /%[sdj%]/g;
-	exports.format = function(f) {
-	  if (!isString(f)) {
-	    var objects = [];
-	    for (var i = 0; i < arguments.length; i++) {
-	      objects.push(inspect(arguments[i]));
-	    }
-	    return objects.join(' ');
-	  }
+	/*whatsupdoc*/
 
-	  var i = 1;
-	  var args = arguments;
-	  var len = args.length;
-	  var str = String(f).replace(formatRegExp, function(x) {
-	    if (x === '%%') return '%';
-	    if (i >= len) return x;
-	    switch (x) {
-	      case '%s': return String(args[i++]);
-	      case '%d': return Number(args[i++]);
-	      case '%j':
-	        try {
-	          return JSON.stringify(args[i++]);
-	        } catch (_) {
-	          return '[Circular]';
-	        }
-	      default:
-	        return x;
-	    }
-	  });
-	  for (var x = args[i]; i < len; x = args[++i]) {
-	    if (isNull(x) || !isObject(x)) {
-	      str += ' ' + x;
-	    } else {
-	      str += ' ' + inspect(x);
-	    }
-	  }
-	  return str;
-	};
+	var FS = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())); // node
+	var Q = __webpack_require__(8);
+	var Reader = __webpack_require__(21);
+	var Writer = __webpack_require__(22);
+	var Common = __webpack_require__(23);
+	var Mock = __webpack_require__(24);
+	var Root = __webpack_require__(25);
 
+	Common.update(exports, process.cwd);
+	exports.Mock = Mock;
+	exports.Root = Root;
 
-	// Mark that a method should not be used.
-	// Returns a modified function which warns once by default.
-	// If --no-deprecation is set, then it is a no-op.
-	exports.deprecate = function(fn, msg) {
-	  // Allow for deprecating things in the process of starting up.
-	  if (isUndefined(global.process)) {
-	    return function() {
-	      return exports.deprecate(fn, msg).apply(this, arguments);
+	// facilitates AIMD (additive increase, multiplicative decrease) for backing off
+	var backOffDelay = 0;
+	var backOffFactor = 1.0001;
+	function dampen(wrapped, thisp) {
+	    var retry = function () {
+	        var args = arguments;
+	        var ready = backOffDelay ? Q.delay(backOffDelay) : Q.resolve();
+	        return ready.then(function () {
+	            return Q.when(wrapped.apply(thisp, args), function (stream) {
+	                backOffDelay = Math.max(0, backOffDelay - 1);
+	                return stream;
+	            }, function (error) {
+	                if (error.code === "EMFILE") {
+	                    backOffDelay = (backOffDelay + 1) * backOffFactor;
+	                    return retry.apply(null, args);
+	                } else {
+	                    throw error;
+	                }
+	            });
+	        });
 	    };
-	  }
-
-	  if (process.noDeprecation === true) {
-	    return fn;
-	  }
-
-	  var warned = false;
-	  function deprecated() {
-	    if (!warned) {
-	      if (process.throwDeprecation) {
-	        throw new Error(msg);
-	      } else if (process.traceDeprecation) {
-	        console.trace(msg);
-	      } else {
-	        console.error(msg);
-	      }
-	      warned = true;
-	    }
-	    return fn.apply(this, arguments);
-	  }
-
-	  return deprecated;
-	};
-
-
-	var debugs = {};
-	var debugEnviron;
-	exports.debuglog = function(set) {
-	  if (isUndefined(debugEnviron))
-	    debugEnviron = process.env.NODE_DEBUG || '';
-	  set = set.toUpperCase();
-	  if (!debugs[set]) {
-	    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
-	      var pid = process.pid;
-	      debugs[set] = function() {
-	        var msg = exports.format.apply(exports, arguments);
-	        console.error('%s %d: %s', set, pid, msg);
-	      };
-	    } else {
-	      debugs[set] = function() {};
-	    }
-	  }
-	  return debugs[set];
-	};
-
+	    return retry;
+	}
 
 	/**
-	 * Echos the value of a value. Trys to print the value out
-	 * in the best way possible given the different types.
-	 *
-	 * @param {Object} obj The object to print out.
-	 * @param {Object} opts Optional options object that alters the output.
+	 * @param {String} path
+	 * @param {Object} options (flags, mode, bufferSize, charset, begin, end)
+	 * @returns {Promise * Stream} a stream from the `q-io` module.
 	 */
-	/* legacy: obj, showHidden, depth, colors*/
-	function inspect(obj, opts) {
-	  // default options
-	  var ctx = {
-	    seen: [],
-	    stylize: stylizeNoColor
-	  };
-	  // legacy...
-	  if (arguments.length >= 3) ctx.depth = arguments[2];
-	  if (arguments.length >= 4) ctx.colors = arguments[3];
-	  if (isBoolean(opts)) {
-	    // legacy...
-	    ctx.showHidden = opts;
-	  } else if (opts) {
-	    // got an "options" object
-	    exports._extend(ctx, opts);
-	  }
-	  // set default options
-	  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
-	  if (isUndefined(ctx.depth)) ctx.depth = 2;
-	  if (isUndefined(ctx.colors)) ctx.colors = false;
-	  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
-	  if (ctx.colors) ctx.stylize = stylizeWithColor;
-	  return formatValue(ctx, obj, ctx.depth);
-	}
-	exports.inspect = inspect;
-
-
-	// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
-	inspect.colors = {
-	  'bold' : [1, 22],
-	  'italic' : [3, 23],
-	  'underline' : [4, 24],
-	  'inverse' : [7, 27],
-	  'white' : [37, 39],
-	  'grey' : [90, 39],
-	  'black' : [30, 39],
-	  'blue' : [34, 39],
-	  'cyan' : [36, 39],
-	  'green' : [32, 39],
-	  'magenta' : [35, 39],
-	  'red' : [31, 39],
-	  'yellow' : [33, 39]
-	};
-
-	// Don't use 'blue' not visible on cmd.exe
-	inspect.styles = {
-	  'special': 'cyan',
-	  'number': 'yellow',
-	  'boolean': 'yellow',
-	  'undefined': 'grey',
-	  'null': 'bold',
-	  'string': 'green',
-	  'date': 'magenta',
-	  // "name": intentionally not styling
-	  'regexp': 'red'
-	};
-
-
-	function stylizeWithColor(str, styleType) {
-	  var style = inspect.styles[styleType];
-
-	  if (style) {
-	    return '\u001b[' + inspect.colors[style][0] + 'm' + str +
-	           '\u001b[' + inspect.colors[style][1] + 'm';
-	  } else {
-	    return str;
-	  }
-	}
-
-
-	function stylizeNoColor(str, styleType) {
-	  return str;
-	}
-
-
-	function arrayToHash(array) {
-	  var hash = {};
-
-	  array.forEach(function(val, idx) {
-	    hash[val] = true;
-	  });
-
-	  return hash;
-	}
-
-
-	function formatValue(ctx, value, recurseTimes) {
-	  // Provide a hook for user-specified inspect functions.
-	  // Check that value is an object with an inspect function on it
-	  if (ctx.customInspect &&
-	      value &&
-	      isFunction(value.inspect) &&
-	      // Filter out the util module, it's inspect function is special
-	      value.inspect !== exports.inspect &&
-	      // Also filter out any prototype objects using the circular check.
-	      !(value.constructor && value.constructor.prototype === value)) {
-	    var ret = value.inspect(recurseTimes, ctx);
-	    if (!isString(ret)) {
-	      ret = formatValue(ctx, ret, recurseTimes);
+	exports.open = dampen(function (path, flags, charset, options) {
+	    var self = this;
+	    if (typeof flags == "object") {
+	        options = flags;
+	        flags = options.flags;
+	        charset = options.charset;
 	    }
-	    return ret;
-	  }
-
-	  // Primitive types cannot have properties
-	  var primitive = formatPrimitive(ctx, value);
-	  if (primitive) {
-	    return primitive;
-	  }
-
-	  // Look up the keys of the object.
-	  var keys = Object.keys(value);
-	  var visibleKeys = arrayToHash(keys);
-
-	  if (ctx.showHidden) {
-	    keys = Object.getOwnPropertyNames(value);
-	  }
-
-	  // IE doesn't make error fields non-enumerable
-	  // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
-	  if (isError(value)
-	      && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
-	    return formatError(value);
-	  }
-
-	  // Some type of object without properties can be shortcutted.
-	  if (keys.length === 0) {
-	    if (isFunction(value)) {
-	      var name = value.name ? ': ' + value.name : '';
-	      return ctx.stylize('[Function' + name + ']', 'special');
+	    options = options || {};
+	    flags = flags || "r";
+	    var nodeFlags = flags.replace(/b/g, "") || "r";
+	    var nodeOptions = {
+	        "flags": nodeFlags
+	    };
+	    if ("bufferSize" in options) {
+	        nodeOptions.bufferSize = options.bufferSize;
 	    }
-	    if (isRegExp(value)) {
-	      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+	    if ("mode" in options) {
+	        nodeOptions.mode = options.mode;
 	    }
-	    if (isDate(value)) {
-	      return ctx.stylize(Date.prototype.toString.call(value), 'date');
+	    if ("begin" in options) {
+	        nodeOptions.start = options.begin;
+	        nodeOptions.end = options.end - 1;
 	    }
-	    if (isError(value)) {
-	      return formatError(value);
-	    }
-	  }
-
-	  var base = '', array = false, braces = ['{', '}'];
-
-	  // Make Array say that they are Array
-	  if (isArray(value)) {
-	    array = true;
-	    braces = ['[', ']'];
-	  }
-
-	  // Make functions say that they are functions
-	  if (isFunction(value)) {
-	    var n = value.name ? ': ' + value.name : '';
-	    base = ' [Function' + n + ']';
-	  }
-
-	  // Make RegExps say that they are RegExps
-	  if (isRegExp(value)) {
-	    base = ' ' + RegExp.prototype.toString.call(value);
-	  }
-
-	  // Make dates with properties first say the date
-	  if (isDate(value)) {
-	    base = ' ' + Date.prototype.toUTCString.call(value);
-	  }
-
-	  // Make error with message first say the error
-	  if (isError(value)) {
-	    base = ' ' + formatError(value);
-	  }
-
-	  if (keys.length === 0 && (!array || value.length == 0)) {
-	    return braces[0] + base + braces[1];
-	  }
-
-	  if (recurseTimes < 0) {
-	    if (isRegExp(value)) {
-	      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
-	    } else {
-	      return ctx.stylize('[Object]', 'special');
-	    }
-	  }
-
-	  ctx.seen.push(value);
-
-	  var output;
-	  if (array) {
-	    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
-	  } else {
-	    output = keys.map(function(key) {
-	      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
-	    });
-	  }
-
-	  ctx.seen.pop();
-
-	  return reduceToSingleString(output, base, braces);
-	}
-
-
-	function formatPrimitive(ctx, value) {
-	  if (isUndefined(value))
-	    return ctx.stylize('undefined', 'undefined');
-	  if (isString(value)) {
-	    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
-	                                             .replace(/'/g, "\\'")
-	                                             .replace(/\\"/g, '"') + '\'';
-	    return ctx.stylize(simple, 'string');
-	  }
-	  if (isNumber(value))
-	    return ctx.stylize('' + value, 'number');
-	  if (isBoolean(value))
-	    return ctx.stylize('' + value, 'boolean');
-	  // For some reason typeof null is "object", so special case here.
-	  if (isNull(value))
-	    return ctx.stylize('null', 'null');
-	}
-
-
-	function formatError(value) {
-	  return '[' + Error.prototype.toString.call(value) + ']';
-	}
-
-
-	function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
-	  var output = [];
-	  for (var i = 0, l = value.length; i < l; ++i) {
-	    if (hasOwnProperty(value, String(i))) {
-	      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-	          String(i), true));
-	    } else {
-	      output.push('');
-	    }
-	  }
-	  keys.forEach(function(key) {
-	    if (!key.match(/^\d+$/)) {
-	      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
-	          key, true));
-	    }
-	  });
-	  return output;
-	}
-
-
-	function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
-	  var name, str, desc;
-	  desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
-	  if (desc.get) {
-	    if (desc.set) {
-	      str = ctx.stylize('[Getter/Setter]', 'special');
-	    } else {
-	      str = ctx.stylize('[Getter]', 'special');
-	    }
-	  } else {
-	    if (desc.set) {
-	      str = ctx.stylize('[Setter]', 'special');
-	    }
-	  }
-	  if (!hasOwnProperty(visibleKeys, key)) {
-	    name = '[' + key + ']';
-	  }
-	  if (!str) {
-	    if (ctx.seen.indexOf(desc.value) < 0) {
-	      if (isNull(recurseTimes)) {
-	        str = formatValue(ctx, desc.value, null);
-	      } else {
-	        str = formatValue(ctx, desc.value, recurseTimes - 1);
-	      }
-	      if (str.indexOf('\n') > -1) {
-	        if (array) {
-	          str = str.split('\n').map(function(line) {
-	            return '  ' + line;
-	          }).join('\n').substr(2);
-	        } else {
-	          str = '\n' + str.split('\n').map(function(line) {
-	            return '   ' + line;
-	          }).join('\n');
+	    if (flags.indexOf("b") >= 0) {
+	        if (charset) {
+	            throw new Error("Can't open a binary file with a charset: " + charset);
 	        }
-	      }
 	    } else {
-	      str = ctx.stylize('[Circular]', 'special');
+	        charset = charset || 'utf-8';
 	    }
-	  }
-	  if (isUndefined(name)) {
-	    if (array && key.match(/^\d+$/)) {
-	      return str;
-	    }
-	    name = JSON.stringify('' + key);
-	    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
-	      name = name.substr(1, name.length - 2);
-	      name = ctx.stylize(name, 'name');
+	    if (flags.indexOf("w") >= 0 || flags.indexOf("a") >= 0) {
+	        var stream = FS.createWriteStream(String(path), nodeOptions);
+	        return Writer(stream, charset);
 	    } else {
-	      name = name.replace(/'/g, "\\'")
-	                 .replace(/\\"/g, '"')
-	                 .replace(/(^"|"$)/g, "'");
-	      name = ctx.stylize(name, 'string');
+	        var stream = FS.createReadStream(String(path), nodeOptions);
+	        return Reader(stream, charset);
 	    }
-	  }
+	});
 
-	  return name + ': ' + str;
-	}
-
-
-	function reduceToSingleString(output, base, braces) {
-	  var numLinesEst = 0;
-	  var length = output.reduce(function(prev, cur) {
-	    numLinesEst++;
-	    if (cur.indexOf('\n') >= 0) numLinesEst++;
-	    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
-	  }, 0);
-
-	  if (length > 60) {
-	    return braces[0] +
-	           (base === '' ? '' : base + '\n ') +
-	           ' ' +
-	           output.join(',\n  ') +
-	           ' ' +
-	           braces[1];
-	  }
-
-	  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
-	}
-
-
-	// NOTE: These type checking functions intentionally don't use `instanceof`
-	// because it is fragile and can be easily faked with `Object.create()`.
-	function isArray(ar) {
-	  return Array.isArray(ar);
-	}
-	exports.isArray = isArray;
-
-	function isBoolean(arg) {
-	  return typeof arg === 'boolean';
-	}
-	exports.isBoolean = isBoolean;
-
-	function isNull(arg) {
-	  return arg === null;
-	}
-	exports.isNull = isNull;
-
-	function isNullOrUndefined(arg) {
-	  return arg == null;
-	}
-	exports.isNullOrUndefined = isNullOrUndefined;
-
-	function isNumber(arg) {
-	  return typeof arg === 'number';
-	}
-	exports.isNumber = isNumber;
-
-	function isString(arg) {
-	  return typeof arg === 'string';
-	}
-	exports.isString = isString;
-
-	function isSymbol(arg) {
-	  return typeof arg === 'symbol';
-	}
-	exports.isSymbol = isSymbol;
-
-	function isUndefined(arg) {
-	  return arg === void 0;
-	}
-	exports.isUndefined = isUndefined;
-
-	function isRegExp(re) {
-	  return isObject(re) && objectToString(re) === '[object RegExp]';
-	}
-	exports.isRegExp = isRegExp;
-
-	function isObject(arg) {
-	  return typeof arg === 'object' && arg !== null;
-	}
-	exports.isObject = isObject;
-
-	function isDate(d) {
-	  return isObject(d) && objectToString(d) === '[object Date]';
-	}
-	exports.isDate = isDate;
-
-	function isError(e) {
-	  return isObject(e) &&
-	      (objectToString(e) === '[object Error]' || e instanceof Error);
-	}
-	exports.isError = isError;
-
-	function isFunction(arg) {
-	  return typeof arg === 'function';
-	}
-	exports.isFunction = isFunction;
-
-	function isPrimitive(arg) {
-	  return arg === null ||
-	         typeof arg === 'boolean' ||
-	         typeof arg === 'number' ||
-	         typeof arg === 'string' ||
-	         typeof arg === 'symbol' ||  // ES6 symbol
-	         typeof arg === 'undefined';
-	}
-	exports.isPrimitive = isPrimitive;
-
-	exports.isBuffer = __webpack_require__(30);
-
-	function objectToString(o) {
-	  return Object.prototype.toString.call(o);
-	}
-
-
-	function pad(n) {
-	  return n < 10 ? '0' + n.toString(10) : n.toString(10);
-	}
-
-
-	var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-	              'Oct', 'Nov', 'Dec'];
-
-	// 26 Feb 16:19:34
-	function timestamp() {
-	  var d = new Date();
-	  var time = [pad(d.getHours()),
-	              pad(d.getMinutes()),
-	              pad(d.getSeconds())].join(':');
-	  return [d.getDate(), months[d.getMonth()], time].join(' ');
-	}
-
-
-	// log is just a thin wrapper to console.log that prepends a timestamp
-	exports.log = function() {
-	  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
+	exports.remove = function (path) {
+	    path = String(path);
+	    var done = Q.defer();
+	    FS.unlink(path, function (error) {
+	        if (error) {
+	            error.message = "Can't remove " + JSON.stringify(path) + ": " + error.message;
+	            done.reject(error);
+	        } else {
+	            done.resolve();
+	        }
+	    });
+	    return done.promise;
 	};
 
+	exports.rename = function (source, target) {
+	    source = String(source);
+	    target = String(target);
+	    return Q.ninvoke(FS, "rename", source, target)
+	    .fail(function (error) {
+	        if (error.code === "EXDEV") {
+	            error.message = "source and target are on different devices: " + error.message;
+	            error.crossDevice = true;
+	        }
+	        error.message = (
+	            "Can't move " + JSON.stringify(source) + " to " +
+	            JSON.stringify(target) + " because " + error.message
+	        );
+	        throw error;
+	    });
+	};
+
+	exports.makeDirectory = function (path, mode) {
+	    path = String(path);
+	    var done = Q.defer();
+	    if (typeof mode === "string") {
+	        mode = parseInt(mode, 8);
+	    } else if (mode === void 0) {
+	        mode = parseInt('755', 8);
+	    }
+	    FS.mkdir(path, mode, function (error) {
+	        if (error) {
+	            if (error.code === "EISDIR") {
+	                error.exists = true;
+	                error.isDirectory = true;
+	                error.message = "directory already exists: " + error.message;
+	            }
+	            if (error.code === "EEXIST") {
+	                error.exists = true;
+	                error.message = "file exists at that path: " + error.message;
+	            }
+	            error.message = "Can't makeDirectory " + JSON.stringify(path) + " with mode " + mode + ": " + error.message;
+	            done.reject(error);
+	        } else {
+	            done.resolve();
+	        }
+	    });
+	    return done.promise;
+	};
+
+	exports.removeDirectory = function (path) {
+	    path = String(path);
+	    var done = Q.defer();
+	    FS.rmdir(path, function (error) {
+	        if (error) {
+	            error.message = "Can't removeDirectory " + JSON.stringify(path) + ": " + error.message;
+	            done.reject(error);
+	        } else {
+	            done.resolve();
+	        }
+	    });
+	    return done.promise;
+	};
 
 	/**
-	 * Inherit the prototype methods from one constructor into another.
-	 *
-	 * The Function.prototype.inherits from lang.js rewritten as a standalone
-	 * function (not on Function.prototype). NOTE: If this file is to be loaded
-	 * during bootstrapping this function needs to be rewritten using some native
-	 * functions as prototype setup using normal JavaScript does not work as
-	 * expected during bootstrapping (see mirror.js in r114903).
-	 *
-	 * @param {function} ctor Constructor function which needs to inherit the
-	 *     prototype.
-	 * @param {function} superCtor Constructor function to inherit prototype from.
 	 */
-	exports.inherits = __webpack_require__(35);
+	exports.list = dampen(function (path) {
+	    path = String(path);
+	    var result = Q.defer();
+	    FS.readdir(path, function (error, list) {
+	        if (error) {
+	            error.message = "Can't list " + JSON.stringify(path) + ": " + error.message;
+	            return result.reject(error);
+	        } else {
+	            result.resolve(list);
+	        }
+	    });
+	    return result.promise;
+	});
 
-	exports._extend = function(origin, add) {
-	  // Don't do anything if add isn't an object
-	  if (!add || !isObject(add)) return origin;
-
-	  var keys = Object.keys(add);
-	  var i = keys.length;
-	  while (i--) {
-	    origin[keys[i]] = add[keys[i]];
-	  }
-	  return origin;
+	/**
+	 * @param {String} path
+	 * @returns {Promise * Stat}
+	 */
+	exports.stat = function (path) {
+	    var self = this;
+	    path = String(path);
+	    var done = Q.defer();
+	    try {
+	        FS.stat(path, function (error, stat) {
+	            if (error) {
+	                error.message = "Can't stat " + JSON.stringify(path) + ": " + error;
+	                done.reject(error);
+	            } else {
+	                done.resolve(new self.Stats(stat));
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
 	};
 
-	function hasOwnProperty(obj, prop) {
-	  return Object.prototype.hasOwnProperty.call(obj, prop);
-	}
+	exports.statLink = function (path) {
+	    path = String(path);
+	    var done = Q.defer();
+	    try {
+	        FS.lstat(path, function (error, stat) {
+	            if (error) {
+	                error.message = "Can't statLink " + JSON.stringify(path) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve(stat);
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(6)))
+	exports.statFd = function (fd) {
+	    fd = Number(fd);
+	    var done = Q.defer();
+	    try {
+	        FS.fstat(fd, function (error, stat) {
+	            if (error) {
+	                error.message = "Can't statFd file descriptor " + JSON.stringify(fd) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve(stat);
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.link = function (source, target) {
+	    source = String(source);
+	    target = String(target);
+	    var done = Q.defer();
+	    try {
+	        FS.link(source, target, function (error) {
+	            if (error) {
+	                error.message = "Can't link " + JSON.stringify(source) + " to " + JSON.stringify(target) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve();
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	// this lookup table translates the link types that Q-IO accepts (which have
+	// been normalized to full words to be consistent with the naming convention)
+	var linkTypes = {
+	    "file": "file",
+	    "directory": "dir",
+	    "junction": "junction"
+	};
+
+	exports.symbolicLink = function (target, relative, type) {
+	    if (!linkTypes.hasOwnProperty(type)) {
+	        console.warn(new Error("For Windows compatibility, symbolicLink must be called with a type argument \"file\", \"directory\", or \"junction\""));
+	    }
+	    type = linkTypes[type];
+	    target = String(target);
+	    relative = String(relative);
+	    var done = Q.defer();
+	    try {
+	        FS.symlink(relative, target, type || 'file', function (error) {
+	            if (error) {
+	                error.message = "Can't create symbolicLink " + JSON.stringify(target) + " to relative location " + JSON.stringify(relative) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve();
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.chown = function (path, uid, gid) {
+	    path = String(path);
+	    var done = Q.defer();
+	    try {
+	        FS.chown(path, uid, gid, function (error) {
+	            if (error) {
+	                error.message = "Can't chown (change owner) of " + JSON.stringify(path) + " to user " + JSON.stringify(uid) + " and group " + JSON.stringify(gid) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve();
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.chmod = function (path, mode) {
+	    path = String(path);
+	    mode = String(mode);
+	    var done = Q.defer();
+	    try {
+	        FS.chmod(path, mode, function (error) {
+	            if (error) {
+	                error.message = "Can't chmod (change permissions mode) of " + JSON.stringify(path) + " to (octal number) " + mode.toString(8) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve();
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.canonical = function (path) {
+	    var result = Q.defer();
+	    FS.realpath(path, function (error, canonicalPath) {
+	        if (error) {
+	            error.message = "Can't get canonical path of " + JSON.stringify(path) + " by way of C realpath: " + error.message;
+	            result.reject(error);
+	        } else {
+	            result.resolve(canonicalPath);
+	        }
+	    });
+	    return result.promise;
+	};
+
+	exports.readLink = function (path) {
+	    var result = Q.defer();
+	    FS.readlink(path, function (error, path) {
+	        if (error) {
+	            error.message = "Can't get link from " + JSON.stringify(path) + " by way of C readlink: " + error.message;
+	            result.reject(error);
+	        } else {
+	            result.resolve(path);
+	        }
+	    });
+	    return result.promise;
+	};
+
+	exports.mock = function (path) {
+	    return Mock.mock(this, path);
+	};
+
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7)))
 
 /***/ },
-/* 20 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {/*!
@@ -17584,7 +16711,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @license  MIT
 	 */
 
-	var base64 = __webpack_require__(36)
+	var base64 = __webpack_require__(34)
 	var ieee754 = __webpack_require__(32)
 	var isArray = __webpack_require__(33)
 
@@ -18909,14 +18036,607 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global, process) {// Copyright Joyent, Inc. and other Node contributors.
+	//
+	// Permission is hereby granted, free of charge, to any person obtaining a
+	// copy of this software and associated documentation files (the
+	// "Software"), to deal in the Software without restriction, including
+	// without limitation the rights to use, copy, modify, merge, publish,
+	// distribute, sublicense, and/or sell copies of the Software, and to permit
+	// persons to whom the Software is furnished to do so, subject to the
+	// following conditions:
+	//
+	// The above copyright notice and this permission notice shall be included
+	// in all copies or substantial portions of the Software.
+	//
+	// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+	// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+	// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+	// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+	// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+	// USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+	var formatRegExp = /%[sdj%]/g;
+	exports.format = function(f) {
+	  if (!isString(f)) {
+	    var objects = [];
+	    for (var i = 0; i < arguments.length; i++) {
+	      objects.push(inspect(arguments[i]));
+	    }
+	    return objects.join(' ');
+	  }
+
+	  var i = 1;
+	  var args = arguments;
+	  var len = args.length;
+	  var str = String(f).replace(formatRegExp, function(x) {
+	    if (x === '%%') return '%';
+	    if (i >= len) return x;
+	    switch (x) {
+	      case '%s': return String(args[i++]);
+	      case '%d': return Number(args[i++]);
+	      case '%j':
+	        try {
+	          return JSON.stringify(args[i++]);
+	        } catch (_) {
+	          return '[Circular]';
+	        }
+	      default:
+	        return x;
+	    }
+	  });
+	  for (var x = args[i]; i < len; x = args[++i]) {
+	    if (isNull(x) || !isObject(x)) {
+	      str += ' ' + x;
+	    } else {
+	      str += ' ' + inspect(x);
+	    }
+	  }
+	  return str;
+	};
+
+
+	// Mark that a method should not be used.
+	// Returns a modified function which warns once by default.
+	// If --no-deprecation is set, then it is a no-op.
+	exports.deprecate = function(fn, msg) {
+	  // Allow for deprecating things in the process of starting up.
+	  if (isUndefined(global.process)) {
+	    return function() {
+	      return exports.deprecate(fn, msg).apply(this, arguments);
+	    };
+	  }
+
+	  if (process.noDeprecation === true) {
+	    return fn;
+	  }
+
+	  var warned = false;
+	  function deprecated() {
+	    if (!warned) {
+	      if (process.throwDeprecation) {
+	        throw new Error(msg);
+	      } else if (process.traceDeprecation) {
+	        console.trace(msg);
+	      } else {
+	        console.error(msg);
+	      }
+	      warned = true;
+	    }
+	    return fn.apply(this, arguments);
+	  }
+
+	  return deprecated;
+	};
+
+
+	var debugs = {};
+	var debugEnviron;
+	exports.debuglog = function(set) {
+	  if (isUndefined(debugEnviron))
+	    debugEnviron = process.env.NODE_DEBUG || '';
+	  set = set.toUpperCase();
+	  if (!debugs[set]) {
+	    if (new RegExp('\\b' + set + '\\b', 'i').test(debugEnviron)) {
+	      var pid = process.pid;
+	      debugs[set] = function() {
+	        var msg = exports.format.apply(exports, arguments);
+	        console.error('%s %d: %s', set, pid, msg);
+	      };
+	    } else {
+	      debugs[set] = function() {};
+	    }
+	  }
+	  return debugs[set];
+	};
+
+
+	/**
+	 * Echos the value of a value. Trys to print the value out
+	 * in the best way possible given the different types.
+	 *
+	 * @param {Object} obj The object to print out.
+	 * @param {Object} opts Optional options object that alters the output.
+	 */
+	/* legacy: obj, showHidden, depth, colors*/
+	function inspect(obj, opts) {
+	  // default options
+	  var ctx = {
+	    seen: [],
+	    stylize: stylizeNoColor
+	  };
+	  // legacy...
+	  if (arguments.length >= 3) ctx.depth = arguments[2];
+	  if (arguments.length >= 4) ctx.colors = arguments[3];
+	  if (isBoolean(opts)) {
+	    // legacy...
+	    ctx.showHidden = opts;
+	  } else if (opts) {
+	    // got an "options" object
+	    exports._extend(ctx, opts);
+	  }
+	  // set default options
+	  if (isUndefined(ctx.showHidden)) ctx.showHidden = false;
+	  if (isUndefined(ctx.depth)) ctx.depth = 2;
+	  if (isUndefined(ctx.colors)) ctx.colors = false;
+	  if (isUndefined(ctx.customInspect)) ctx.customInspect = true;
+	  if (ctx.colors) ctx.stylize = stylizeWithColor;
+	  return formatValue(ctx, obj, ctx.depth);
+	}
+	exports.inspect = inspect;
+
+
+	// http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
+	inspect.colors = {
+	  'bold' : [1, 22],
+	  'italic' : [3, 23],
+	  'underline' : [4, 24],
+	  'inverse' : [7, 27],
+	  'white' : [37, 39],
+	  'grey' : [90, 39],
+	  'black' : [30, 39],
+	  'blue' : [34, 39],
+	  'cyan' : [36, 39],
+	  'green' : [32, 39],
+	  'magenta' : [35, 39],
+	  'red' : [31, 39],
+	  'yellow' : [33, 39]
+	};
+
+	// Don't use 'blue' not visible on cmd.exe
+	inspect.styles = {
+	  'special': 'cyan',
+	  'number': 'yellow',
+	  'boolean': 'yellow',
+	  'undefined': 'grey',
+	  'null': 'bold',
+	  'string': 'green',
+	  'date': 'magenta',
+	  // "name": intentionally not styling
+	  'regexp': 'red'
+	};
+
+
+	function stylizeWithColor(str, styleType) {
+	  var style = inspect.styles[styleType];
+
+	  if (style) {
+	    return '\u001b[' + inspect.colors[style][0] + 'm' + str +
+	           '\u001b[' + inspect.colors[style][1] + 'm';
+	  } else {
+	    return str;
+	  }
+	}
+
+
+	function stylizeNoColor(str, styleType) {
+	  return str;
+	}
+
+
+	function arrayToHash(array) {
+	  var hash = {};
+
+	  array.forEach(function(val, idx) {
+	    hash[val] = true;
+	  });
+
+	  return hash;
+	}
+
+
+	function formatValue(ctx, value, recurseTimes) {
+	  // Provide a hook for user-specified inspect functions.
+	  // Check that value is an object with an inspect function on it
+	  if (ctx.customInspect &&
+	      value &&
+	      isFunction(value.inspect) &&
+	      // Filter out the util module, it's inspect function is special
+	      value.inspect !== exports.inspect &&
+	      // Also filter out any prototype objects using the circular check.
+	      !(value.constructor && value.constructor.prototype === value)) {
+	    var ret = value.inspect(recurseTimes, ctx);
+	    if (!isString(ret)) {
+	      ret = formatValue(ctx, ret, recurseTimes);
+	    }
+	    return ret;
+	  }
+
+	  // Primitive types cannot have properties
+	  var primitive = formatPrimitive(ctx, value);
+	  if (primitive) {
+	    return primitive;
+	  }
+
+	  // Look up the keys of the object.
+	  var keys = Object.keys(value);
+	  var visibleKeys = arrayToHash(keys);
+
+	  if (ctx.showHidden) {
+	    keys = Object.getOwnPropertyNames(value);
+	  }
+
+	  // IE doesn't make error fields non-enumerable
+	  // http://msdn.microsoft.com/en-us/library/ie/dww52sbt(v=vs.94).aspx
+	  if (isError(value)
+	      && (keys.indexOf('message') >= 0 || keys.indexOf('description') >= 0)) {
+	    return formatError(value);
+	  }
+
+	  // Some type of object without properties can be shortcutted.
+	  if (keys.length === 0) {
+	    if (isFunction(value)) {
+	      var name = value.name ? ': ' + value.name : '';
+	      return ctx.stylize('[Function' + name + ']', 'special');
+	    }
+	    if (isRegExp(value)) {
+	      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+	    }
+	    if (isDate(value)) {
+	      return ctx.stylize(Date.prototype.toString.call(value), 'date');
+	    }
+	    if (isError(value)) {
+	      return formatError(value);
+	    }
+	  }
+
+	  var base = '', array = false, braces = ['{', '}'];
+
+	  // Make Array say that they are Array
+	  if (isArray(value)) {
+	    array = true;
+	    braces = ['[', ']'];
+	  }
+
+	  // Make functions say that they are functions
+	  if (isFunction(value)) {
+	    var n = value.name ? ': ' + value.name : '';
+	    base = ' [Function' + n + ']';
+	  }
+
+	  // Make RegExps say that they are RegExps
+	  if (isRegExp(value)) {
+	    base = ' ' + RegExp.prototype.toString.call(value);
+	  }
+
+	  // Make dates with properties first say the date
+	  if (isDate(value)) {
+	    base = ' ' + Date.prototype.toUTCString.call(value);
+	  }
+
+	  // Make error with message first say the error
+	  if (isError(value)) {
+	    base = ' ' + formatError(value);
+	  }
+
+	  if (keys.length === 0 && (!array || value.length == 0)) {
+	    return braces[0] + base + braces[1];
+	  }
+
+	  if (recurseTimes < 0) {
+	    if (isRegExp(value)) {
+	      return ctx.stylize(RegExp.prototype.toString.call(value), 'regexp');
+	    } else {
+	      return ctx.stylize('[Object]', 'special');
+	    }
+	  }
+
+	  ctx.seen.push(value);
+
+	  var output;
+	  if (array) {
+	    output = formatArray(ctx, value, recurseTimes, visibleKeys, keys);
+	  } else {
+	    output = keys.map(function(key) {
+	      return formatProperty(ctx, value, recurseTimes, visibleKeys, key, array);
+	    });
+	  }
+
+	  ctx.seen.pop();
+
+	  return reduceToSingleString(output, base, braces);
+	}
+
+
+	function formatPrimitive(ctx, value) {
+	  if (isUndefined(value))
+	    return ctx.stylize('undefined', 'undefined');
+	  if (isString(value)) {
+	    var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
+	                                             .replace(/'/g, "\\'")
+	                                             .replace(/\\"/g, '"') + '\'';
+	    return ctx.stylize(simple, 'string');
+	  }
+	  if (isNumber(value))
+	    return ctx.stylize('' + value, 'number');
+	  if (isBoolean(value))
+	    return ctx.stylize('' + value, 'boolean');
+	  // For some reason typeof null is "object", so special case here.
+	  if (isNull(value))
+	    return ctx.stylize('null', 'null');
+	}
+
+
+	function formatError(value) {
+	  return '[' + Error.prototype.toString.call(value) + ']';
+	}
+
+
+	function formatArray(ctx, value, recurseTimes, visibleKeys, keys) {
+	  var output = [];
+	  for (var i = 0, l = value.length; i < l; ++i) {
+	    if (hasOwnProperty(value, String(i))) {
+	      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+	          String(i), true));
+	    } else {
+	      output.push('');
+	    }
+	  }
+	  keys.forEach(function(key) {
+	    if (!key.match(/^\d+$/)) {
+	      output.push(formatProperty(ctx, value, recurseTimes, visibleKeys,
+	          key, true));
+	    }
+	  });
+	  return output;
+	}
+
+
+	function formatProperty(ctx, value, recurseTimes, visibleKeys, key, array) {
+	  var name, str, desc;
+	  desc = Object.getOwnPropertyDescriptor(value, key) || { value: value[key] };
+	  if (desc.get) {
+	    if (desc.set) {
+	      str = ctx.stylize('[Getter/Setter]', 'special');
+	    } else {
+	      str = ctx.stylize('[Getter]', 'special');
+	    }
+	  } else {
+	    if (desc.set) {
+	      str = ctx.stylize('[Setter]', 'special');
+	    }
+	  }
+	  if (!hasOwnProperty(visibleKeys, key)) {
+	    name = '[' + key + ']';
+	  }
+	  if (!str) {
+	    if (ctx.seen.indexOf(desc.value) < 0) {
+	      if (isNull(recurseTimes)) {
+	        str = formatValue(ctx, desc.value, null);
+	      } else {
+	        str = formatValue(ctx, desc.value, recurseTimes - 1);
+	      }
+	      if (str.indexOf('\n') > -1) {
+	        if (array) {
+	          str = str.split('\n').map(function(line) {
+	            return '  ' + line;
+	          }).join('\n').substr(2);
+	        } else {
+	          str = '\n' + str.split('\n').map(function(line) {
+	            return '   ' + line;
+	          }).join('\n');
+	        }
+	      }
+	    } else {
+	      str = ctx.stylize('[Circular]', 'special');
+	    }
+	  }
+	  if (isUndefined(name)) {
+	    if (array && key.match(/^\d+$/)) {
+	      return str;
+	    }
+	    name = JSON.stringify('' + key);
+	    if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
+	      name = name.substr(1, name.length - 2);
+	      name = ctx.stylize(name, 'name');
+	    } else {
+	      name = name.replace(/'/g, "\\'")
+	                 .replace(/\\"/g, '"')
+	                 .replace(/(^"|"$)/g, "'");
+	      name = ctx.stylize(name, 'string');
+	    }
+	  }
+
+	  return name + ': ' + str;
+	}
+
+
+	function reduceToSingleString(output, base, braces) {
+	  var numLinesEst = 0;
+	  var length = output.reduce(function(prev, cur) {
+	    numLinesEst++;
+	    if (cur.indexOf('\n') >= 0) numLinesEst++;
+	    return prev + cur.replace(/\u001b\[\d\d?m/g, '').length + 1;
+	  }, 0);
+
+	  if (length > 60) {
+	    return braces[0] +
+	           (base === '' ? '' : base + '\n ') +
+	           ' ' +
+	           output.join(',\n  ') +
+	           ' ' +
+	           braces[1];
+	  }
+
+	  return braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
+	}
+
+
+	// NOTE: These type checking functions intentionally don't use `instanceof`
+	// because it is fragile and can be easily faked with `Object.create()`.
+	function isArray(ar) {
+	  return Array.isArray(ar);
+	}
+	exports.isArray = isArray;
+
+	function isBoolean(arg) {
+	  return typeof arg === 'boolean';
+	}
+	exports.isBoolean = isBoolean;
+
+	function isNull(arg) {
+	  return arg === null;
+	}
+	exports.isNull = isNull;
+
+	function isNullOrUndefined(arg) {
+	  return arg == null;
+	}
+	exports.isNullOrUndefined = isNullOrUndefined;
+
+	function isNumber(arg) {
+	  return typeof arg === 'number';
+	}
+	exports.isNumber = isNumber;
+
+	function isString(arg) {
+	  return typeof arg === 'string';
+	}
+	exports.isString = isString;
+
+	function isSymbol(arg) {
+	  return typeof arg === 'symbol';
+	}
+	exports.isSymbol = isSymbol;
+
+	function isUndefined(arg) {
+	  return arg === void 0;
+	}
+	exports.isUndefined = isUndefined;
+
+	function isRegExp(re) {
+	  return isObject(re) && objectToString(re) === '[object RegExp]';
+	}
+	exports.isRegExp = isRegExp;
+
+	function isObject(arg) {
+	  return typeof arg === 'object' && arg !== null;
+	}
+	exports.isObject = isObject;
+
+	function isDate(d) {
+	  return isObject(d) && objectToString(d) === '[object Date]';
+	}
+	exports.isDate = isDate;
+
+	function isError(e) {
+	  return isObject(e) &&
+	      (objectToString(e) === '[object Error]' || e instanceof Error);
+	}
+	exports.isError = isError;
+
+	function isFunction(arg) {
+	  return typeof arg === 'function';
+	}
+	exports.isFunction = isFunction;
+
+	function isPrimitive(arg) {
+	  return arg === null ||
+	         typeof arg === 'boolean' ||
+	         typeof arg === 'number' ||
+	         typeof arg === 'string' ||
+	         typeof arg === 'symbol' ||  // ES6 symbol
+	         typeof arg === 'undefined';
+	}
+	exports.isPrimitive = isPrimitive;
+
+	exports.isBuffer = __webpack_require__(28);
+
+	function objectToString(o) {
+	  return Object.prototype.toString.call(o);
+	}
+
+
+	function pad(n) {
+	  return n < 10 ? '0' + n.toString(10) : n.toString(10);
+	}
+
+
+	var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+	              'Oct', 'Nov', 'Dec'];
+
+	// 26 Feb 16:19:34
+	function timestamp() {
+	  var d = new Date();
+	  var time = [pad(d.getHours()),
+	              pad(d.getMinutes()),
+	              pad(d.getSeconds())].join(':');
+	  return [d.getDate(), months[d.getMonth()], time].join(' ');
+	}
+
+
+	// log is just a thin wrapper to console.log that prepends a timestamp
+	exports.log = function() {
+	  console.log('%s - %s', timestamp(), exports.format.apply(exports, arguments));
+	};
+
+
+	/**
+	 * Inherit the prototype methods from one constructor into another.
+	 *
+	 * The Function.prototype.inherits from lang.js rewritten as a standalone
+	 * function (not on Function.prototype). NOTE: If this file is to be loaded
+	 * during bootstrapping this function needs to be rewritten using some native
+	 * functions as prototype setup using normal JavaScript does not work as
+	 * expected during bootstrapping (see mirror.js in r114903).
+	 *
+	 * @param {function} ctor Constructor function which needs to inherit the
+	 *     prototype.
+	 * @param {function} superCtor Constructor function to inherit prototype from.
+	 */
+	exports.inherits = __webpack_require__(35);
+
+	exports._extend = function(origin, add) {
+	  // Don't do anything if add isn't an object
+	  if (!add || !isObject(add)) return origin;
+
+	  var keys = Object.keys(add);
+	  var i = keys.length;
+	  while (i--) {
+	    origin[keys[i]] = add[keys[i]];
+	  }
+	  return origin;
+	};
+
+	function hasOwnProperty(obj, prop) {
+	  return Object.prototype.hasOwnProperty.call(obj, prop);
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(7)))
 
 /***/ },
 /* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {
-	var Q = __webpack_require__(9);
+	var Q = __webpack_require__(8);
 
 	/**
 	 * Wraps a Node readable stream, providing an API similar
@@ -19049,14 +18769,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
 
 /***/ },
 /* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process, Buffer) {
-	var Q = __webpack_require__(9);
+	var Q = __webpack_require__(8);
 
 	/**
 	 * Wraps a Node writable stream, providing an API similar to
@@ -19169,14 +18889,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6), __webpack_require__(20).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7), __webpack_require__(19).Buffer))
 
 /***/ },
 /* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(Buffer) {var Q = __webpack_require__(9);
-	var Boot = __webpack_require__(28);
+	/* WEBPACK VAR INJECTION */(function(Buffer) {var Q = __webpack_require__(8);
+	var Boot = __webpack_require__(30);
 	var RootFs = __webpack_require__(25);
 	var MockFs = __webpack_require__(24);
 
@@ -19668,19 +19388,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
 
 /***/ },
 /* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {
-	var Q = __webpack_require__(9);
-	var Boot = __webpack_require__(28);
+	var Q = __webpack_require__(8);
+	var Boot = __webpack_require__(30);
 	var Common = __webpack_require__(23);
-	var BufferStream = __webpack_require__(29);
+	var BufferStream = __webpack_require__(31);
 	var Reader = __webpack_require__(21);
-	var Set = __webpack_require__(34);
+	var Set = __webpack_require__(36);
 
 	module.exports = MockFs;
 
@@ -20224,18 +19944,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	// cycle breaking
-	var FS = __webpack_require__(8);
+	var FS = __webpack_require__(18);
 
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
 
 /***/ },
 /* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
-	var Q = __webpack_require__(9);
-	var BOOT = __webpack_require__(28);
+	var Q = __webpack_require__(8);
+	var BOOT = __webpack_require__(30);
 	var COMMON = __webpack_require__(23);
 
 	module.exports = RootFs;
@@ -20400,7 +20120,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(setImmediate, clearImmediate) {var nextTick = __webpack_require__(6).nextTick;
+	/* WEBPACK VAR INJECTION */(function(setImmediate, clearImmediate) {var nextTick = __webpack_require__(7).nextTick;
 	var apply = Function.prototype.apply;
 	var slice = Array.prototype.slice;
 	var immediateIds = {};
@@ -20482,386 +20202,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(process) {(function (exports) {
-
-	// -- kriskowal Kris Kowal Copyright (C) 2009-2010 MIT License
-	// -- tlrobinson Tom Robinson TODO
-
-	/**
-	 * Pure JavaScript implementations of file system path
-	 * manipulation.
-	 */
-
-	// NOTE: this file may be used is the engine bootstrapping
-	// process, so any "requires" must be accounted for in
-	// narwhal.js
-
-	/*whatsupdoc*/
-	/*markup markdown*/
-
-	var regExpEscape = function (str) {
-	    return str.replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&");
-	};
-
-	var path = __webpack_require__(37);
-
-	/**
-	 * @name ROOT
-	 * * `/` on Unix
-	 * * `\` on Windows
-	 */
-
-	/**
-	 * @name SEPARATOR
-	 * * `/` on Unix
-	 * * `\` on Windows
-	 */
-
-	/**
-	 * @name ALT_SEPARATOR
-	 * * undefined on Unix
-	 * * `/` on Windows
-	 */
-
-	exports.ROOT = exports.SEPARATOR = path.sep || (process.platform === "win32" ? "\\": "/");
-	if (path.sep === "\\") {
-	    exports.ALT_SEPARATOR = "/";
-	} else {
-	    exports.ALT_SEPARATOR = undefined;
-	}
-
-	// we need to make sure the separator regex is always in sync with the separators.
-	// this caches the generated regex and rebuild if either separator changes.
-	var separatorCached, altSeparatorCached, separatorReCached;
-	/**
-	 * @function
-	 */
-	exports.SEPARATORS_RE = function () {
-	    if (
-	        separatorCached !== exports.SEPARATOR ||
-	        altSeparatorCached !== exports.ALT_SEPARATOR
-	    ) {
-	        separatorCached = exports.SEPARATOR;
-	        altSeparatorCached = exports.ALT_SEPARATOR;
-	        separatorReCached = new RegExp("[" +
-	            (separatorCached || "").replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&") +
-	            (altSeparatorCached || "").replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&") +
-	        "]", "g");
-	    }
-	    return separatorReCached;
-	}
-
-	/**
-	 * separates a path into components.  If the path is
-	 * absolute, the first path component is the root of the
-	 * file system, indicated by an empty string on Unix, and a
-	 * drive letter followed by a colon on Windows.
-	 * @returns {Array * String}
-	 */
-	exports.split = function (path) {
-	    var parts;
-	    try {
-	        parts = String(path).split(exports.SEPARATORS_RE());
-	    } catch (exception) {
-	        throw new Error("Cannot split " + (typeof path) + ", " + JSON.stringify(path));
-	    }
-	    // this special case helps isAbsolute
-	    // distinguish an empty path from an absolute path
-	    // "" -> [] NOT [""]
-	    if (parts.length === 1 && parts[0] === "")
-	        return [];
-	    // "a" -> ["a"]
-	    // "/a" -> ["", "a"]
-	    return parts;
-	};
-
-	/**
-	 * Takes file system paths as variadic arguments and treats
-	 * each as a file or directory path and returns the path
-	 * arrived by traversing into the those paths.  All
-	 * arguments except for the last must be paths to
-	 * directories for the result to be meaningful.
-	 * @returns {String} path
-	 */
-	exports.join = function () {
-	    if (arguments.length === 1 && Array.isArray(arguments[0]))
-	        return exports.normal.apply(exports, arguments[0]);
-	    return exports.normal.apply(exports, arguments);
-	};
-
-	/**
-	 * Takes file system paths as variadic arguments and treats
-	 * each path as a location, in the URL sense, resolving each
-	 * new location based on the previous.  For example, if the
-	 * first argument is the absolute path of a JSON file, and
-	 * the second argument is a path mentioned in that JSON
-	 * file, `resolve` returns the absolute path of the
-	 * mentioned file.
-	 * @returns {String} path
-	 */
-	exports.resolve = function () {
-	    var root = "";
-	    var parents = [];
-	    var children = [];
-	    var leaf = "";
-	    for (var i = 0; i < arguments.length; i++) {
-	        var path = String(arguments[i]);
-	        if (path == "")
-	            continue;
-	        var parts = path.split(exports.SEPARATORS_RE());
-	        if (exports.isAbsolute(path)) {
-	            root = parts.shift() + exports.SEPARATOR;
-	            parents = [];
-	            children = [];
-	        }
-	        leaf = parts.pop();
-	        if (leaf == "." || leaf == "..") {
-	            parts.push(leaf);
-	            leaf = "";
-	        }
-	        for (var j = 0; j < parts.length; j++) {
-	            var part = parts[j];
-	            if (part == "." || part == "") {
-	            } else if (part == "..") {
-	                if (children.length) {
-	                    children.pop();
-	                } else {
-	                    if (root) {
-	                    } else {
-	                        parents.push("..");
-	                    }
-	                }
-	            } else {
-	                children.push(part);
-	            }
-	        };
-	    }
-	    path = parents.concat(children).join(exports.SEPARATOR);
-	    if (path) leaf = exports.SEPARATOR + leaf;
-	    return root + path + leaf;
-	};
-
-	/**
-	 * Takes paths as any number of arguments and reduces them
-	 * into a single path in normal form, removing all "." path
-	 * components, and reducing ".." path components by removing
-	 * the previous path component if possible.
-	 * @returns {String} path
-	 */
-	exports.normal = function () {
-	    var root = "";
-	    var parents = [];
-	    var children = [];
-	    for (var i = 0, ii = arguments.length; i < ii; i++) {
-	        var path = String(arguments[i]);
-	        // empty paths have no affect
-	        if (path === "")
-	            continue;
-	        var parts = path.split(exports.SEPARATORS_RE());
-	        if (exports.isAbsolute(path)) {
-	            root = parts.shift() + exports.SEPARATOR;
-	            parents = [];
-	            children = [];
-	        }
-	        for (var j = 0, jj = parts.length; j < jj; j++) {
-	            var part = parts[j];
-	            if (part === "." || part === "") {
-	            } else if (part == "..") {
-	                if (children.length) {
-	                    children.pop();
-	                } else {
-	                    if (root) {
-	                    } else {
-	                        parents.push("..");
-	                    }
-	                }
-	            } else {
-	                children.push(part);
-	            }
-	        }
-	    }
-	    path = parents.concat(children).join(exports.SEPARATOR);
-	    return root + path;
-	};
-
-	/***
-	 * @returns {Boolean} whether the given path begins at the
-	 * root of the file system or a drive letter.
-	 */
-	exports.isAbsolute = function (path) {
-	    // for absolute paths on any operating system,
-	    // the first path component always determines
-	    // whether it is relative or absolute.  On Unix,
-	    // it is empty, so ["", "foo"].join("/") == "/foo",
-	    // "/foo".split("/") == ["", "foo"].
-	    var parts = exports.split(path);
-	    // split("") == [].  "" is not absolute.
-	    // split("/") == ["", ""] is absolute.
-	    // split(?) == [""] does not occur.
-	    if (parts.length == 0)
-	        return false;
-	    return exports.isRoot(parts[0]);
-	};
-
-	/**
-	 * @returns {Boolean} whether the given path does not begin
-	 * at the root of the file system or a drive letter.
-	 */
-	exports.isRelative = function (path) {
-	    return !exports.isAbsolute(path);
-	};
-
-	/**
-	 * @returns {Boolean} whether the given path component
-	 * corresponds to the root of the file system or a drive
-	 * letter, as applicable.
-	 */
-	exports.isRoot = function (first) {
-	    if (exports.SEPARATOR === "\\") {
-	        return /[a-zA-Z]:$/.test(first);
-	    } else {
-	        return first == "";
-	    }
-	};
-
-	/**
-	 * @returns {String} the Unix root path or corresponding
-	 * Windows drive for a given path.
-	 */
-	exports.root = function (path) {
-	    if (!exports.isAbsolute(path))
-	        path = __webpack_require__(8).absolute(path);
-	    var parts = exports.split(path);
-	    return exports.join(parts[0], "");
-	};
-
-	/**
-	 * @returns {String} the parent directory of the given path.
-	 */
-	exports.directory = function (path) {
-	    path = exports.normal(path);
-	    var absolute = exports.isAbsolute(path);
-	    var parts = exports.split(path);
-	    // XXX needs to be sensitive to the root for
-	    // Windows compatibility
-	    if (parts.length) {
-	        if (parts[parts.length - 1] == "..") {
-	            parts.push("..");
-	        } else {
-	            parts.pop();
-	        }
-	    } else {
-	        parts.unshift("..");
-	    }
-	    return parts.join(exports.SEPARATOR) || (
-	        exports.isRelative(path) ?
-	        "" : exports.ROOT
-	    );
-	};
-
-	/**
-	 * @returns {String} the last component of a path, without
-	 * the given extension if the extension is provided and
-	 * matches the given file.
-	 * @param {String} path
-	 * @param {String} extention an optional extention to detect
-	 * and remove if it exists.
-	 */
-	exports.base = function (path, extension) {
-	    var base = path.split(exports.SEPARATORS_RE()).pop();
-	    if (extension)
-	        base = base.replace(
-	            new RegExp(regExpEscape(extension) + "$"),
-	            ""
-	        );
-	    return base;
-	};
-
-	/**
-	 * @returns {String} the extension (e.g., `txt`) of the file
-	 * at the given path.
-	 */
-	exports.extension = function (path) {
-	    path = exports.base(path);
-	    path = path.replace(/^\.*/, "");
-	    var index = path.lastIndexOf(".");
-	    return index <= 0 ? "" : path.substring(index);
-	};
-
-	})(true ? exports : FS_BOOT = {});
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6)))
-
-/***/ },
-/* 29 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(Buffer) {
-	var Q = __webpack_require__(9);
-	var Reader = __webpack_require__(21);
-
-	module.exports = BufferStream;
-	function BufferStream(chunks, charset) {
-	    if (!(this instanceof BufferStream)) {
-	        return new BufferStream(chunks, charset);
-	    }
-	    if (!chunks) {
-	        chunks = [];
-	    } else if (!Array.isArray(chunks)) {
-	        chunks = [chunks];
-	    }
-	    this._charset = charset;
-	    this._chunks = chunks;
-	    this._close = Q.defer();
-	    this.closed = this._close.promise;
-	}
-
-	BufferStream.prototype.forEach = function (write, thisp) {
-	    var self = this;
-	    var chunks = self._chunks;
-	    return Q.fcall(function () {
-	        chunks.splice(0, chunks.length).forEach(write, thisp);
-	    });
-	};
-
-	BufferStream.prototype.read = function () {
-	    var result;
-	    result = Reader.join(this._chunks);
-	    if (this._charset) {
-	        result = result.toString(this._charset);
-	    }
-	    return Q.resolve(result);
-	};
-
-	BufferStream.prototype.write = function (chunk) {
-	    if (this._charset) {
-	        chunk = new Buffer(String(chunk), this._charset);
-	    } else {
-	        if (!(chunk instanceof Buffer)) {
-	            throw new Error("Can't write strings to buffer stream without a charset: " + chunk);
-	        }
-	    }
-	    this._chunks.push(chunk);
-	    return Q.resolve();
-	};
-
-	BufferStream.prototype.close = function () {
-	    this._close.resolve();
-	    return Q.resolve();
-	};
-
-	BufferStream.prototype.destroy = function () {
-	    this._close.resolve();
-	    return Q.resolve();
-	};
-
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20).Buffer))
-
-/***/ },
-/* 30 */
-/***/ function(module, exports, __webpack_require__) {
-
 	module.exports = function isBuffer(arg) {
 	  return arg && typeof arg === 'object'
 	    && typeof arg.copy === 'function'
@@ -20870,7 +20210,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 31 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -21147,6 +20487,386 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
+/* 30 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {(function (exports) {
+
+	// -- kriskowal Kris Kowal Copyright (C) 2009-2010 MIT License
+	// -- tlrobinson Tom Robinson TODO
+
+	/**
+	 * Pure JavaScript implementations of file system path
+	 * manipulation.
+	 */
+
+	// NOTE: this file may be used is the engine bootstrapping
+	// process, so any "requires" must be accounted for in
+	// narwhal.js
+
+	/*whatsupdoc*/
+	/*markup markdown*/
+
+	var regExpEscape = function (str) {
+	    return str.replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&");
+	};
+
+	var path = __webpack_require__(37);
+
+	/**
+	 * @name ROOT
+	 * * `/` on Unix
+	 * * `\` on Windows
+	 */
+
+	/**
+	 * @name SEPARATOR
+	 * * `/` on Unix
+	 * * `\` on Windows
+	 */
+
+	/**
+	 * @name ALT_SEPARATOR
+	 * * undefined on Unix
+	 * * `/` on Windows
+	 */
+
+	exports.ROOT = exports.SEPARATOR = path.sep || (process.platform === "win32" ? "\\": "/");
+	if (path.sep === "\\") {
+	    exports.ALT_SEPARATOR = "/";
+	} else {
+	    exports.ALT_SEPARATOR = undefined;
+	}
+
+	// we need to make sure the separator regex is always in sync with the separators.
+	// this caches the generated regex and rebuild if either separator changes.
+	var separatorCached, altSeparatorCached, separatorReCached;
+	/**
+	 * @function
+	 */
+	exports.SEPARATORS_RE = function () {
+	    if (
+	        separatorCached !== exports.SEPARATOR ||
+	        altSeparatorCached !== exports.ALT_SEPARATOR
+	    ) {
+	        separatorCached = exports.SEPARATOR;
+	        altSeparatorCached = exports.ALT_SEPARATOR;
+	        separatorReCached = new RegExp("[" +
+	            (separatorCached || "").replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&") +
+	            (altSeparatorCached || "").replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&") +
+	        "]", "g");
+	    }
+	    return separatorReCached;
+	}
+
+	/**
+	 * separates a path into components.  If the path is
+	 * absolute, the first path component is the root of the
+	 * file system, indicated by an empty string on Unix, and a
+	 * drive letter followed by a colon on Windows.
+	 * @returns {Array * String}
+	 */
+	exports.split = function (path) {
+	    var parts;
+	    try {
+	        parts = String(path).split(exports.SEPARATORS_RE());
+	    } catch (exception) {
+	        throw new Error("Cannot split " + (typeof path) + ", " + JSON.stringify(path));
+	    }
+	    // this special case helps isAbsolute
+	    // distinguish an empty path from an absolute path
+	    // "" -> [] NOT [""]
+	    if (parts.length === 1 && parts[0] === "")
+	        return [];
+	    // "a" -> ["a"]
+	    // "/a" -> ["", "a"]
+	    return parts;
+	};
+
+	/**
+	 * Takes file system paths as variadic arguments and treats
+	 * each as a file or directory path and returns the path
+	 * arrived by traversing into the those paths.  All
+	 * arguments except for the last must be paths to
+	 * directories for the result to be meaningful.
+	 * @returns {String} path
+	 */
+	exports.join = function () {
+	    if (arguments.length === 1 && Array.isArray(arguments[0]))
+	        return exports.normal.apply(exports, arguments[0]);
+	    return exports.normal.apply(exports, arguments);
+	};
+
+	/**
+	 * Takes file system paths as variadic arguments and treats
+	 * each path as a location, in the URL sense, resolving each
+	 * new location based on the previous.  For example, if the
+	 * first argument is the absolute path of a JSON file, and
+	 * the second argument is a path mentioned in that JSON
+	 * file, `resolve` returns the absolute path of the
+	 * mentioned file.
+	 * @returns {String} path
+	 */
+	exports.resolve = function () {
+	    var root = "";
+	    var parents = [];
+	    var children = [];
+	    var leaf = "";
+	    for (var i = 0; i < arguments.length; i++) {
+	        var path = String(arguments[i]);
+	        if (path == "")
+	            continue;
+	        var parts = path.split(exports.SEPARATORS_RE());
+	        if (exports.isAbsolute(path)) {
+	            root = parts.shift() + exports.SEPARATOR;
+	            parents = [];
+	            children = [];
+	        }
+	        leaf = parts.pop();
+	        if (leaf == "." || leaf == "..") {
+	            parts.push(leaf);
+	            leaf = "";
+	        }
+	        for (var j = 0; j < parts.length; j++) {
+	            var part = parts[j];
+	            if (part == "." || part == "") {
+	            } else if (part == "..") {
+	                if (children.length) {
+	                    children.pop();
+	                } else {
+	                    if (root) {
+	                    } else {
+	                        parents.push("..");
+	                    }
+	                }
+	            } else {
+	                children.push(part);
+	            }
+	        };
+	    }
+	    path = parents.concat(children).join(exports.SEPARATOR);
+	    if (path) leaf = exports.SEPARATOR + leaf;
+	    return root + path + leaf;
+	};
+
+	/**
+	 * Takes paths as any number of arguments and reduces them
+	 * into a single path in normal form, removing all "." path
+	 * components, and reducing ".." path components by removing
+	 * the previous path component if possible.
+	 * @returns {String} path
+	 */
+	exports.normal = function () {
+	    var root = "";
+	    var parents = [];
+	    var children = [];
+	    for (var i = 0, ii = arguments.length; i < ii; i++) {
+	        var path = String(arguments[i]);
+	        // empty paths have no affect
+	        if (path === "")
+	            continue;
+	        var parts = path.split(exports.SEPARATORS_RE());
+	        if (exports.isAbsolute(path)) {
+	            root = parts.shift() + exports.SEPARATOR;
+	            parents = [];
+	            children = [];
+	        }
+	        for (var j = 0, jj = parts.length; j < jj; j++) {
+	            var part = parts[j];
+	            if (part === "." || part === "") {
+	            } else if (part == "..") {
+	                if (children.length) {
+	                    children.pop();
+	                } else {
+	                    if (root) {
+	                    } else {
+	                        parents.push("..");
+	                    }
+	                }
+	            } else {
+	                children.push(part);
+	            }
+	        }
+	    }
+	    path = parents.concat(children).join(exports.SEPARATOR);
+	    return root + path;
+	};
+
+	/***
+	 * @returns {Boolean} whether the given path begins at the
+	 * root of the file system or a drive letter.
+	 */
+	exports.isAbsolute = function (path) {
+	    // for absolute paths on any operating system,
+	    // the first path component always determines
+	    // whether it is relative or absolute.  On Unix,
+	    // it is empty, so ["", "foo"].join("/") == "/foo",
+	    // "/foo".split("/") == ["", "foo"].
+	    var parts = exports.split(path);
+	    // split("") == [].  "" is not absolute.
+	    // split("/") == ["", ""] is absolute.
+	    // split(?) == [""] does not occur.
+	    if (parts.length == 0)
+	        return false;
+	    return exports.isRoot(parts[0]);
+	};
+
+	/**
+	 * @returns {Boolean} whether the given path does not begin
+	 * at the root of the file system or a drive letter.
+	 */
+	exports.isRelative = function (path) {
+	    return !exports.isAbsolute(path);
+	};
+
+	/**
+	 * @returns {Boolean} whether the given path component
+	 * corresponds to the root of the file system or a drive
+	 * letter, as applicable.
+	 */
+	exports.isRoot = function (first) {
+	    if (exports.SEPARATOR === "\\") {
+	        return /[a-zA-Z]:$/.test(first);
+	    } else {
+	        return first == "";
+	    }
+	};
+
+	/**
+	 * @returns {String} the Unix root path or corresponding
+	 * Windows drive for a given path.
+	 */
+	exports.root = function (path) {
+	    if (!exports.isAbsolute(path))
+	        path = __webpack_require__(18).absolute(path);
+	    var parts = exports.split(path);
+	    return exports.join(parts[0], "");
+	};
+
+	/**
+	 * @returns {String} the parent directory of the given path.
+	 */
+	exports.directory = function (path) {
+	    path = exports.normal(path);
+	    var absolute = exports.isAbsolute(path);
+	    var parts = exports.split(path);
+	    // XXX needs to be sensitive to the root for
+	    // Windows compatibility
+	    if (parts.length) {
+	        if (parts[parts.length - 1] == "..") {
+	            parts.push("..");
+	        } else {
+	            parts.pop();
+	        }
+	    } else {
+	        parts.unshift("..");
+	    }
+	    return parts.join(exports.SEPARATOR) || (
+	        exports.isRelative(path) ?
+	        "" : exports.ROOT
+	    );
+	};
+
+	/**
+	 * @returns {String} the last component of a path, without
+	 * the given extension if the extension is provided and
+	 * matches the given file.
+	 * @param {String} path
+	 * @param {String} extention an optional extention to detect
+	 * and remove if it exists.
+	 */
+	exports.base = function (path, extension) {
+	    var base = path.split(exports.SEPARATORS_RE()).pop();
+	    if (extension)
+	        base = base.replace(
+	            new RegExp(regExpEscape(extension) + "$"),
+	            ""
+	        );
+	    return base;
+	};
+
+	/**
+	 * @returns {String} the extension (e.g., `txt`) of the file
+	 * at the given path.
+	 */
+	exports.extension = function (path) {
+	    path = exports.base(path);
+	    path = path.replace(/^\.*/, "");
+	    var index = path.lastIndexOf(".");
+	    return index <= 0 ? "" : path.substring(index);
+	};
+
+	})(true ? exports : FS_BOOT = {});
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7)))
+
+/***/ },
+/* 31 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(Buffer) {
+	var Q = __webpack_require__(8);
+	var Reader = __webpack_require__(21);
+
+	module.exports = BufferStream;
+	function BufferStream(chunks, charset) {
+	    if (!(this instanceof BufferStream)) {
+	        return new BufferStream(chunks, charset);
+	    }
+	    if (!chunks) {
+	        chunks = [];
+	    } else if (!Array.isArray(chunks)) {
+	        chunks = [chunks];
+	    }
+	    this._charset = charset;
+	    this._chunks = chunks;
+	    this._close = Q.defer();
+	    this.closed = this._close.promise;
+	}
+
+	BufferStream.prototype.forEach = function (write, thisp) {
+	    var self = this;
+	    var chunks = self._chunks;
+	    return Q.fcall(function () {
+	        chunks.splice(0, chunks.length).forEach(write, thisp);
+	    });
+	};
+
+	BufferStream.prototype.read = function () {
+	    var result;
+	    result = Reader.join(this._chunks);
+	    if (this._charset) {
+	        result = result.toString(this._charset);
+	    }
+	    return Q.resolve(result);
+	};
+
+	BufferStream.prototype.write = function (chunk) {
+	    if (this._charset) {
+	        chunk = new Buffer(String(chunk), this._charset);
+	    } else {
+	        if (!(chunk instanceof Buffer)) {
+	            throw new Error("Can't write strings to buffer stream without a charset: " + chunk);
+	        }
+	    }
+	    this._chunks.push(chunk);
+	    return Q.resolve();
+	};
+
+	BufferStream.prototype.close = function () {
+	    this._close.resolve();
+	    return Q.resolve();
+	};
+
+	BufferStream.prototype.destroy = function () {
+	    this._close.resolve();
+	    return Q.resolve();
+	};
+
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
+
+/***/ },
 /* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -21277,6 +20997,165 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 34 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+	;(function (exports) {
+		'use strict';
+
+	  var Arr = (typeof Uint8Array !== 'undefined')
+	    ? Uint8Array
+	    : Array
+
+		var PLUS   = '+'.charCodeAt(0)
+		var SLASH  = '/'.charCodeAt(0)
+		var NUMBER = '0'.charCodeAt(0)
+		var LOWER  = 'a'.charCodeAt(0)
+		var UPPER  = 'A'.charCodeAt(0)
+		var PLUS_URL_SAFE = '-'.charCodeAt(0)
+		var SLASH_URL_SAFE = '_'.charCodeAt(0)
+
+		function decode (elt) {
+			var code = elt.charCodeAt(0)
+			if (code === PLUS ||
+			    code === PLUS_URL_SAFE)
+				return 62 // '+'
+			if (code === SLASH ||
+			    code === SLASH_URL_SAFE)
+				return 63 // '/'
+			if (code < NUMBER)
+				return -1 //no match
+			if (code < NUMBER + 10)
+				return code - NUMBER + 26 + 26
+			if (code < UPPER + 26)
+				return code - UPPER
+			if (code < LOWER + 26)
+				return code - LOWER + 26
+		}
+
+		function b64ToByteArray (b64) {
+			var i, j, l, tmp, placeHolders, arr
+
+			if (b64.length % 4 > 0) {
+				throw new Error('Invalid string. Length must be a multiple of 4')
+			}
+
+			// the number of equal signs (place holders)
+			// if there are two placeholders, than the two characters before it
+			// represent one byte
+			// if there is only one, then the three characters before it represent 2 bytes
+			// this is just a cheap hack to not do indexOf twice
+			var len = b64.length
+			placeHolders = '=' === b64.charAt(len - 2) ? 2 : '=' === b64.charAt(len - 1) ? 1 : 0
+
+			// base64 is 4/3 + up to two characters of the original data
+			arr = new Arr(b64.length * 3 / 4 - placeHolders)
+
+			// if there are placeholders, only get up to the last complete 4 chars
+			l = placeHolders > 0 ? b64.length - 4 : b64.length
+
+			var L = 0
+
+			function push (v) {
+				arr[L++] = v
+			}
+
+			for (i = 0, j = 0; i < l; i += 4, j += 3) {
+				tmp = (decode(b64.charAt(i)) << 18) | (decode(b64.charAt(i + 1)) << 12) | (decode(b64.charAt(i + 2)) << 6) | decode(b64.charAt(i + 3))
+				push((tmp & 0xFF0000) >> 16)
+				push((tmp & 0xFF00) >> 8)
+				push(tmp & 0xFF)
+			}
+
+			if (placeHolders === 2) {
+				tmp = (decode(b64.charAt(i)) << 2) | (decode(b64.charAt(i + 1)) >> 4)
+				push(tmp & 0xFF)
+			} else if (placeHolders === 1) {
+				tmp = (decode(b64.charAt(i)) << 10) | (decode(b64.charAt(i + 1)) << 4) | (decode(b64.charAt(i + 2)) >> 2)
+				push((tmp >> 8) & 0xFF)
+				push(tmp & 0xFF)
+			}
+
+			return arr
+		}
+
+		function uint8ToBase64 (uint8) {
+			var i,
+				extraBytes = uint8.length % 3, // if we have 1 byte left, pad 2 bytes
+				output = "",
+				temp, length
+
+			function encode (num) {
+				return lookup.charAt(num)
+			}
+
+			function tripletToBase64 (num) {
+				return encode(num >> 18 & 0x3F) + encode(num >> 12 & 0x3F) + encode(num >> 6 & 0x3F) + encode(num & 0x3F)
+			}
+
+			// go through the array every three bytes, we'll deal with trailing stuff later
+			for (i = 0, length = uint8.length - extraBytes; i < length; i += 3) {
+				temp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
+				output += tripletToBase64(temp)
+			}
+
+			// pad the end with zeros, but make sure to not forget the extra bytes
+			switch (extraBytes) {
+				case 1:
+					temp = uint8[uint8.length - 1]
+					output += encode(temp >> 2)
+					output += encode((temp << 4) & 0x3F)
+					output += '=='
+					break
+				case 2:
+					temp = (uint8[uint8.length - 2] << 8) + (uint8[uint8.length - 1])
+					output += encode(temp >> 10)
+					output += encode((temp >> 4) & 0x3F)
+					output += encode((temp << 2) & 0x3F)
+					output += '='
+					break
+			}
+
+			return output
+		}
+
+		exports.toByteArray = b64ToByteArray
+		exports.fromByteArray = uint8ToBase64
+	}(false ? (this.base64js = {}) : exports))
+
+
+/***/ },
+/* 35 */
+/***/ function(module, exports, __webpack_require__) {
+
+	if (typeof Object.create === 'function') {
+	  // implementation from standard node.js 'util' module
+	  module.exports = function inherits(ctor, superCtor) {
+	    ctor.super_ = superCtor
+	    ctor.prototype = Object.create(superCtor.prototype, {
+	      constructor: {
+	        value: ctor,
+	        enumerable: false,
+	        writable: true,
+	        configurable: true
+	      }
+	    });
+	  };
+	} else {
+	  // old school shim for old browsers
+	  module.exports = function inherits(ctor, superCtor) {
+	    ctor.super_ = superCtor
+	    var TempCtor = function () {}
+	    TempCtor.prototype = superCtor.prototype
+	    ctor.prototype = new TempCtor()
+	    ctor.prototype.constructor = ctor
+	  }
+	}
+
+
+/***/ },
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -21452,165 +21331,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.order.makeObservable();
 	};
 
-
-
-/***/ },
-/* 35 */
-/***/ function(module, exports, __webpack_require__) {
-
-	if (typeof Object.create === 'function') {
-	  // implementation from standard node.js 'util' module
-	  module.exports = function inherits(ctor, superCtor) {
-	    ctor.super_ = superCtor
-	    ctor.prototype = Object.create(superCtor.prototype, {
-	      constructor: {
-	        value: ctor,
-	        enumerable: false,
-	        writable: true,
-	        configurable: true
-	      }
-	    });
-	  };
-	} else {
-	  // old school shim for old browsers
-	  module.exports = function inherits(ctor, superCtor) {
-	    ctor.super_ = superCtor
-	    var TempCtor = function () {}
-	    TempCtor.prototype = superCtor.prototype
-	    ctor.prototype = new TempCtor()
-	    ctor.prototype.constructor = ctor
-	  }
-	}
-
-
-/***/ },
-/* 36 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-
-	;(function (exports) {
-		'use strict';
-
-	  var Arr = (typeof Uint8Array !== 'undefined')
-	    ? Uint8Array
-	    : Array
-
-		var PLUS   = '+'.charCodeAt(0)
-		var SLASH  = '/'.charCodeAt(0)
-		var NUMBER = '0'.charCodeAt(0)
-		var LOWER  = 'a'.charCodeAt(0)
-		var UPPER  = 'A'.charCodeAt(0)
-		var PLUS_URL_SAFE = '-'.charCodeAt(0)
-		var SLASH_URL_SAFE = '_'.charCodeAt(0)
-
-		function decode (elt) {
-			var code = elt.charCodeAt(0)
-			if (code === PLUS ||
-			    code === PLUS_URL_SAFE)
-				return 62 // '+'
-			if (code === SLASH ||
-			    code === SLASH_URL_SAFE)
-				return 63 // '/'
-			if (code < NUMBER)
-				return -1 //no match
-			if (code < NUMBER + 10)
-				return code - NUMBER + 26 + 26
-			if (code < UPPER + 26)
-				return code - UPPER
-			if (code < LOWER + 26)
-				return code - LOWER + 26
-		}
-
-		function b64ToByteArray (b64) {
-			var i, j, l, tmp, placeHolders, arr
-
-			if (b64.length % 4 > 0) {
-				throw new Error('Invalid string. Length must be a multiple of 4')
-			}
-
-			// the number of equal signs (place holders)
-			// if there are two placeholders, than the two characters before it
-			// represent one byte
-			// if there is only one, then the three characters before it represent 2 bytes
-			// this is just a cheap hack to not do indexOf twice
-			var len = b64.length
-			placeHolders = '=' === b64.charAt(len - 2) ? 2 : '=' === b64.charAt(len - 1) ? 1 : 0
-
-			// base64 is 4/3 + up to two characters of the original data
-			arr = new Arr(b64.length * 3 / 4 - placeHolders)
-
-			// if there are placeholders, only get up to the last complete 4 chars
-			l = placeHolders > 0 ? b64.length - 4 : b64.length
-
-			var L = 0
-
-			function push (v) {
-				arr[L++] = v
-			}
-
-			for (i = 0, j = 0; i < l; i += 4, j += 3) {
-				tmp = (decode(b64.charAt(i)) << 18) | (decode(b64.charAt(i + 1)) << 12) | (decode(b64.charAt(i + 2)) << 6) | decode(b64.charAt(i + 3))
-				push((tmp & 0xFF0000) >> 16)
-				push((tmp & 0xFF00) >> 8)
-				push(tmp & 0xFF)
-			}
-
-			if (placeHolders === 2) {
-				tmp = (decode(b64.charAt(i)) << 2) | (decode(b64.charAt(i + 1)) >> 4)
-				push(tmp & 0xFF)
-			} else if (placeHolders === 1) {
-				tmp = (decode(b64.charAt(i)) << 10) | (decode(b64.charAt(i + 1)) << 4) | (decode(b64.charAt(i + 2)) >> 2)
-				push((tmp >> 8) & 0xFF)
-				push(tmp & 0xFF)
-			}
-
-			return arr
-		}
-
-		function uint8ToBase64 (uint8) {
-			var i,
-				extraBytes = uint8.length % 3, // if we have 1 byte left, pad 2 bytes
-				output = "",
-				temp, length
-
-			function encode (num) {
-				return lookup.charAt(num)
-			}
-
-			function tripletToBase64 (num) {
-				return encode(num >> 18 & 0x3F) + encode(num >> 12 & 0x3F) + encode(num >> 6 & 0x3F) + encode(num & 0x3F)
-			}
-
-			// go through the array every three bytes, we'll deal with trailing stuff later
-			for (i = 0, length = uint8.length - extraBytes; i < length; i += 3) {
-				temp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
-				output += tripletToBase64(temp)
-			}
-
-			// pad the end with zeros, but make sure to not forget the extra bytes
-			switch (extraBytes) {
-				case 1:
-					temp = uint8[uint8.length - 1]
-					output += encode(temp >> 2)
-					output += encode((temp << 4) & 0x3F)
-					output += '=='
-					break
-				case 2:
-					temp = (uint8[uint8.length - 2] << 8) + (uint8[uint8.length - 1])
-					output += encode(temp >> 10)
-					output += encode((temp >> 4) & 0x3F)
-					output += encode((temp << 2) & 0x3F)
-					output += '='
-					break
-			}
-
-			return output
-		}
-
-		exports.toByteArray = b64ToByteArray
-		exports.fromByteArray = uint8ToBase64
-	}(false ? (this.base64js = {}) : exports))
 
 
 /***/ },
@@ -21842,17 +21562,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(6)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7)))
 
 /***/ },
 /* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
-	var Array = __webpack_require__(45);
-	var Object = __webpack_require__(46);
-	var Function = __webpack_require__(47);
-	var RegExp = __webpack_require__(48);
+	var Array = __webpack_require__(46);
+	var Object = __webpack_require__(47);
+	var Function = __webpack_require__(48);
+	var RegExp = __webpack_require__(49);
 
 
 
@@ -21866,7 +21586,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var Shim = __webpack_require__(38);
 	var GenericCollection = __webpack_require__(41);
-	var GenericOrder = __webpack_require__(49);
+	var GenericOrder = __webpack_require__(45);
 	var PropertyChanges = __webpack_require__(43);
 	var RangeChanges = __webpack_require__(44);
 
@@ -22749,7 +22469,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return this.iterate.apply(this, arguments);
 	};
 
-	__webpack_require__(45);
+	__webpack_require__(46);
 
 
 
@@ -23421,6 +23141,67 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
+	
+	var Object = __webpack_require__(47);
+
+	module.exports = GenericOrder;
+	function GenericOrder() {
+	    throw new Error("Can't construct. GenericOrder is a mixin.");
+	}
+
+	GenericOrder.prototype.equals = function (that, equals) {
+	    equals = equals || this.contentEquals || Object.equals;
+
+	    if (this === that) {
+	        return true;
+	    }
+	    if (!that) {
+	        return false;
+	    }
+
+	    var self = this;
+	    return (
+	        this.length === that.length &&
+	        this.zip(that).every(function (pair) {
+	            return equals(pair[0], pair[1]);
+	        })
+	    );
+	};
+
+	GenericOrder.prototype.compare = function (that, compare) {
+	    compare = compare || this.contentCompare || Object.compare;
+
+	    if (this === that) {
+	        return 0;
+	    }
+	    if (!that) {
+	        return 1;
+	    }
+
+	    var length = Math.min(this.length, that.length);
+	    var comparison = this.zip(that).reduce(function (comparison, pair, index) {
+	        if (comparison === 0) {
+	            if (index >= length) {
+	                return comparison;
+	            } else {
+	                return compare(pair[0], pair[1]);
+	            }
+	        } else {
+	            return comparison;
+	        }
+	    }, 0);
+	    if (comparison === 0) {
+	        return this.length - that.length;
+	    }
+	    return comparison;
+	};
+
+
+
+/***/ },
+/* 46 */
+/***/ function(module, exports, __webpack_require__) {
+
 	"use strict";
 
 	/*
@@ -23430,9 +23211,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    https://github.com/motorola-mobility/montage/blob/master/LICENSE.md
 	*/
 
-	var Function = __webpack_require__(47);
+	var Function = __webpack_require__(48);
 	var GenericCollection = __webpack_require__(41);
-	var GenericOrder = __webpack_require__(49);
+	var GenericOrder = __webpack_require__(45);
 	var WeakMap = __webpack_require__(53);
 
 	module.exports = Array;
@@ -23698,7 +23479,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 46 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -24242,7 +24023,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 47 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -24307,7 +24088,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 48 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -24323,67 +24104,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return string.replace(special, "\\$&");
 	    };
 	}
-
-
-
-/***/ },
-/* 49 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	var Object = __webpack_require__(46);
-
-	module.exports = GenericOrder;
-	function GenericOrder() {
-	    throw new Error("Can't construct. GenericOrder is a mixin.");
-	}
-
-	GenericOrder.prototype.equals = function (that, equals) {
-	    equals = equals || this.contentEquals || Object.equals;
-
-	    if (this === that) {
-	        return true;
-	    }
-	    if (!that) {
-	        return false;
-	    }
-
-	    var self = this;
-	    return (
-	        this.length === that.length &&
-	        this.zip(that).every(function (pair) {
-	            return equals(pair[0], pair[1]);
-	        })
-	    );
-	};
-
-	GenericOrder.prototype.compare = function (that, compare) {
-	    compare = compare || this.contentCompare || Object.compare;
-
-	    if (this === that) {
-	        return 0;
-	    }
-	    if (!that) {
-	        return 1;
-	    }
-
-	    var length = Math.min(this.length, that.length);
-	    var comparison = this.zip(that).reduce(function (comparison, pair, index) {
-	        if (comparison === 0) {
-	            if (index >= length) {
-	                return comparison;
-	            } else {
-	                return compare(pair[0], pair[1]);
-	            }
-	        } else {
-	            return comparison;
-	        }
-	    }, 0);
-	    if (comparison === 0) {
-	        return this.length - that.length;
-	    }
-	    return comparison;
-	};
 
 
 
@@ -24587,7 +24307,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	"use strict";
 
-	var Object = __webpack_require__(46);
+	var Object = __webpack_require__(47);
 	var MapChanges = __webpack_require__(54);
 	var PropertyChanges = __webpack_require__(43);
 

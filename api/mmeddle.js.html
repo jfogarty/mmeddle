@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>mMeddle Source: mmeddle.js</title>
+
+	<!--[if lt IE 9]>
+	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+	<link type="text/css" rel="stylesheet" href="styles/sunlight.default.css">
+
+	<link type="text/css" rel="stylesheet" href="styles/site.cosmo.css">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top ">
+<div class="container">
+	<div class="navbar-header">
+		<a class="navbar-brand" href="index.html">mMeddle</a>
+	</div>
+	<div class="navbar-collapse">
+		<ul class="nav navbar-nav">
+			
+			<li class="dropdown">
+				<a href="namespaces.list.html" class="dropdown-toggle" data-toggle="dropdown">Namespaces<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="module-util_Logger-PRIORITY.html">util/Logger~PRIORITY</a></li><li><a href="module-util_log-mm.loggers.html">util/log~mm.loggers</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="modules.list.html" class="dropdown-toggle" data-toggle="dropdown">Modules<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="module-mMeddle.html">mMeddle</a></li><li><a href="module-sal_storage.html">sal/storage</a></li><li><a href="module-sal_users.html">sal/users</a></li><li><a href="module-util_log.html">util/log</a></li><li><a href="module-util_Logger.html">util/Logger</a></li><li><a href="module-util_SequencedObject.html">util/SequencedObject</a></li><li><a href="module-util_Settings.html">util/Settings</a></li><li><a href="module-util_uIntArray.html">util/uIntArray</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="classes.list.html" class="dropdown-toggle" data-toggle="dropdown">Classes<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="module-sal_users-PersistentUser.html">sal/users~PersistentUser</a></li><li><a href="module-sal_users-User.html">sal/users~User</a></li><li><a href="module-util_Logger-Logger.html">util/Logger~Logger</a></li><li><a href="module-util_SequencedObject-SequencedObject.html">util/SequencedObject~SequencedObject</a></li><li><a href="module-util_Settings-Settings.html">util/Settings~Settings</a></li>
+				</ul>
+			</li>
+			
+		</ul>
+	</div>
+</div>
+</div>
+
+
+<div class="container">
+<div class="row">
+
+	
+	<div class="col-md-12">
+	
+		<div id="main">
+    		<h1 class="page-title">Source: mmeddle.js</h1>
+			
+
+		<h1 class="page-title">Source: mmeddle.js</h1>
+    
+<section>
+	<article>
+		<pre
+			class="sunlight-highlight-javascript linenums">/**
+ * @fileOverview the mMeddle global declaration and linkage constructor.
+ * @module mMeddle
+ */
+
+'use strict';
+/**
+ * @summary **The mmeddle.js factory function**
+ * @description
+ * This is called automatically when loading mmeddle via the index.js root.
+ * This populates `module.exports` with an object containing access to all
+ * the other required components.
+ */ 
+function create() {
+  // Test for ES5 support
+  /* istanbul ignore if */
+  if (typeof Object.create !== 'function') {
+   throw new Error('ES5 not supported by this JavaScript engine. ' +
+        'Please load the es5-shim and es5-sham library for compatibility.');
+  }
+  
+  // Globally register the execution environment for testing by the sub-modules.
+  var inNode = !!(typeof window === 'undefined' &amp;&amp;
+               typeof process !== 'undefined' &amp;&amp;
+               process.nextTick);
+  var inBrowser = !inNode;
+  var inPhantom = false;
+
+  /**
+   * mmeddle factory function. Creates a new instance of mmeddle with a workspace.
+   */
+  var mm = {};
+  mm.create = create;
+
+  mm.type = {};
+  
+  mm._ = require('lodash'); // The underscore replacement utility library.
+  mm.Q = require('q'); // Promises compatible with node and browsers.
+  
+  mm.inBrowser = inBrowser;
+  mm.inNode    = inNode;
+  /* istanbul ignore next */
+  mm.envText = inNode ? 'Node.js' : 'Browser';
+  
+  /* istanbul ignore if */
+  if (inBrowser) {
+    var userAgent = navigator.userAgent;
+    inPhantom = userAgent.indexOf('PhantomJS') >= 0;
+    mm.inPhantom = inPhantom;
+    if (inPhantom) {
+      mm.envText += '-PhantomJS';
+    }
+    mm.envText += '(' + userAgent + ')';
+  }
+  else {
+     mm.envText += '(' + global.process.version + ')';
+  }
+  
+  //mm.format = require('string-template');
+  //Other candidates.
+  //mm.format = require('string-format');
+  //mm.format = require('sf');
+  
+  /* istanbul ignore next */
+  mm.format = require('../external/sf');
+  
+  require('./util/')(mm);
+  require('./sal/')(mm)
+  require('./core/')(mm)
+  
+  /* istanbul ignore else */
+  if (inNode) {
+    mm.FS = require('q-io/fs');
+    // mmeddle.FS = require('q-io/fs-mock');
+  }
+  
+  // return the new instance
+  return mm;
+}
+
+// create an isolated instance of mmeddle with its own workspace.
+var mMeddle = create();
+
+mMeddle.log('- mMeddle on ' + mMeddle.envText + ' initialized.');
+
+// export the default instance
+module.exports = mMeddle;
+</pre>
+	</article>
+</section>
+
+
+
+
+
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+
+	
+
+</div>
+</div>
+
+
+<footer>
+
+
+	<span class="copyright">
+	All rights reserved - Copyright 2015
+	</span>
+	<br />
+
+<span class="jsdoc-message">
+	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-beta3</a>
+	on Sun Apr 26th 2015 using the <a
+	href="https://github.com/terryweiss/docstrap">DocStrap template</a>.
+</span>
+</footer>
+
+<!--<script src="scripts/sunlight.js"></script>-->
+<script src="scripts/docstrap.lib.js"></script>
+<script src="scripts/bootstrap-dropdown.js"></script>
+<script src="scripts/toc.js"></script>
+
+<script>
+$( function () {
+	$( "[id*='$']" ).each( function () {
+		var $this = $( this );
+
+		$this.attr( "id", $this.attr( "id" ).replace( "$", "__" ) );
+	} );
+
+	$( "#toc" ).toc( {
+		anchorName  : function ( i, heading, prefix ) {
+			return $( heading ).attr( "id" ) || ( prefix + i );
+		},
+		selectors   : "h1,h2,h3,h4",
+		showAndHide : false,
+		scrollTo    : "100px"
+	} );
+
+	$( "#toc>ul" ).addClass( "nav nav-pills nav-stacked" );
+	$( "#main span[id^='toc']" ).addClass( "toc-shim" );
+	$( '.dropdown-toggle' ).dropdown();
+	//			$( ".tutorial-section pre, .readme-section pre" ).addClass( "sunlight-highlight-javascript" ).addClass( "linenums" );
+
+	$( ".tutorial-section pre, .readme-section pre" ).each( function () {
+		var $this = $( this );
+
+		var example = $this.find( "code" );
+		exampleText = example.html();
+		var lang = /{@lang (.*?)}/.exec( exampleText );
+		if ( lang && lang[1] ) {
+			exampleText = exampleText.replace( lang[0], "" );
+			example.html( exampleText );
+			lang = lang[1];
+		} else {
+			lang = "javascript";
+		}
+
+		if ( lang ) {
+
+			$this
+			.addClass( "sunlight-highlight-" + lang )
+			.addClass( "linenums" )
+			.html( example.html() );
+
+		}
+	} );
+
+	Sunlight.highlightAll( {
+		lineNumbers : true,
+		showMenu : true,
+		enableDoclinks : true
+	} );
+} );
+</script>
+
+
+
+<!--Navigation and Symbol Display-->
+
+
+<!--Google Analytics-->
+
+
+</body>
+</html>
