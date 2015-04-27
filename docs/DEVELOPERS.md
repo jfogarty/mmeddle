@@ -58,15 +58,15 @@ will be solved as a direct result of your hard work on this bucket of code.
 
 ## Structure
 
-*mMeddle* is structured as a single main module `mmeddle` which contains bindings
-between the other modules. Modules within sub-directories usually contain no
-*requires* statements unless they are to anode_module (preferably one which
-is in some way unique to a single module) or to a sub-directory from the one containing
-the module. `require("..\[a modulename]")` is **not** permitted in this code.
+*mMeddle* is structured as a single main module `mmeddle` which contains 
+bindings between the other modules. Modules within sub-directories usually contain no *requires* statements unless they are to anode_module (preferably
+one which is in some way unique to a single module) or to a sub-directory
+from the one containing the module. `require("..\[a modulename]")` 
+is **not** permitted in this code.
 
-Isolating the bindings between modules to a single outer level module greatly eases
-restructuring and module substitution for the various environments in which mmeddle
-must run.
+Isolating the bindings between modules to a single outer level module 
+greatly eases restructuring and module substitution for the various 
+environments in which mmeddle must run.
 
 ## Building
 
@@ -137,6 +137,15 @@ is to enable the local filesystem Storage SAL plugin: `storageFs`. When that get
 a [MongoDB server](https://www.mongodb.org/downloads) and enable the `storageMongoDB` Storage
 SAL plugin.
 
+## Local Execution
+
+The mMeddle server (server.js) is started in the traditional way with:
+
+    npm start
+
+By default the is an `Express` web server which exposes the entire development
+tree as static content on **localhost:8080**. The `index.html` page has links
+to various things of interest.
 
 ## Cloud Build Automation
 
@@ -151,8 +160,9 @@ the project root. These should of course stay green.
 
 mMeddle is currently hosted at RedHat's OpenShift node.js service at
 [openShift/mmeddle](http://mmeddle-jfogarty.rhcloud.com/). 
-This hosts a MongoDB database for the test service. This database is firewalled and
-cannot be accessed from outside. 
+This hosts a MongoDB database for the test service. This database is firewalled
+and can't be accessed from outside, although you can ssh to the server and
+run the mongo cli from the shell.
 
 We are currently not automatically pushing *mMeddle* to the test service, so I
 do that when I'm happy with the current state of the build. At some point we can
@@ -207,7 +217,7 @@ I ignore this but, nothing bad seems to happen. This may be related to
 since I am currently debugging under node 0.12.0. It is flakey, but usually
 gets the job done. Good luck.
 
-![backgound math art](../images/dev/BrowserMocha-NodeInspectorDebug.jpg)
+![Node Inspector Screen Capture](../images/dev/BrowserMocha-NodeInspectorDebug.jpg)
 
 ### Debugging Browser Unit Tests
 

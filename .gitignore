@@ -37,6 +37,7 @@ node_modules
 /dev/
 
 /api/
+/app/
 /docs/src/
 /docx/
 /testm/

@@ -112,14 +112,14 @@ while subject matter experts will publish and edit live documents containing equ
 curious will have access to a level of math that has mostly been out of reach
 through layers of technical barriers. A golden age will flourish and all world problems
 will be solved as a direct result of your hard work on this bucket of code. </p>
-<h2>Structure</h2><p><em>mMeddle</em> is structured as a single main module <code>mmeddle</code> which contains bindings
-between the other modules. Modules within sub-directories usually contain no
-<em>requires</em> statements unless they are to anode_module (preferably one which
-is in some way unique to a single module) or to a sub-directory from the one containing
-the module. <code>require(&quot;..\[a modulename]&quot;)</code> is <strong>not</strong> permitted in this code.</p>
-<p>Isolating the bindings between modules to a single outer level module greatly eases
-restructuring and module substitution for the various environments in which mmeddle
-must run.</p>
+<h2>Structure</h2><p><em>mMeddle</em> is structured as a single main module <code>mmeddle</code> which contains 
+bindings between the other modules. Modules within sub-directories usually contain no <em>requires</em> statements unless they are to anode_module (preferably
+one which is in some way unique to a single module) or to a sub-directory
+from the one containing the module. <code>require(&quot;..\[a modulename]&quot;)</code> 
+is <strong>not</strong> permitted in this code.</p>
+<p>Isolating the bindings between modules to a single outer level module 
+greatly eases restructuring and module substitution for the various 
+environments in which mmeddle must run.</p>
 <h2>Building</h2><p>Gulp and a <code>gulpfile.js</code> provide the build and test environment:</p>
 <pre class="prettyprint source"><code>gulp</code></pre><p>This runs the gulpfile.js <code>default</code> task which performs verification tests,
 then builds and packages the various forms of the library.</p>
@@ -179,6 +179,10 @@ examine the annotated source by browsing to <code>./coverage/lcov-report/index.h
 is to enable the local filesystem Storage SAL plugin: <code>storageFs</code>. When that gets old, install
 a <a href="https://www.mongodb.org/downloads">MongoDB server</a> and enable the <code>storageMongoDB</code> Storage
 SAL plugin.</p>
+<h2>Local Execution</h2><p>The mMeddle server (server.js) is started in the traditional way with:</p>
+<pre class="prettyprint source"><code>npm start</code></pre><p>By default the is an <code>Express</code> web server which exposes the entire development
+tree as static content on <strong>localhost:8080</strong>. The <code>index.html</code> page has links
+to various things of interest.</p>
 <h2>Cloud Build Automation</h2><p>The <a href="https://github.com/jfogarty/mmeddle">github/mmeddle</a> repository is linked
 to the <a href="https://travis-ci.org/jfogarty/mmeddle">Travis-CI/mmeddle</a> service. Every commit
 pushed to the <strong>master</strong> branch triggers an npm install and cloud build of the 
@@ -189,8 +193,9 @@ coverage push update the little badges in the upper left corner of the README.md
 the project root. These should of course stay green.</p>
 <p>mMeddle is currently hosted at RedHat's OpenShift node.js service at
 <a href="http://mmeddle-jfogarty.rhcloud.com/">openShift/mmeddle</a>. 
-This hosts a MongoDB database for the test service. This database is firewalled and
-cannot be accessed from outside. </p>
+This hosts a MongoDB database for the test service. This database is firewalled
+and can't be accessed from outside, although you can ssh to the server and
+run the mongo cli from the shell.</p>
 <p>We are currently not automatically pushing <em>mMeddle</em> to the test service, so I
 do that when I'm happy with the current state of the build. At some point we can
 turn on automatic pushing directly from <a href="https://travis-ci.org">Travis-CI</a> since
@@ -222,7 +227,7 @@ page long. </p>
 (<em>Node Inspector is currently broken on Node &gt;= v0.11.14</em>)
 since I am currently debugging under node 0.12.0. It is flakey, but usually
 gets the job done. Good luck.</p>
-<p><img src="../images/dev/BrowserMocha-NodeInspectorDebug.jpg" alt="backgound math art"></p>
+<p><img src="../images/dev/BrowserMocha-NodeInspectorDebug.jpg" alt="Node Inspector Screen Capture"></p>
 <h3>Debugging Browser Unit Tests</h3><p>Debugging for the browser consists of opening <code>test\testMocha.html</code> under your favorite browser and using its script debugging tools. I prefer <strong>Mozilla Firefox</strong> with the <strong>Firebug console</strong> add-in. Don't forget to run the <strong>gulp bundle</strong> task first or you will be debugging an old version (I've never done that).</p>
 <p>The Mocha page is nice in that you can select and drill down into test suites anmd rerun the tests individually. Clicking a test's <strong>it()</strong> text shows the source of the test.</p>
 <h2>Windows Development (sigh)</h2><p>I write code on Windows and need to keep the development environment Windows friendly (or

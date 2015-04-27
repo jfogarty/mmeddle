@@ -123,7 +123,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  mm.type = {};
 	  
 	  mm._ = __webpack_require__(6); // The underscore replacement utility library.
-	  mm.Q = __webpack_require__(8); // Promises compatible with node and browsers.
+	  mm.Q = __webpack_require__(7); // Promises compatible with node and browsers.
 	  
 	  mm.inBrowser = inBrowser;
 	  mm.inNode    = inNode;
@@ -158,7 +158,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  
 	  /* istanbul ignore else */
 	  if (inNode) {
-	    mm.FS = __webpack_require__(18);
+	    mm.FS = __webpack_require__(9);
 	    // mmeddle.FS = require('q-io/fs-mock');
 	  }
 	  
@@ -174,7 +174,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// export the default instance
 	module.exports = mMeddle;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), (function() { return this; }())))
 
 /***/ },
 /* 2 */
@@ -1022,20 +1022,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = function(mm) {
 	  mm.util = __webpack_require__(20);
 	  mm.obj = {};
-	  mm.obj.SequencedObject = __webpack_require__(9)(mm);  
+	  mm.obj.SequencedObject = __webpack_require__(10)(mm);  
 
-	  __webpack_require__(10)(mm.util);
-	  mm.obj.Enum = __webpack_require__(11)();
-	  mm.Logger = __webpack_require__(12)(mm);
+	  __webpack_require__(11)(mm.util);
+	  mm.obj.Enum = __webpack_require__(12)();
+	  mm.Logger = __webpack_require__(13)(mm);
 	  
-	  mm.log = __webpack_require__(13)(mm);
+	  mm.log = __webpack_require__(14)(mm);
 
 
 	  mm.obj.CoreObject = function CoreObject() {
 	    // core object prototype functions here.
 	  };
 
-	  mm.obj.SequencedObject = __webpack_require__(14)(mm);  
+	  mm.obj.SequencedObject = __webpack_require__(15)(mm);  
 	};
 
 
@@ -1045,9 +1045,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	// Insert the Services Abstraction Layer dependencies.
 	module.exports = function(mm) {
-	  mm.storage = __webpack_require__(15)(mm);
-	  mm.users = __webpack_require__(16)(mm);
-	  mm.userStorage = __webpack_require__(17)(mm);
+	  mm.storage = __webpack_require__(16)(mm);
+	  mm.users = __webpack_require__(17)(mm);
+	  mm.userStorage = __webpack_require__(18)(mm);
 
 
 	};
@@ -12876,70 +12876,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	// shim for using process in browser
-
-	var process = module.exports = {};
-	var queue = [];
-	var draining = false;
-
-	function drainQueue() {
-	    if (draining) {
-	        return;
-	    }
-	    draining = true;
-	    var currentQueue;
-	    var len = queue.length;
-	    while(len) {
-	        currentQueue = queue;
-	        queue = [];
-	        var i = -1;
-	        while (++i < len) {
-	            currentQueue[i]();
-	        }
-	        len = queue.length;
-	    }
-	    draining = false;
-	}
-	process.nextTick = function (fun) {
-	    queue.push(fun);
-	    if (!draining) {
-	        setTimeout(drainQueue, 0);
-	    }
-	};
-
-	process.title = 'browser';
-	process.browser = true;
-	process.env = {};
-	process.argv = [];
-	process.version = ''; // empty string to avoid regexp issues
-	process.versions = {};
-
-	function noop() {}
-
-	process.on = noop;
-	process.addListener = noop;
-	process.once = noop;
-	process.off = noop;
-	process.removeListener = noop;
-	process.removeAllListeners = noop;
-	process.emit = noop;
-
-	process.binding = function (name) {
-	    throw new Error('process.binding is not supported');
-	};
-
-	// TODO(shtylman)
-	process.cwd = function () { return '/' };
-	process.chdir = function (dir) {
-	    throw new Error('process.chdir is not supported');
-	};
-	process.umask = function() { return 0; };
-
-
-/***/ },
-/* 8 */
-/***/ function(module, exports, __webpack_require__) {
-
 	/* WEBPACK VAR INJECTION */(function(process, setImmediate) {// vim:ts=4:sts=4:sw=4:
 	/*!
 	 *
@@ -14927,10 +14863,436 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	});
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7), __webpack_require__(27).setImmediate))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), __webpack_require__(27).setImmediate))
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// shim for using process in browser
+
+	var process = module.exports = {};
+	var queue = [];
+	var draining = false;
+
+	function drainQueue() {
+	    if (draining) {
+	        return;
+	    }
+	    draining = true;
+	    var currentQueue;
+	    var len = queue.length;
+	    while(len) {
+	        currentQueue = queue;
+	        queue = [];
+	        var i = -1;
+	        while (++i < len) {
+	            currentQueue[i]();
+	        }
+	        len = queue.length;
+	    }
+	    draining = false;
+	}
+	process.nextTick = function (fun) {
+	    queue.push(fun);
+	    if (!draining) {
+	        setTimeout(drainQueue, 0);
+	    }
+	};
+
+	process.title = 'browser';
+	process.browser = true;
+	process.env = {};
+	process.argv = [];
+	process.version = ''; // empty string to avoid regexp issues
+	process.versions = {};
+
+	function noop() {}
+
+	process.on = noop;
+	process.addListener = noop;
+	process.once = noop;
+	process.off = noop;
+	process.removeListener = noop;
+	process.removeAllListeners = noop;
+	process.emit = noop;
+
+	process.binding = function (name) {
+	    throw new Error('process.binding is not supported');
+	};
+
+	// TODO(shtylman)
+	process.cwd = function () { return '/' };
+	process.chdir = function (dir) {
+	    throw new Error('process.chdir is not supported');
+	};
+	process.umask = function() { return 0; };
+
 
 /***/ },
 /* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {/**
+	 * An asynchronous local file system API, based on a subset
+	 * of the `narwhal/fs` API and the `narwhal/promise` API,
+	 * such that the method names are the same but some return
+	 * values are promises instead of fully resolved values.
+	 * @module
+	 */
+
+	/*whatsupdoc*/
+
+	var FS = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())); // node
+	var Q = __webpack_require__(7);
+	var Reader = __webpack_require__(21);
+	var Writer = __webpack_require__(22);
+	var Common = __webpack_require__(23);
+	var Mock = __webpack_require__(24);
+	var Root = __webpack_require__(25);
+
+	Common.update(exports, process.cwd);
+	exports.Mock = Mock;
+	exports.Root = Root;
+
+	// facilitates AIMD (additive increase, multiplicative decrease) for backing off
+	var backOffDelay = 0;
+	var backOffFactor = 1.0001;
+	function dampen(wrapped, thisp) {
+	    var retry = function () {
+	        var args = arguments;
+	        var ready = backOffDelay ? Q.delay(backOffDelay) : Q.resolve();
+	        return ready.then(function () {
+	            return Q.when(wrapped.apply(thisp, args), function (stream) {
+	                backOffDelay = Math.max(0, backOffDelay - 1);
+	                return stream;
+	            }, function (error) {
+	                if (error.code === "EMFILE") {
+	                    backOffDelay = (backOffDelay + 1) * backOffFactor;
+	                    return retry.apply(null, args);
+	                } else {
+	                    throw error;
+	                }
+	            });
+	        });
+	    };
+	    return retry;
+	}
+
+	/**
+	 * @param {String} path
+	 * @param {Object} options (flags, mode, bufferSize, charset, begin, end)
+	 * @returns {Promise * Stream} a stream from the `q-io` module.
+	 */
+	exports.open = dampen(function (path, flags, charset, options) {
+	    var self = this;
+	    if (typeof flags == "object") {
+	        options = flags;
+	        flags = options.flags;
+	        charset = options.charset;
+	    }
+	    options = options || {};
+	    flags = flags || "r";
+	    var nodeFlags = flags.replace(/b/g, "") || "r";
+	    var nodeOptions = {
+	        "flags": nodeFlags
+	    };
+	    if ("bufferSize" in options) {
+	        nodeOptions.bufferSize = options.bufferSize;
+	    }
+	    if ("mode" in options) {
+	        nodeOptions.mode = options.mode;
+	    }
+	    if ("begin" in options) {
+	        nodeOptions.start = options.begin;
+	        nodeOptions.end = options.end - 1;
+	    }
+	    if (flags.indexOf("b") >= 0) {
+	        if (charset) {
+	            throw new Error("Can't open a binary file with a charset: " + charset);
+	        }
+	    } else {
+	        charset = charset || 'utf-8';
+	    }
+	    if (flags.indexOf("w") >= 0 || flags.indexOf("a") >= 0) {
+	        var stream = FS.createWriteStream(String(path), nodeOptions);
+	        return Writer(stream, charset);
+	    } else {
+	        var stream = FS.createReadStream(String(path), nodeOptions);
+	        return Reader(stream, charset);
+	    }
+	});
+
+	exports.remove = function (path) {
+	    path = String(path);
+	    var done = Q.defer();
+	    FS.unlink(path, function (error) {
+	        if (error) {
+	            error.message = "Can't remove " + JSON.stringify(path) + ": " + error.message;
+	            done.reject(error);
+	        } else {
+	            done.resolve();
+	        }
+	    });
+	    return done.promise;
+	};
+
+	exports.rename = function (source, target) {
+	    source = String(source);
+	    target = String(target);
+	    return Q.ninvoke(FS, "rename", source, target)
+	    .fail(function (error) {
+	        if (error.code === "EXDEV") {
+	            error.message = "source and target are on different devices: " + error.message;
+	            error.crossDevice = true;
+	        }
+	        error.message = (
+	            "Can't move " + JSON.stringify(source) + " to " +
+	            JSON.stringify(target) + " because " + error.message
+	        );
+	        throw error;
+	    });
+	};
+
+	exports.makeDirectory = function (path, mode) {
+	    path = String(path);
+	    var done = Q.defer();
+	    if (typeof mode === "string") {
+	        mode = parseInt(mode, 8);
+	    } else if (mode === void 0) {
+	        mode = parseInt('755', 8);
+	    }
+	    FS.mkdir(path, mode, function (error) {
+	        if (error) {
+	            if (error.code === "EISDIR") {
+	                error.exists = true;
+	                error.isDirectory = true;
+	                error.message = "directory already exists: " + error.message;
+	            }
+	            if (error.code === "EEXIST") {
+	                error.exists = true;
+	                error.message = "file exists at that path: " + error.message;
+	            }
+	            error.message = "Can't makeDirectory " + JSON.stringify(path) + " with mode " + mode + ": " + error.message;
+	            done.reject(error);
+	        } else {
+	            done.resolve();
+	        }
+	    });
+	    return done.promise;
+	};
+
+	exports.removeDirectory = function (path) {
+	    path = String(path);
+	    var done = Q.defer();
+	    FS.rmdir(path, function (error) {
+	        if (error) {
+	            error.message = "Can't removeDirectory " + JSON.stringify(path) + ": " + error.message;
+	            done.reject(error);
+	        } else {
+	            done.resolve();
+	        }
+	    });
+	    return done.promise;
+	};
+
+	/**
+	 */
+	exports.list = dampen(function (path) {
+	    path = String(path);
+	    var result = Q.defer();
+	    FS.readdir(path, function (error, list) {
+	        if (error) {
+	            error.message = "Can't list " + JSON.stringify(path) + ": " + error.message;
+	            return result.reject(error);
+	        } else {
+	            result.resolve(list);
+	        }
+	    });
+	    return result.promise;
+	});
+
+	/**
+	 * @param {String} path
+	 * @returns {Promise * Stat}
+	 */
+	exports.stat = function (path) {
+	    var self = this;
+	    path = String(path);
+	    var done = Q.defer();
+	    try {
+	        FS.stat(path, function (error, stat) {
+	            if (error) {
+	                error.message = "Can't stat " + JSON.stringify(path) + ": " + error;
+	                done.reject(error);
+	            } else {
+	                done.resolve(new self.Stats(stat));
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.statLink = function (path) {
+	    path = String(path);
+	    var done = Q.defer();
+	    try {
+	        FS.lstat(path, function (error, stat) {
+	            if (error) {
+	                error.message = "Can't statLink " + JSON.stringify(path) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve(stat);
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.statFd = function (fd) {
+	    fd = Number(fd);
+	    var done = Q.defer();
+	    try {
+	        FS.fstat(fd, function (error, stat) {
+	            if (error) {
+	                error.message = "Can't statFd file descriptor " + JSON.stringify(fd) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve(stat);
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.link = function (source, target) {
+	    source = String(source);
+	    target = String(target);
+	    var done = Q.defer();
+	    try {
+	        FS.link(source, target, function (error) {
+	            if (error) {
+	                error.message = "Can't link " + JSON.stringify(source) + " to " + JSON.stringify(target) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve();
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	// this lookup table translates the link types that Q-IO accepts (which have
+	// been normalized to full words to be consistent with the naming convention)
+	var linkTypes = {
+	    "file": "file",
+	    "directory": "dir",
+	    "junction": "junction"
+	};
+
+	exports.symbolicLink = function (target, relative, type) {
+	    if (!linkTypes.hasOwnProperty(type)) {
+	        console.warn(new Error("For Windows compatibility, symbolicLink must be called with a type argument \"file\", \"directory\", or \"junction\""));
+	    }
+	    type = linkTypes[type];
+	    target = String(target);
+	    relative = String(relative);
+	    var done = Q.defer();
+	    try {
+	        FS.symlink(relative, target, type || 'file', function (error) {
+	            if (error) {
+	                error.message = "Can't create symbolicLink " + JSON.stringify(target) + " to relative location " + JSON.stringify(relative) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve();
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.chown = function (path, uid, gid) {
+	    path = String(path);
+	    var done = Q.defer();
+	    try {
+	        FS.chown(path, uid, gid, function (error) {
+	            if (error) {
+	                error.message = "Can't chown (change owner) of " + JSON.stringify(path) + " to user " + JSON.stringify(uid) + " and group " + JSON.stringify(gid) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve();
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.chmod = function (path, mode) {
+	    path = String(path);
+	    mode = String(mode);
+	    var done = Q.defer();
+	    try {
+	        FS.chmod(path, mode, function (error) {
+	            if (error) {
+	                error.message = "Can't chmod (change permissions mode) of " + JSON.stringify(path) + " to (octal number) " + mode.toString(8) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve();
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.canonical = function (path) {
+	    var result = Q.defer();
+	    FS.realpath(path, function (error, canonicalPath) {
+	        if (error) {
+	            error.message = "Can't get canonical path of " + JSON.stringify(path) + " by way of C realpath: " + error.message;
+	            result.reject(error);
+	        } else {
+	            result.resolve(canonicalPath);
+	        }
+	    });
+	    return result.promise;
+	};
+
+	exports.readLink = function (path) {
+	    var result = Q.defer();
+	    FS.readlink(path, function (error, path) {
+	        if (error) {
+	            error.message = "Can't get link from " + JSON.stringify(path) + " by way of C readlink: " + error.message;
+	            result.reject(error);
+	        } else {
+	            result.resolve(path);
+	        }
+	    });
+	    return result.promise;
+	};
+
+	exports.mock = function (path) {
+	    return Mock.mock(this, path);
+	};
+
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
+
+/***/ },
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -14973,7 +15335,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -15015,7 +15377,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -15030,7 +15392,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -15471,7 +15833,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use srict';
@@ -15639,7 +16001,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -15803,7 +16165,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -15874,7 +16236,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -15891,7 +16253,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var SequencedObject = mm.obj.SequencedObject,
 	      Enum = mm.obj.Enum;
 	      
-	  var sha256 = __webpack_require__(29);
+	  var sha256 = __webpack_require__(30);
 
 	  var T = 10;
 	  
@@ -16140,7 +16502,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -16339,368 +16701,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 18 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {/**
-	 * An asynchronous local file system API, based on a subset
-	 * of the `narwhal/fs` API and the `narwhal/promise` API,
-	 * such that the method names are the same but some return
-	 * values are promises instead of fully resolved values.
-	 * @module
-	 */
-
-	/*whatsupdoc*/
-
-	var FS = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())); // node
-	var Q = __webpack_require__(8);
-	var Reader = __webpack_require__(21);
-	var Writer = __webpack_require__(22);
-	var Common = __webpack_require__(23);
-	var Mock = __webpack_require__(24);
-	var Root = __webpack_require__(25);
-
-	Common.update(exports, process.cwd);
-	exports.Mock = Mock;
-	exports.Root = Root;
-
-	// facilitates AIMD (additive increase, multiplicative decrease) for backing off
-	var backOffDelay = 0;
-	var backOffFactor = 1.0001;
-	function dampen(wrapped, thisp) {
-	    var retry = function () {
-	        var args = arguments;
-	        var ready = backOffDelay ? Q.delay(backOffDelay) : Q.resolve();
-	        return ready.then(function () {
-	            return Q.when(wrapped.apply(thisp, args), function (stream) {
-	                backOffDelay = Math.max(0, backOffDelay - 1);
-	                return stream;
-	            }, function (error) {
-	                if (error.code === "EMFILE") {
-	                    backOffDelay = (backOffDelay + 1) * backOffFactor;
-	                    return retry.apply(null, args);
-	                } else {
-	                    throw error;
-	                }
-	            });
-	        });
-	    };
-	    return retry;
-	}
-
-	/**
-	 * @param {String} path
-	 * @param {Object} options (flags, mode, bufferSize, charset, begin, end)
-	 * @returns {Promise * Stream} a stream from the `q-io` module.
-	 */
-	exports.open = dampen(function (path, flags, charset, options) {
-	    var self = this;
-	    if (typeof flags == "object") {
-	        options = flags;
-	        flags = options.flags;
-	        charset = options.charset;
-	    }
-	    options = options || {};
-	    flags = flags || "r";
-	    var nodeFlags = flags.replace(/b/g, "") || "r";
-	    var nodeOptions = {
-	        "flags": nodeFlags
-	    };
-	    if ("bufferSize" in options) {
-	        nodeOptions.bufferSize = options.bufferSize;
-	    }
-	    if ("mode" in options) {
-	        nodeOptions.mode = options.mode;
-	    }
-	    if ("begin" in options) {
-	        nodeOptions.start = options.begin;
-	        nodeOptions.end = options.end - 1;
-	    }
-	    if (flags.indexOf("b") >= 0) {
-	        if (charset) {
-	            throw new Error("Can't open a binary file with a charset: " + charset);
-	        }
-	    } else {
-	        charset = charset || 'utf-8';
-	    }
-	    if (flags.indexOf("w") >= 0 || flags.indexOf("a") >= 0) {
-	        var stream = FS.createWriteStream(String(path), nodeOptions);
-	        return Writer(stream, charset);
-	    } else {
-	        var stream = FS.createReadStream(String(path), nodeOptions);
-	        return Reader(stream, charset);
-	    }
-	});
-
-	exports.remove = function (path) {
-	    path = String(path);
-	    var done = Q.defer();
-	    FS.unlink(path, function (error) {
-	        if (error) {
-	            error.message = "Can't remove " + JSON.stringify(path) + ": " + error.message;
-	            done.reject(error);
-	        } else {
-	            done.resolve();
-	        }
-	    });
-	    return done.promise;
-	};
-
-	exports.rename = function (source, target) {
-	    source = String(source);
-	    target = String(target);
-	    return Q.ninvoke(FS, "rename", source, target)
-	    .fail(function (error) {
-	        if (error.code === "EXDEV") {
-	            error.message = "source and target are on different devices: " + error.message;
-	            error.crossDevice = true;
-	        }
-	        error.message = (
-	            "Can't move " + JSON.stringify(source) + " to " +
-	            JSON.stringify(target) + " because " + error.message
-	        );
-	        throw error;
-	    });
-	};
-
-	exports.makeDirectory = function (path, mode) {
-	    path = String(path);
-	    var done = Q.defer();
-	    if (typeof mode === "string") {
-	        mode = parseInt(mode, 8);
-	    } else if (mode === void 0) {
-	        mode = parseInt('755', 8);
-	    }
-	    FS.mkdir(path, mode, function (error) {
-	        if (error) {
-	            if (error.code === "EISDIR") {
-	                error.exists = true;
-	                error.isDirectory = true;
-	                error.message = "directory already exists: " + error.message;
-	            }
-	            if (error.code === "EEXIST") {
-	                error.exists = true;
-	                error.message = "file exists at that path: " + error.message;
-	            }
-	            error.message = "Can't makeDirectory " + JSON.stringify(path) + " with mode " + mode + ": " + error.message;
-	            done.reject(error);
-	        } else {
-	            done.resolve();
-	        }
-	    });
-	    return done.promise;
-	};
-
-	exports.removeDirectory = function (path) {
-	    path = String(path);
-	    var done = Q.defer();
-	    FS.rmdir(path, function (error) {
-	        if (error) {
-	            error.message = "Can't removeDirectory " + JSON.stringify(path) + ": " + error.message;
-	            done.reject(error);
-	        } else {
-	            done.resolve();
-	        }
-	    });
-	    return done.promise;
-	};
-
-	/**
-	 */
-	exports.list = dampen(function (path) {
-	    path = String(path);
-	    var result = Q.defer();
-	    FS.readdir(path, function (error, list) {
-	        if (error) {
-	            error.message = "Can't list " + JSON.stringify(path) + ": " + error.message;
-	            return result.reject(error);
-	        } else {
-	            result.resolve(list);
-	        }
-	    });
-	    return result.promise;
-	});
-
-	/**
-	 * @param {String} path
-	 * @returns {Promise * Stat}
-	 */
-	exports.stat = function (path) {
-	    var self = this;
-	    path = String(path);
-	    var done = Q.defer();
-	    try {
-	        FS.stat(path, function (error, stat) {
-	            if (error) {
-	                error.message = "Can't stat " + JSON.stringify(path) + ": " + error;
-	                done.reject(error);
-	            } else {
-	                done.resolve(new self.Stats(stat));
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.statLink = function (path) {
-	    path = String(path);
-	    var done = Q.defer();
-	    try {
-	        FS.lstat(path, function (error, stat) {
-	            if (error) {
-	                error.message = "Can't statLink " + JSON.stringify(path) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve(stat);
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.statFd = function (fd) {
-	    fd = Number(fd);
-	    var done = Q.defer();
-	    try {
-	        FS.fstat(fd, function (error, stat) {
-	            if (error) {
-	                error.message = "Can't statFd file descriptor " + JSON.stringify(fd) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve(stat);
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.link = function (source, target) {
-	    source = String(source);
-	    target = String(target);
-	    var done = Q.defer();
-	    try {
-	        FS.link(source, target, function (error) {
-	            if (error) {
-	                error.message = "Can't link " + JSON.stringify(source) + " to " + JSON.stringify(target) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve();
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	// this lookup table translates the link types that Q-IO accepts (which have
-	// been normalized to full words to be consistent with the naming convention)
-	var linkTypes = {
-	    "file": "file",
-	    "directory": "dir",
-	    "junction": "junction"
-	};
-
-	exports.symbolicLink = function (target, relative, type) {
-	    if (!linkTypes.hasOwnProperty(type)) {
-	        console.warn(new Error("For Windows compatibility, symbolicLink must be called with a type argument \"file\", \"directory\", or \"junction\""));
-	    }
-	    type = linkTypes[type];
-	    target = String(target);
-	    relative = String(relative);
-	    var done = Q.defer();
-	    try {
-	        FS.symlink(relative, target, type || 'file', function (error) {
-	            if (error) {
-	                error.message = "Can't create symbolicLink " + JSON.stringify(target) + " to relative location " + JSON.stringify(relative) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve();
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.chown = function (path, uid, gid) {
-	    path = String(path);
-	    var done = Q.defer();
-	    try {
-	        FS.chown(path, uid, gid, function (error) {
-	            if (error) {
-	                error.message = "Can't chown (change owner) of " + JSON.stringify(path) + " to user " + JSON.stringify(uid) + " and group " + JSON.stringify(gid) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve();
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.chmod = function (path, mode) {
-	    path = String(path);
-	    mode = String(mode);
-	    var done = Q.defer();
-	    try {
-	        FS.chmod(path, mode, function (error) {
-	            if (error) {
-	                error.message = "Can't chmod (change permissions mode) of " + JSON.stringify(path) + " to (octal number) " + mode.toString(8) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve();
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.canonical = function (path) {
-	    var result = Q.defer();
-	    FS.realpath(path, function (error, canonicalPath) {
-	        if (error) {
-	            error.message = "Can't get canonical path of " + JSON.stringify(path) + " by way of C realpath: " + error.message;
-	            result.reject(error);
-	        } else {
-	            result.resolve(canonicalPath);
-	        }
-	    });
-	    return result.promise;
-	};
-
-	exports.readLink = function (path) {
-	    var result = Q.defer();
-	    FS.readlink(path, function (error, path) {
-	        if (error) {
-	            error.message = "Can't get link from " + JSON.stringify(path) + " by way of C readlink: " + error.message;
-	            result.reject(error);
-	        } else {
-	            result.resolve(path);
-	        }
-	    });
-	    return result.promise;
-	};
-
-	exports.mock = function (path) {
-	    return Mock.mock(this, path);
-	};
-
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7)))
-
-/***/ },
 /* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -16711,9 +16711,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @license  MIT
 	 */
 
-	var base64 = __webpack_require__(34)
-	var ieee754 = __webpack_require__(32)
-	var isArray = __webpack_require__(33)
+	var base64 = __webpack_require__(35)
+	var ieee754 = __webpack_require__(33)
+	var isArray = __webpack_require__(34)
 
 	exports.Buffer = Buffer
 	exports.SlowBuffer = SlowBuffer
@@ -18567,7 +18567,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	exports.isPrimitive = isPrimitive;
 
-	exports.isBuffer = __webpack_require__(28);
+	exports.isBuffer = __webpack_require__(31);
 
 	function objectToString(o) {
 	  return Object.prototype.toString.call(o);
@@ -18611,7 +18611,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 *     prototype.
 	 * @param {function} superCtor Constructor function to inherit prototype from.
 	 */
-	exports.inherits = __webpack_require__(35);
+	exports.inherits = __webpack_require__(44);
 
 	exports._extend = function(origin, add) {
 	  // Don't do anything if add isn't an object
@@ -18629,14 +18629,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return Object.prototype.hasOwnProperty.call(obj, prop);
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(7)))
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(8)))
 
 /***/ },
 /* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {
-	var Q = __webpack_require__(8);
+	var Q = __webpack_require__(7);
 
 	/**
 	 * Wraps a Node readable stream, providing an API similar
@@ -18776,7 +18776,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process, Buffer) {
-	var Q = __webpack_require__(8);
+	var Q = __webpack_require__(7);
 
 	/**
 	 * Wraps a Node writable stream, providing an API similar to
@@ -18889,14 +18889,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7), __webpack_require__(19).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), __webpack_require__(19).Buffer))
 
 /***/ },
 /* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(Buffer) {var Q = __webpack_require__(8);
-	var Boot = __webpack_require__(30);
+	/* WEBPACK VAR INJECTION */(function(Buffer) {var Q = __webpack_require__(7);
+	var Boot = __webpack_require__(28);
 	var RootFs = __webpack_require__(25);
 	var MockFs = __webpack_require__(24);
 
@@ -19395,12 +19395,12 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {
-	var Q = __webpack_require__(8);
-	var Boot = __webpack_require__(30);
+	var Q = __webpack_require__(7);
+	var Boot = __webpack_require__(28);
 	var Common = __webpack_require__(23);
-	var BufferStream = __webpack_require__(31);
+	var BufferStream = __webpack_require__(29);
 	var Reader = __webpack_require__(21);
-	var Set = __webpack_require__(36);
+	var Set = __webpack_require__(32);
 
 	module.exports = MockFs;
 
@@ -19944,7 +19944,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	// cycle breaking
-	var FS = __webpack_require__(18);
+	var FS = __webpack_require__(9);
 
 
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
@@ -19954,8 +19954,8 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	
-	var Q = __webpack_require__(8);
-	var BOOT = __webpack_require__(30);
+	var Q = __webpack_require__(7);
+	var BOOT = __webpack_require__(28);
 	var COMMON = __webpack_require__(23);
 
 	module.exports = RootFs;
@@ -20120,7 +20120,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(setImmediate, clearImmediate) {var nextTick = __webpack_require__(7).nextTick;
+	/* WEBPACK VAR INJECTION */(function(setImmediate, clearImmediate) {var nextTick = __webpack_require__(8).nextTick;
 	var apply = Function.prototype.apply;
 	var slice = Array.prototype.slice;
 	var immediateIds = {};
@@ -20202,15 +20202,384 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = function isBuffer(arg) {
-	  return arg && typeof arg === 'object'
-	    && typeof arg.copy === 'function'
-	    && typeof arg.fill === 'function'
-	    && typeof arg.readUInt8 === 'function';
+	/* WEBPACK VAR INJECTION */(function(process) {(function (exports) {
+
+	// -- kriskowal Kris Kowal Copyright (C) 2009-2010 MIT License
+	// -- tlrobinson Tom Robinson TODO
+
+	/**
+	 * Pure JavaScript implementations of file system path
+	 * manipulation.
+	 */
+
+	// NOTE: this file may be used is the engine bootstrapping
+	// process, so any "requires" must be accounted for in
+	// narwhal.js
+
+	/*whatsupdoc*/
+	/*markup markdown*/
+
+	var regExpEscape = function (str) {
+	    return str.replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&");
+	};
+
+	var path = __webpack_require__(36);
+
+	/**
+	 * @name ROOT
+	 * * `/` on Unix
+	 * * `\` on Windows
+	 */
+
+	/**
+	 * @name SEPARATOR
+	 * * `/` on Unix
+	 * * `\` on Windows
+	 */
+
+	/**
+	 * @name ALT_SEPARATOR
+	 * * undefined on Unix
+	 * * `/` on Windows
+	 */
+
+	exports.ROOT = exports.SEPARATOR = path.sep || (process.platform === "win32" ? "\\": "/");
+	if (path.sep === "\\") {
+	    exports.ALT_SEPARATOR = "/";
+	} else {
+	    exports.ALT_SEPARATOR = undefined;
 	}
+
+	// we need to make sure the separator regex is always in sync with the separators.
+	// this caches the generated regex and rebuild if either separator changes.
+	var separatorCached, altSeparatorCached, separatorReCached;
+	/**
+	 * @function
+	 */
+	exports.SEPARATORS_RE = function () {
+	    if (
+	        separatorCached !== exports.SEPARATOR ||
+	        altSeparatorCached !== exports.ALT_SEPARATOR
+	    ) {
+	        separatorCached = exports.SEPARATOR;
+	        altSeparatorCached = exports.ALT_SEPARATOR;
+	        separatorReCached = new RegExp("[" +
+	            (separatorCached || "").replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&") +
+	            (altSeparatorCached || "").replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&") +
+	        "]", "g");
+	    }
+	    return separatorReCached;
+	}
+
+	/**
+	 * separates a path into components.  If the path is
+	 * absolute, the first path component is the root of the
+	 * file system, indicated by an empty string on Unix, and a
+	 * drive letter followed by a colon on Windows.
+	 * @returns {Array * String}
+	 */
+	exports.split = function (path) {
+	    var parts;
+	    try {
+	        parts = String(path).split(exports.SEPARATORS_RE());
+	    } catch (exception) {
+	        throw new Error("Cannot split " + (typeof path) + ", " + JSON.stringify(path));
+	    }
+	    // this special case helps isAbsolute
+	    // distinguish an empty path from an absolute path
+	    // "" -> [] NOT [""]
+	    if (parts.length === 1 && parts[0] === "")
+	        return [];
+	    // "a" -> ["a"]
+	    // "/a" -> ["", "a"]
+	    return parts;
+	};
+
+	/**
+	 * Takes file system paths as variadic arguments and treats
+	 * each as a file or directory path and returns the path
+	 * arrived by traversing into the those paths.  All
+	 * arguments except for the last must be paths to
+	 * directories for the result to be meaningful.
+	 * @returns {String} path
+	 */
+	exports.join = function () {
+	    if (arguments.length === 1 && Array.isArray(arguments[0]))
+	        return exports.normal.apply(exports, arguments[0]);
+	    return exports.normal.apply(exports, arguments);
+	};
+
+	/**
+	 * Takes file system paths as variadic arguments and treats
+	 * each path as a location, in the URL sense, resolving each
+	 * new location based on the previous.  For example, if the
+	 * first argument is the absolute path of a JSON file, and
+	 * the second argument is a path mentioned in that JSON
+	 * file, `resolve` returns the absolute path of the
+	 * mentioned file.
+	 * @returns {String} path
+	 */
+	exports.resolve = function () {
+	    var root = "";
+	    var parents = [];
+	    var children = [];
+	    var leaf = "";
+	    for (var i = 0; i < arguments.length; i++) {
+	        var path = String(arguments[i]);
+	        if (path == "")
+	            continue;
+	        var parts = path.split(exports.SEPARATORS_RE());
+	        if (exports.isAbsolute(path)) {
+	            root = parts.shift() + exports.SEPARATOR;
+	            parents = [];
+	            children = [];
+	        }
+	        leaf = parts.pop();
+	        if (leaf == "." || leaf == "..") {
+	            parts.push(leaf);
+	            leaf = "";
+	        }
+	        for (var j = 0; j < parts.length; j++) {
+	            var part = parts[j];
+	            if (part == "." || part == "") {
+	            } else if (part == "..") {
+	                if (children.length) {
+	                    children.pop();
+	                } else {
+	                    if (root) {
+	                    } else {
+	                        parents.push("..");
+	                    }
+	                }
+	            } else {
+	                children.push(part);
+	            }
+	        };
+	    }
+	    path = parents.concat(children).join(exports.SEPARATOR);
+	    if (path) leaf = exports.SEPARATOR + leaf;
+	    return root + path + leaf;
+	};
+
+	/**
+	 * Takes paths as any number of arguments and reduces them
+	 * into a single path in normal form, removing all "." path
+	 * components, and reducing ".." path components by removing
+	 * the previous path component if possible.
+	 * @returns {String} path
+	 */
+	exports.normal = function () {
+	    var root = "";
+	    var parents = [];
+	    var children = [];
+	    for (var i = 0, ii = arguments.length; i < ii; i++) {
+	        var path = String(arguments[i]);
+	        // empty paths have no affect
+	        if (path === "")
+	            continue;
+	        var parts = path.split(exports.SEPARATORS_RE());
+	        if (exports.isAbsolute(path)) {
+	            root = parts.shift() + exports.SEPARATOR;
+	            parents = [];
+	            children = [];
+	        }
+	        for (var j = 0, jj = parts.length; j < jj; j++) {
+	            var part = parts[j];
+	            if (part === "." || part === "") {
+	            } else if (part == "..") {
+	                if (children.length) {
+	                    children.pop();
+	                } else {
+	                    if (root) {
+	                    } else {
+	                        parents.push("..");
+	                    }
+	                }
+	            } else {
+	                children.push(part);
+	            }
+	        }
+	    }
+	    path = parents.concat(children).join(exports.SEPARATOR);
+	    return root + path;
+	};
+
+	/***
+	 * @returns {Boolean} whether the given path begins at the
+	 * root of the file system or a drive letter.
+	 */
+	exports.isAbsolute = function (path) {
+	    // for absolute paths on any operating system,
+	    // the first path component always determines
+	    // whether it is relative or absolute.  On Unix,
+	    // it is empty, so ["", "foo"].join("/") == "/foo",
+	    // "/foo".split("/") == ["", "foo"].
+	    var parts = exports.split(path);
+	    // split("") == [].  "" is not absolute.
+	    // split("/") == ["", ""] is absolute.
+	    // split(?) == [""] does not occur.
+	    if (parts.length == 0)
+	        return false;
+	    return exports.isRoot(parts[0]);
+	};
+
+	/**
+	 * @returns {Boolean} whether the given path does not begin
+	 * at the root of the file system or a drive letter.
+	 */
+	exports.isRelative = function (path) {
+	    return !exports.isAbsolute(path);
+	};
+
+	/**
+	 * @returns {Boolean} whether the given path component
+	 * corresponds to the root of the file system or a drive
+	 * letter, as applicable.
+	 */
+	exports.isRoot = function (first) {
+	    if (exports.SEPARATOR === "\\") {
+	        return /[a-zA-Z]:$/.test(first);
+	    } else {
+	        return first == "";
+	    }
+	};
+
+	/**
+	 * @returns {String} the Unix root path or corresponding
+	 * Windows drive for a given path.
+	 */
+	exports.root = function (path) {
+	    if (!exports.isAbsolute(path))
+	        path = __webpack_require__(9).absolute(path);
+	    var parts = exports.split(path);
+	    return exports.join(parts[0], "");
+	};
+
+	/**
+	 * @returns {String} the parent directory of the given path.
+	 */
+	exports.directory = function (path) {
+	    path = exports.normal(path);
+	    var absolute = exports.isAbsolute(path);
+	    var parts = exports.split(path);
+	    // XXX needs to be sensitive to the root for
+	    // Windows compatibility
+	    if (parts.length) {
+	        if (parts[parts.length - 1] == "..") {
+	            parts.push("..");
+	        } else {
+	            parts.pop();
+	        }
+	    } else {
+	        parts.unshift("..");
+	    }
+	    return parts.join(exports.SEPARATOR) || (
+	        exports.isRelative(path) ?
+	        "" : exports.ROOT
+	    );
+	};
+
+	/**
+	 * @returns {String} the last component of a path, without
+	 * the given extension if the extension is provided and
+	 * matches the given file.
+	 * @param {String} path
+	 * @param {String} extention an optional extention to detect
+	 * and remove if it exists.
+	 */
+	exports.base = function (path, extension) {
+	    var base = path.split(exports.SEPARATORS_RE()).pop();
+	    if (extension)
+	        base = base.replace(
+	            new RegExp(regExpEscape(extension) + "$"),
+	            ""
+	        );
+	    return base;
+	};
+
+	/**
+	 * @returns {String} the extension (e.g., `txt`) of the file
+	 * at the given path.
+	 */
+	exports.extension = function (path) {
+	    path = exports.base(path);
+	    path = path.replace(/^\.*/, "");
+	    var index = path.lastIndexOf(".");
+	    return index <= 0 ? "" : path.substring(index);
+	};
+
+	})(true ? exports : FS_BOOT = {});
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
 
 /***/ },
 /* 29 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(Buffer) {
+	var Q = __webpack_require__(7);
+	var Reader = __webpack_require__(21);
+
+	module.exports = BufferStream;
+	function BufferStream(chunks, charset) {
+	    if (!(this instanceof BufferStream)) {
+	        return new BufferStream(chunks, charset);
+	    }
+	    if (!chunks) {
+	        chunks = [];
+	    } else if (!Array.isArray(chunks)) {
+	        chunks = [chunks];
+	    }
+	    this._charset = charset;
+	    this._chunks = chunks;
+	    this._close = Q.defer();
+	    this.closed = this._close.promise;
+	}
+
+	BufferStream.prototype.forEach = function (write, thisp) {
+	    var self = this;
+	    var chunks = self._chunks;
+	    return Q.fcall(function () {
+	        chunks.splice(0, chunks.length).forEach(write, thisp);
+	    });
+	};
+
+	BufferStream.prototype.read = function () {
+	    var result;
+	    result = Reader.join(this._chunks);
+	    if (this._charset) {
+	        result = result.toString(this._charset);
+	    }
+	    return Q.resolve(result);
+	};
+
+	BufferStream.prototype.write = function (chunk) {
+	    if (this._charset) {
+	        chunk = new Buffer(String(chunk), this._charset);
+	    } else {
+	        if (!(chunk instanceof Buffer)) {
+	            throw new Error("Can't write strings to buffer stream without a charset: " + chunk);
+	        }
+	    }
+	    this._chunks.push(chunk);
+	    return Q.resolve();
+	};
+
+	BufferStream.prototype.close = function () {
+	    this._close.resolve();
+	    return Q.resolve();
+	};
+
+	BufferStream.prototype.destroy = function () {
+	    this._close.resolve();
+	    return Q.resolve();
+	};
+
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
+
+/***/ },
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -20487,686 +20856,29 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 30 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {(function (exports) {
-
-	// -- kriskowal Kris Kowal Copyright (C) 2009-2010 MIT License
-	// -- tlrobinson Tom Robinson TODO
-
-	/**
-	 * Pure JavaScript implementations of file system path
-	 * manipulation.
-	 */
-
-	// NOTE: this file may be used is the engine bootstrapping
-	// process, so any "requires" must be accounted for in
-	// narwhal.js
-
-	/*whatsupdoc*/
-	/*markup markdown*/
-
-	var regExpEscape = function (str) {
-	    return str.replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&");
-	};
-
-	var path = __webpack_require__(37);
-
-	/**
-	 * @name ROOT
-	 * * `/` on Unix
-	 * * `\` on Windows
-	 */
-
-	/**
-	 * @name SEPARATOR
-	 * * `/` on Unix
-	 * * `\` on Windows
-	 */
-
-	/**
-	 * @name ALT_SEPARATOR
-	 * * undefined on Unix
-	 * * `/` on Windows
-	 */
-
-	exports.ROOT = exports.SEPARATOR = path.sep || (process.platform === "win32" ? "\\": "/");
-	if (path.sep === "\\") {
-	    exports.ALT_SEPARATOR = "/";
-	} else {
-	    exports.ALT_SEPARATOR = undefined;
-	}
-
-	// we need to make sure the separator regex is always in sync with the separators.
-	// this caches the generated regex and rebuild if either separator changes.
-	var separatorCached, altSeparatorCached, separatorReCached;
-	/**
-	 * @function
-	 */
-	exports.SEPARATORS_RE = function () {
-	    if (
-	        separatorCached !== exports.SEPARATOR ||
-	        altSeparatorCached !== exports.ALT_SEPARATOR
-	    ) {
-	        separatorCached = exports.SEPARATOR;
-	        altSeparatorCached = exports.ALT_SEPARATOR;
-	        separatorReCached = new RegExp("[" +
-	            (separatorCached || "").replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&") +
-	            (altSeparatorCached || "").replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&") +
-	        "]", "g");
-	    }
-	    return separatorReCached;
-	}
-
-	/**
-	 * separates a path into components.  If the path is
-	 * absolute, the first path component is the root of the
-	 * file system, indicated by an empty string on Unix, and a
-	 * drive letter followed by a colon on Windows.
-	 * @returns {Array * String}
-	 */
-	exports.split = function (path) {
-	    var parts;
-	    try {
-	        parts = String(path).split(exports.SEPARATORS_RE());
-	    } catch (exception) {
-	        throw new Error("Cannot split " + (typeof path) + ", " + JSON.stringify(path));
-	    }
-	    // this special case helps isAbsolute
-	    // distinguish an empty path from an absolute path
-	    // "" -> [] NOT [""]
-	    if (parts.length === 1 && parts[0] === "")
-	        return [];
-	    // "a" -> ["a"]
-	    // "/a" -> ["", "a"]
-	    return parts;
-	};
-
-	/**
-	 * Takes file system paths as variadic arguments and treats
-	 * each as a file or directory path and returns the path
-	 * arrived by traversing into the those paths.  All
-	 * arguments except for the last must be paths to
-	 * directories for the result to be meaningful.
-	 * @returns {String} path
-	 */
-	exports.join = function () {
-	    if (arguments.length === 1 && Array.isArray(arguments[0]))
-	        return exports.normal.apply(exports, arguments[0]);
-	    return exports.normal.apply(exports, arguments);
-	};
-
-	/**
-	 * Takes file system paths as variadic arguments and treats
-	 * each path as a location, in the URL sense, resolving each
-	 * new location based on the previous.  For example, if the
-	 * first argument is the absolute path of a JSON file, and
-	 * the second argument is a path mentioned in that JSON
-	 * file, `resolve` returns the absolute path of the
-	 * mentioned file.
-	 * @returns {String} path
-	 */
-	exports.resolve = function () {
-	    var root = "";
-	    var parents = [];
-	    var children = [];
-	    var leaf = "";
-	    for (var i = 0; i < arguments.length; i++) {
-	        var path = String(arguments[i]);
-	        if (path == "")
-	            continue;
-	        var parts = path.split(exports.SEPARATORS_RE());
-	        if (exports.isAbsolute(path)) {
-	            root = parts.shift() + exports.SEPARATOR;
-	            parents = [];
-	            children = [];
-	        }
-	        leaf = parts.pop();
-	        if (leaf == "." || leaf == "..") {
-	            parts.push(leaf);
-	            leaf = "";
-	        }
-	        for (var j = 0; j < parts.length; j++) {
-	            var part = parts[j];
-	            if (part == "." || part == "") {
-	            } else if (part == "..") {
-	                if (children.length) {
-	                    children.pop();
-	                } else {
-	                    if (root) {
-	                    } else {
-	                        parents.push("..");
-	                    }
-	                }
-	            } else {
-	                children.push(part);
-	            }
-	        };
-	    }
-	    path = parents.concat(children).join(exports.SEPARATOR);
-	    if (path) leaf = exports.SEPARATOR + leaf;
-	    return root + path + leaf;
-	};
-
-	/**
-	 * Takes paths as any number of arguments and reduces them
-	 * into a single path in normal form, removing all "." path
-	 * components, and reducing ".." path components by removing
-	 * the previous path component if possible.
-	 * @returns {String} path
-	 */
-	exports.normal = function () {
-	    var root = "";
-	    var parents = [];
-	    var children = [];
-	    for (var i = 0, ii = arguments.length; i < ii; i++) {
-	        var path = String(arguments[i]);
-	        // empty paths have no affect
-	        if (path === "")
-	            continue;
-	        var parts = path.split(exports.SEPARATORS_RE());
-	        if (exports.isAbsolute(path)) {
-	            root = parts.shift() + exports.SEPARATOR;
-	            parents = [];
-	            children = [];
-	        }
-	        for (var j = 0, jj = parts.length; j < jj; j++) {
-	            var part = parts[j];
-	            if (part === "." || part === "") {
-	            } else if (part == "..") {
-	                if (children.length) {
-	                    children.pop();
-	                } else {
-	                    if (root) {
-	                    } else {
-	                        parents.push("..");
-	                    }
-	                }
-	            } else {
-	                children.push(part);
-	            }
-	        }
-	    }
-	    path = parents.concat(children).join(exports.SEPARATOR);
-	    return root + path;
-	};
-
-	/***
-	 * @returns {Boolean} whether the given path begins at the
-	 * root of the file system or a drive letter.
-	 */
-	exports.isAbsolute = function (path) {
-	    // for absolute paths on any operating system,
-	    // the first path component always determines
-	    // whether it is relative or absolute.  On Unix,
-	    // it is empty, so ["", "foo"].join("/") == "/foo",
-	    // "/foo".split("/") == ["", "foo"].
-	    var parts = exports.split(path);
-	    // split("") == [].  "" is not absolute.
-	    // split("/") == ["", ""] is absolute.
-	    // split(?) == [""] does not occur.
-	    if (parts.length == 0)
-	        return false;
-	    return exports.isRoot(parts[0]);
-	};
-
-	/**
-	 * @returns {Boolean} whether the given path does not begin
-	 * at the root of the file system or a drive letter.
-	 */
-	exports.isRelative = function (path) {
-	    return !exports.isAbsolute(path);
-	};
-
-	/**
-	 * @returns {Boolean} whether the given path component
-	 * corresponds to the root of the file system or a drive
-	 * letter, as applicable.
-	 */
-	exports.isRoot = function (first) {
-	    if (exports.SEPARATOR === "\\") {
-	        return /[a-zA-Z]:$/.test(first);
-	    } else {
-	        return first == "";
-	    }
-	};
-
-	/**
-	 * @returns {String} the Unix root path or corresponding
-	 * Windows drive for a given path.
-	 */
-	exports.root = function (path) {
-	    if (!exports.isAbsolute(path))
-	        path = __webpack_require__(18).absolute(path);
-	    var parts = exports.split(path);
-	    return exports.join(parts[0], "");
-	};
-
-	/**
-	 * @returns {String} the parent directory of the given path.
-	 */
-	exports.directory = function (path) {
-	    path = exports.normal(path);
-	    var absolute = exports.isAbsolute(path);
-	    var parts = exports.split(path);
-	    // XXX needs to be sensitive to the root for
-	    // Windows compatibility
-	    if (parts.length) {
-	        if (parts[parts.length - 1] == "..") {
-	            parts.push("..");
-	        } else {
-	            parts.pop();
-	        }
-	    } else {
-	        parts.unshift("..");
-	    }
-	    return parts.join(exports.SEPARATOR) || (
-	        exports.isRelative(path) ?
-	        "" : exports.ROOT
-	    );
-	};
-
-	/**
-	 * @returns {String} the last component of a path, without
-	 * the given extension if the extension is provided and
-	 * matches the given file.
-	 * @param {String} path
-	 * @param {String} extention an optional extention to detect
-	 * and remove if it exists.
-	 */
-	exports.base = function (path, extension) {
-	    var base = path.split(exports.SEPARATORS_RE()).pop();
-	    if (extension)
-	        base = base.replace(
-	            new RegExp(regExpEscape(extension) + "$"),
-	            ""
-	        );
-	    return base;
-	};
-
-	/**
-	 * @returns {String} the extension (e.g., `txt`) of the file
-	 * at the given path.
-	 */
-	exports.extension = function (path) {
-	    path = exports.base(path);
-	    path = path.replace(/^\.*/, "");
-	    var index = path.lastIndexOf(".");
-	    return index <= 0 ? "" : path.substring(index);
-	};
-
-	})(true ? exports : FS_BOOT = {});
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7)))
-
-/***/ },
 /* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(Buffer) {
-	var Q = __webpack_require__(8);
-	var Reader = __webpack_require__(21);
-
-	module.exports = BufferStream;
-	function BufferStream(chunks, charset) {
-	    if (!(this instanceof BufferStream)) {
-	        return new BufferStream(chunks, charset);
-	    }
-	    if (!chunks) {
-	        chunks = [];
-	    } else if (!Array.isArray(chunks)) {
-	        chunks = [chunks];
-	    }
-	    this._charset = charset;
-	    this._chunks = chunks;
-	    this._close = Q.defer();
-	    this.closed = this._close.promise;
+	module.exports = function isBuffer(arg) {
+	  return arg && typeof arg === 'object'
+	    && typeof arg.copy === 'function'
+	    && typeof arg.fill === 'function'
+	    && typeof arg.readUInt8 === 'function';
 	}
-
-	BufferStream.prototype.forEach = function (write, thisp) {
-	    var self = this;
-	    var chunks = self._chunks;
-	    return Q.fcall(function () {
-	        chunks.splice(0, chunks.length).forEach(write, thisp);
-	    });
-	};
-
-	BufferStream.prototype.read = function () {
-	    var result;
-	    result = Reader.join(this._chunks);
-	    if (this._charset) {
-	        result = result.toString(this._charset);
-	    }
-	    return Q.resolve(result);
-	};
-
-	BufferStream.prototype.write = function (chunk) {
-	    if (this._charset) {
-	        chunk = new Buffer(String(chunk), this._charset);
-	    } else {
-	        if (!(chunk instanceof Buffer)) {
-	            throw new Error("Can't write strings to buffer stream without a charset: " + chunk);
-	        }
-	    }
-	    this._chunks.push(chunk);
-	    return Q.resolve();
-	};
-
-	BufferStream.prototype.close = function () {
-	    this._close.resolve();
-	    return Q.resolve();
-	};
-
-	BufferStream.prototype.destroy = function () {
-	    this._close.resolve();
-	    return Q.resolve();
-	};
-
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
 
 /***/ },
 /* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports.read = function(buffer, offset, isLE, mLen, nBytes) {
-	  var e, m,
-	      eLen = nBytes * 8 - mLen - 1,
-	      eMax = (1 << eLen) - 1,
-	      eBias = eMax >> 1,
-	      nBits = -7,
-	      i = isLE ? (nBytes - 1) : 0,
-	      d = isLE ? -1 : 1,
-	      s = buffer[offset + i];
-
-	  i += d;
-
-	  e = s & ((1 << (-nBits)) - 1);
-	  s >>= (-nBits);
-	  nBits += eLen;
-	  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8);
-
-	  m = e & ((1 << (-nBits)) - 1);
-	  e >>= (-nBits);
-	  nBits += mLen;
-	  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8);
-
-	  if (e === 0) {
-	    e = 1 - eBias;
-	  } else if (e === eMax) {
-	    return m ? NaN : ((s ? -1 : 1) * Infinity);
-	  } else {
-	    m = m + Math.pow(2, mLen);
-	    e = e - eBias;
-	  }
-	  return (s ? -1 : 1) * m * Math.pow(2, e - mLen);
-	};
-
-	exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
-	  var e, m, c,
-	      eLen = nBytes * 8 - mLen - 1,
-	      eMax = (1 << eLen) - 1,
-	      eBias = eMax >> 1,
-	      rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0),
-	      i = isLE ? 0 : (nBytes - 1),
-	      d = isLE ? 1 : -1,
-	      s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0;
-
-	  value = Math.abs(value);
-
-	  if (isNaN(value) || value === Infinity) {
-	    m = isNaN(value) ? 1 : 0;
-	    e = eMax;
-	  } else {
-	    e = Math.floor(Math.log(value) / Math.LN2);
-	    if (value * (c = Math.pow(2, -e)) < 1) {
-	      e--;
-	      c *= 2;
-	    }
-	    if (e + eBias >= 1) {
-	      value += rt / c;
-	    } else {
-	      value += rt * Math.pow(2, 1 - eBias);
-	    }
-	    if (value * c >= 2) {
-	      e++;
-	      c /= 2;
-	    }
-
-	    if (e + eBias >= eMax) {
-	      m = 0;
-	      e = eMax;
-	    } else if (e + eBias >= 1) {
-	      m = (value * c - 1) * Math.pow(2, mLen);
-	      e = e + eBias;
-	    } else {
-	      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen);
-	      e = 0;
-	    }
-	  }
-
-	  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8);
-
-	  e = (e << mLen) | m;
-	  eLen += mLen;
-	  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8);
-
-	  buffer[offset + i - d] |= s * 128;
-	};
-
-
-/***/ },
-/* 33 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	/**
-	 * isArray
-	 */
-
-	var isArray = Array.isArray;
-
-	/**
-	 * toString
-	 */
-
-	var str = Object.prototype.toString;
-
-	/**
-	 * Whether or not the given `val`
-	 * is an array.
-	 *
-	 * example:
-	 *
-	 *        isArray([]);
-	 *        // > true
-	 *        isArray(arguments);
-	 *        // > false
-	 *        isArray('');
-	 *        // > false
-	 *
-	 * @param {mixed} val
-	 * @return {bool}
-	 */
-
-	module.exports = isArray || function (val) {
-	  return !! val && '[object Array]' == str.call(val);
-	};
-
-
-/***/ },
-/* 34 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-
-	;(function (exports) {
-		'use strict';
-
-	  var Arr = (typeof Uint8Array !== 'undefined')
-	    ? Uint8Array
-	    : Array
-
-		var PLUS   = '+'.charCodeAt(0)
-		var SLASH  = '/'.charCodeAt(0)
-		var NUMBER = '0'.charCodeAt(0)
-		var LOWER  = 'a'.charCodeAt(0)
-		var UPPER  = 'A'.charCodeAt(0)
-		var PLUS_URL_SAFE = '-'.charCodeAt(0)
-		var SLASH_URL_SAFE = '_'.charCodeAt(0)
-
-		function decode (elt) {
-			var code = elt.charCodeAt(0)
-			if (code === PLUS ||
-			    code === PLUS_URL_SAFE)
-				return 62 // '+'
-			if (code === SLASH ||
-			    code === SLASH_URL_SAFE)
-				return 63 // '/'
-			if (code < NUMBER)
-				return -1 //no match
-			if (code < NUMBER + 10)
-				return code - NUMBER + 26 + 26
-			if (code < UPPER + 26)
-				return code - UPPER
-			if (code < LOWER + 26)
-				return code - LOWER + 26
-		}
-
-		function b64ToByteArray (b64) {
-			var i, j, l, tmp, placeHolders, arr
-
-			if (b64.length % 4 > 0) {
-				throw new Error('Invalid string. Length must be a multiple of 4')
-			}
-
-			// the number of equal signs (place holders)
-			// if there are two placeholders, than the two characters before it
-			// represent one byte
-			// if there is only one, then the three characters before it represent 2 bytes
-			// this is just a cheap hack to not do indexOf twice
-			var len = b64.length
-			placeHolders = '=' === b64.charAt(len - 2) ? 2 : '=' === b64.charAt(len - 1) ? 1 : 0
-
-			// base64 is 4/3 + up to two characters of the original data
-			arr = new Arr(b64.length * 3 / 4 - placeHolders)
-
-			// if there are placeholders, only get up to the last complete 4 chars
-			l = placeHolders > 0 ? b64.length - 4 : b64.length
-
-			var L = 0
-
-			function push (v) {
-				arr[L++] = v
-			}
-
-			for (i = 0, j = 0; i < l; i += 4, j += 3) {
-				tmp = (decode(b64.charAt(i)) << 18) | (decode(b64.charAt(i + 1)) << 12) | (decode(b64.charAt(i + 2)) << 6) | decode(b64.charAt(i + 3))
-				push((tmp & 0xFF0000) >> 16)
-				push((tmp & 0xFF00) >> 8)
-				push(tmp & 0xFF)
-			}
-
-			if (placeHolders === 2) {
-				tmp = (decode(b64.charAt(i)) << 2) | (decode(b64.charAt(i + 1)) >> 4)
-				push(tmp & 0xFF)
-			} else if (placeHolders === 1) {
-				tmp = (decode(b64.charAt(i)) << 10) | (decode(b64.charAt(i + 1)) << 4) | (decode(b64.charAt(i + 2)) >> 2)
-				push((tmp >> 8) & 0xFF)
-				push(tmp & 0xFF)
-			}
-
-			return arr
-		}
-
-		function uint8ToBase64 (uint8) {
-			var i,
-				extraBytes = uint8.length % 3, // if we have 1 byte left, pad 2 bytes
-				output = "",
-				temp, length
-
-			function encode (num) {
-				return lookup.charAt(num)
-			}
-
-			function tripletToBase64 (num) {
-				return encode(num >> 18 & 0x3F) + encode(num >> 12 & 0x3F) + encode(num >> 6 & 0x3F) + encode(num & 0x3F)
-			}
-
-			// go through the array every three bytes, we'll deal with trailing stuff later
-			for (i = 0, length = uint8.length - extraBytes; i < length; i += 3) {
-				temp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
-				output += tripletToBase64(temp)
-			}
-
-			// pad the end with zeros, but make sure to not forget the extra bytes
-			switch (extraBytes) {
-				case 1:
-					temp = uint8[uint8.length - 1]
-					output += encode(temp >> 2)
-					output += encode((temp << 4) & 0x3F)
-					output += '=='
-					break
-				case 2:
-					temp = (uint8[uint8.length - 2] << 8) + (uint8[uint8.length - 1])
-					output += encode(temp >> 10)
-					output += encode((temp >> 4) & 0x3F)
-					output += encode((temp << 2) & 0x3F)
-					output += '='
-					break
-			}
-
-			return output
-		}
-
-		exports.toByteArray = b64ToByteArray
-		exports.fromByteArray = uint8ToBase64
-	}(false ? (this.base64js = {}) : exports))
-
-
-/***/ },
-/* 35 */
-/***/ function(module, exports, __webpack_require__) {
-
-	if (typeof Object.create === 'function') {
-	  // implementation from standard node.js 'util' module
-	  module.exports = function inherits(ctor, superCtor) {
-	    ctor.super_ = superCtor
-	    ctor.prototype = Object.create(superCtor.prototype, {
-	      constructor: {
-	        value: ctor,
-	        enumerable: false,
-	        writable: true,
-	        configurable: true
-	      }
-	    });
-	  };
-	} else {
-	  // old school shim for old browsers
-	  module.exports = function inherits(ctor, superCtor) {
-	    ctor.super_ = superCtor
-	    var TempCtor = function () {}
-	    TempCtor.prototype = superCtor.prototype
-	    ctor.prototype = new TempCtor()
-	    ctor.prototype.constructor = ctor
-	  }
-	}
-
-
-/***/ },
-/* 36 */
-/***/ function(module, exports, __webpack_require__) {
-
 	"use strict";
 
-	var Shim = __webpack_require__(38);
-	var List = __webpack_require__(39);
-	var FastSet = __webpack_require__(40);
-	var GenericCollection = __webpack_require__(41);
-	var GenericSet = __webpack_require__(42);
-	var PropertyChanges = __webpack_require__(43);
-	var RangeChanges = __webpack_require__(44);
+	var Shim = __webpack_require__(37);
+	var List = __webpack_require__(38);
+	var FastSet = __webpack_require__(39);
+	var GenericCollection = __webpack_require__(40);
+	var GenericSet = __webpack_require__(41);
+	var PropertyChanges = __webpack_require__(42);
+	var RangeChanges = __webpack_require__(43);
 
 	module.exports = Set;
 
@@ -21334,7 +21046,266 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 37 */
+/* 33 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports.read = function(buffer, offset, isLE, mLen, nBytes) {
+	  var e, m,
+	      eLen = nBytes * 8 - mLen - 1,
+	      eMax = (1 << eLen) - 1,
+	      eBias = eMax >> 1,
+	      nBits = -7,
+	      i = isLE ? (nBytes - 1) : 0,
+	      d = isLE ? -1 : 1,
+	      s = buffer[offset + i];
+
+	  i += d;
+
+	  e = s & ((1 << (-nBits)) - 1);
+	  s >>= (-nBits);
+	  nBits += eLen;
+	  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8);
+
+	  m = e & ((1 << (-nBits)) - 1);
+	  e >>= (-nBits);
+	  nBits += mLen;
+	  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8);
+
+	  if (e === 0) {
+	    e = 1 - eBias;
+	  } else if (e === eMax) {
+	    return m ? NaN : ((s ? -1 : 1) * Infinity);
+	  } else {
+	    m = m + Math.pow(2, mLen);
+	    e = e - eBias;
+	  }
+	  return (s ? -1 : 1) * m * Math.pow(2, e - mLen);
+	};
+
+	exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
+	  var e, m, c,
+	      eLen = nBytes * 8 - mLen - 1,
+	      eMax = (1 << eLen) - 1,
+	      eBias = eMax >> 1,
+	      rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0),
+	      i = isLE ? 0 : (nBytes - 1),
+	      d = isLE ? 1 : -1,
+	      s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0;
+
+	  value = Math.abs(value);
+
+	  if (isNaN(value) || value === Infinity) {
+	    m = isNaN(value) ? 1 : 0;
+	    e = eMax;
+	  } else {
+	    e = Math.floor(Math.log(value) / Math.LN2);
+	    if (value * (c = Math.pow(2, -e)) < 1) {
+	      e--;
+	      c *= 2;
+	    }
+	    if (e + eBias >= 1) {
+	      value += rt / c;
+	    } else {
+	      value += rt * Math.pow(2, 1 - eBias);
+	    }
+	    if (value * c >= 2) {
+	      e++;
+	      c /= 2;
+	    }
+
+	    if (e + eBias >= eMax) {
+	      m = 0;
+	      e = eMax;
+	    } else if (e + eBias >= 1) {
+	      m = (value * c - 1) * Math.pow(2, mLen);
+	      e = e + eBias;
+	    } else {
+	      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen);
+	      e = 0;
+	    }
+	  }
+
+	  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8);
+
+	  e = (e << mLen) | m;
+	  eLen += mLen;
+	  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8);
+
+	  buffer[offset + i - d] |= s * 128;
+	};
+
+
+/***/ },
+/* 34 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/**
+	 * isArray
+	 */
+
+	var isArray = Array.isArray;
+
+	/**
+	 * toString
+	 */
+
+	var str = Object.prototype.toString;
+
+	/**
+	 * Whether or not the given `val`
+	 * is an array.
+	 *
+	 * example:
+	 *
+	 *        isArray([]);
+	 *        // > true
+	 *        isArray(arguments);
+	 *        // > false
+	 *        isArray('');
+	 *        // > false
+	 *
+	 * @param {mixed} val
+	 * @return {bool}
+	 */
+
+	module.exports = isArray || function (val) {
+	  return !! val && '[object Array]' == str.call(val);
+	};
+
+
+/***/ },
+/* 35 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+	;(function (exports) {
+		'use strict';
+
+	  var Arr = (typeof Uint8Array !== 'undefined')
+	    ? Uint8Array
+	    : Array
+
+		var PLUS   = '+'.charCodeAt(0)
+		var SLASH  = '/'.charCodeAt(0)
+		var NUMBER = '0'.charCodeAt(0)
+		var LOWER  = 'a'.charCodeAt(0)
+		var UPPER  = 'A'.charCodeAt(0)
+		var PLUS_URL_SAFE = '-'.charCodeAt(0)
+		var SLASH_URL_SAFE = '_'.charCodeAt(0)
+
+		function decode (elt) {
+			var code = elt.charCodeAt(0)
+			if (code === PLUS ||
+			    code === PLUS_URL_SAFE)
+				return 62 // '+'
+			if (code === SLASH ||
+			    code === SLASH_URL_SAFE)
+				return 63 // '/'
+			if (code < NUMBER)
+				return -1 //no match
+			if (code < NUMBER + 10)
+				return code - NUMBER + 26 + 26
+			if (code < UPPER + 26)
+				return code - UPPER
+			if (code < LOWER + 26)
+				return code - LOWER + 26
+		}
+
+		function b64ToByteArray (b64) {
+			var i, j, l, tmp, placeHolders, arr
+
+			if (b64.length % 4 > 0) {
+				throw new Error('Invalid string. Length must be a multiple of 4')
+			}
+
+			// the number of equal signs (place holders)
+			// if there are two placeholders, than the two characters before it
+			// represent one byte
+			// if there is only one, then the three characters before it represent 2 bytes
+			// this is just a cheap hack to not do indexOf twice
+			var len = b64.length
+			placeHolders = '=' === b64.charAt(len - 2) ? 2 : '=' === b64.charAt(len - 1) ? 1 : 0
+
+			// base64 is 4/3 + up to two characters of the original data
+			arr = new Arr(b64.length * 3 / 4 - placeHolders)
+
+			// if there are placeholders, only get up to the last complete 4 chars
+			l = placeHolders > 0 ? b64.length - 4 : b64.length
+
+			var L = 0
+
+			function push (v) {
+				arr[L++] = v
+			}
+
+			for (i = 0, j = 0; i < l; i += 4, j += 3) {
+				tmp = (decode(b64.charAt(i)) << 18) | (decode(b64.charAt(i + 1)) << 12) | (decode(b64.charAt(i + 2)) << 6) | decode(b64.charAt(i + 3))
+				push((tmp & 0xFF0000) >> 16)
+				push((tmp & 0xFF00) >> 8)
+				push(tmp & 0xFF)
+			}
+
+			if (placeHolders === 2) {
+				tmp = (decode(b64.charAt(i)) << 2) | (decode(b64.charAt(i + 1)) >> 4)
+				push(tmp & 0xFF)
+			} else if (placeHolders === 1) {
+				tmp = (decode(b64.charAt(i)) << 10) | (decode(b64.charAt(i + 1)) << 4) | (decode(b64.charAt(i + 2)) >> 2)
+				push((tmp >> 8) & 0xFF)
+				push(tmp & 0xFF)
+			}
+
+			return arr
+		}
+
+		function uint8ToBase64 (uint8) {
+			var i,
+				extraBytes = uint8.length % 3, // if we have 1 byte left, pad 2 bytes
+				output = "",
+				temp, length
+
+			function encode (num) {
+				return lookup.charAt(num)
+			}
+
+			function tripletToBase64 (num) {
+				return encode(num >> 18 & 0x3F) + encode(num >> 12 & 0x3F) + encode(num >> 6 & 0x3F) + encode(num & 0x3F)
+			}
+
+			// go through the array every three bytes, we'll deal with trailing stuff later
+			for (i = 0, length = uint8.length - extraBytes; i < length; i += 3) {
+				temp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
+				output += tripletToBase64(temp)
+			}
+
+			// pad the end with zeros, but make sure to not forget the extra bytes
+			switch (extraBytes) {
+				case 1:
+					temp = uint8[uint8.length - 1]
+					output += encode(temp >> 2)
+					output += encode((temp << 4) & 0x3F)
+					output += '=='
+					break
+				case 2:
+					temp = (uint8[uint8.length - 2] << 8) + (uint8[uint8.length - 1])
+					output += encode(temp >> 10)
+					output += encode((temp >> 4) & 0x3F)
+					output += encode((temp << 2) & 0x3F)
+					output += '='
+					break
+			}
+
+			return output
+		}
+
+		exports.toByteArray = b64ToByteArray
+		exports.fromByteArray = uint8ToBase64
+	}(false ? (this.base64js = {}) : exports))
+
+
+/***/ },
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -21562,33 +21533,33 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(7)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
 
 /***/ },
-/* 38 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
-	var Array = __webpack_require__(46);
-	var Object = __webpack_require__(47);
-	var Function = __webpack_require__(48);
-	var RegExp = __webpack_require__(49);
+	var Array = __webpack_require__(45);
+	var Object = __webpack_require__(46);
+	var Function = __webpack_require__(47);
+	var RegExp = __webpack_require__(48);
 
 
 
 /***/ },
-/* 39 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	module.exports = List;
 
-	var Shim = __webpack_require__(38);
-	var GenericCollection = __webpack_require__(41);
-	var GenericOrder = __webpack_require__(45);
-	var PropertyChanges = __webpack_require__(43);
-	var RangeChanges = __webpack_require__(44);
+	var Shim = __webpack_require__(37);
+	var GenericCollection = __webpack_require__(40);
+	var GenericOrder = __webpack_require__(49);
+	var PropertyChanges = __webpack_require__(42);
+	var RangeChanges = __webpack_require__(43);
 
 	function List(values, equals, getDefault) {
 	    if (!(this instanceof List)) {
@@ -22018,18 +21989,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 40 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var Shim = __webpack_require__(38);
+	var Shim = __webpack_require__(37);
 	var Dict = __webpack_require__(50);
-	var List = __webpack_require__(39);
-	var GenericCollection = __webpack_require__(41);
-	var GenericSet = __webpack_require__(42);
+	var List = __webpack_require__(38);
+	var GenericCollection = __webpack_require__(40);
+	var GenericSet = __webpack_require__(41);
 	var TreeLog = __webpack_require__(51);
-	var PropertyChanges = __webpack_require__(43);
+	var PropertyChanges = __webpack_require__(42);
 
 	var object_has = Object.prototype.hasOwnProperty;
 
@@ -22207,7 +22178,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 41 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -22469,12 +22440,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return this.iterate.apply(this, arguments);
 	};
 
-	__webpack_require__(46);
+	__webpack_require__(45);
 
 
 
 /***/ },
-/* 42 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -22539,7 +22510,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 43 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -22556,7 +22527,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    necessary for any collection with observable content.
 	*/
 
-	__webpack_require__(38);
+	__webpack_require__(37);
 	var WeakMap = __webpack_require__(53);
 
 	var object_owns = Object.prototype.hasOwnProperty;
@@ -22993,7 +22964,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 44 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -23138,68 +23109,36 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 45 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
-	
-	var Object = __webpack_require__(47);
-
-	module.exports = GenericOrder;
-	function GenericOrder() {
-	    throw new Error("Can't construct. GenericOrder is a mixin.");
+	if (typeof Object.create === 'function') {
+	  // implementation from standard node.js 'util' module
+	  module.exports = function inherits(ctor, superCtor) {
+	    ctor.super_ = superCtor
+	    ctor.prototype = Object.create(superCtor.prototype, {
+	      constructor: {
+	        value: ctor,
+	        enumerable: false,
+	        writable: true,
+	        configurable: true
+	      }
+	    });
+	  };
+	} else {
+	  // old school shim for old browsers
+	  module.exports = function inherits(ctor, superCtor) {
+	    ctor.super_ = superCtor
+	    var TempCtor = function () {}
+	    TempCtor.prototype = superCtor.prototype
+	    ctor.prototype = new TempCtor()
+	    ctor.prototype.constructor = ctor
+	  }
 	}
-
-	GenericOrder.prototype.equals = function (that, equals) {
-	    equals = equals || this.contentEquals || Object.equals;
-
-	    if (this === that) {
-	        return true;
-	    }
-	    if (!that) {
-	        return false;
-	    }
-
-	    var self = this;
-	    return (
-	        this.length === that.length &&
-	        this.zip(that).every(function (pair) {
-	            return equals(pair[0], pair[1]);
-	        })
-	    );
-	};
-
-	GenericOrder.prototype.compare = function (that, compare) {
-	    compare = compare || this.contentCompare || Object.compare;
-
-	    if (this === that) {
-	        return 0;
-	    }
-	    if (!that) {
-	        return 1;
-	    }
-
-	    var length = Math.min(this.length, that.length);
-	    var comparison = this.zip(that).reduce(function (comparison, pair, index) {
-	        if (comparison === 0) {
-	            if (index >= length) {
-	                return comparison;
-	            } else {
-	                return compare(pair[0], pair[1]);
-	            }
-	        } else {
-	            return comparison;
-	        }
-	    }, 0);
-	    if (comparison === 0) {
-	        return this.length - that.length;
-	    }
-	    return comparison;
-	};
-
 
 
 /***/ },
-/* 46 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -23211,9 +23150,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    https://github.com/motorola-mobility/montage/blob/master/LICENSE.md
 	*/
 
-	var Function = __webpack_require__(48);
-	var GenericCollection = __webpack_require__(41);
-	var GenericOrder = __webpack_require__(45);
+	var Function = __webpack_require__(47);
+	var GenericCollection = __webpack_require__(40);
+	var GenericOrder = __webpack_require__(49);
 	var WeakMap = __webpack_require__(53);
 
 	module.exports = Array;
@@ -23479,7 +23418,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 47 */
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -24023,7 +23962,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 48 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -24088,7 +24027,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 49 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -24108,15 +24047,76 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
+/* 49 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	var Object = __webpack_require__(46);
+
+	module.exports = GenericOrder;
+	function GenericOrder() {
+	    throw new Error("Can't construct. GenericOrder is a mixin.");
+	}
+
+	GenericOrder.prototype.equals = function (that, equals) {
+	    equals = equals || this.contentEquals || Object.equals;
+
+	    if (this === that) {
+	        return true;
+	    }
+	    if (!that) {
+	        return false;
+	    }
+
+	    var self = this;
+	    return (
+	        this.length === that.length &&
+	        this.zip(that).every(function (pair) {
+	            return equals(pair[0], pair[1]);
+	        })
+	    );
+	};
+
+	GenericOrder.prototype.compare = function (that, compare) {
+	    compare = compare || this.contentCompare || Object.compare;
+
+	    if (this === that) {
+	        return 0;
+	    }
+	    if (!that) {
+	        return 1;
+	    }
+
+	    var length = Math.min(this.length, that.length);
+	    var comparison = this.zip(that).reduce(function (comparison, pair, index) {
+	        if (comparison === 0) {
+	            if (index >= length) {
+	                return comparison;
+	            } else {
+	                return compare(pair[0], pair[1]);
+	            }
+	        } else {
+	            return comparison;
+	        }
+	    }, 0);
+	    if (comparison === 0) {
+	        return this.length - that.length;
+	    }
+	    return comparison;
+	};
+
+
+
+/***/ },
 /* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var Shim = __webpack_require__(38);
-	var GenericCollection = __webpack_require__(41);
+	var Shim = __webpack_require__(37);
+	var GenericCollection = __webpack_require__(40);
 	var GenericMap = __webpack_require__(52);
-	var PropertyChanges = __webpack_require__(43);
+	var PropertyChanges = __webpack_require__(42);
 
 	// Burgled from https://github.com/domenic/dict
 
@@ -24307,9 +24307,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	"use strict";
 
-	var Object = __webpack_require__(47);
+	var Object = __webpack_require__(46);
 	var MapChanges = __webpack_require__(54);
-	var PropertyChanges = __webpack_require__(43);
+	var PropertyChanges = __webpack_require__(42);
 
 	module.exports = GenericMap;
 	function GenericMap() {
@@ -25096,7 +25096,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	"use strict";
 
 	var WeakMap = __webpack_require__(53);
-	var List = __webpack_require__(39);
+	var List = __webpack_require__(38);
 
 	module.exports = MapChanges;
 	function MapChanges() {

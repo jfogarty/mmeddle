@@ -5,10 +5,13 @@
   "author": "John Fogarty <johnhenryfogarty@gmail.com> (https://github.com/jfogarty)",
   "contributors": [],
   "homepage": "http://jfogarty.org/mmeddle",
-  "license": "Apache",
+  "license": "Apache License",
   "repository": {
     "type": "git",
     "url": "https://github.com/jfogarty/mmeddle.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jfogarty/mmeddle/issues"
   },
   "keywords": [
     "math",
@@ -21,12 +24,16 @@
   ],
   "dependencies": {
     "commander": "latest",
+    "express": "latest",
     "fast-sha256": "latest",
     "lodash": "latest",
     "mathjs": "latest",
     "q": "latest",
     "q-io": "latest",
-    "sf": "latest"
+    "request": "latest",
+    "serve-static": "latest",
+    "sf": "latest",
+    "ssh2": "latest"
   },
   "devDependencies": {
     "async": "latest",
@@ -56,10 +63,10 @@
     "uglify-js": "latest",
     "webpack": "latest"
   },
-  "main": "./index",
+  "main": "./server.js",
   "scripts": {
     "docs": "jsdoc ./docs/DEVELOPERS.md -r ./src -d ./api --verbose -t ./node_modules/ink-docstrap/template -c .jsdoc.conf.json",
-    "doc2": "jsdoc -r src -d docs/src --verbose -c .jsdoc.conf.json",    
+    "doc2": "jsdoc -r src -d docs/src --verbose -c .jsdoc.conf.json",
     "coverage": "istanbul cover -x **/external/** ./node_modules/mocha/bin/_mocha -- -u bdd -r should --recursive",
     "watch": "gulp watch",
     "test2": "mocha -u bdd -r should --recursive -R list",
@@ -67,12 +74,13 @@
     "testm": "gulp testm",
     "lint": "gulp lint",
     "test": "gulp",
-    "build": "gulp"
+    "build": "gulp",
+    "start": "node server.js"
   },
   "bin": {
     "mmeddle": "./bin/cli.js"
   },
   "engines": {
-    "node": ">= 0.1"
+    "node": "0.12.x"
   }
 }

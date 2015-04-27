@@ -31,17 +31,16 @@ For the next few months this project is closed to external developers.
 * Lazy symbolic evaluation
 * Algebraic transforms and substitutions for expression and equation evolution
 * Dimensional analysis and validation across all levels of each expression
-* 100% undo/redo for every document, section, expression change
-* Workspace composition incorporation other live math documents
+* Workspace composition that incorporates other live math documents
 * Integer, Real, Complex, Vector, Matrix, Tensor and Logic type system plugins
-* Operator definitions include rules of repacement and inference (assoc, comm, dist, elmination, etc.)
+* Operators with rules of repacement and inference (assoc, comm, dist, elmination, etc.)
 * Plugins for SI and US Customary unit systems
 * Implicit unit conversions to common base dimensions (including affine transforms)
 * LaTex and mmeddle format symbolic expression entry
 * MathML and LaTex math format outputs for document ready math
 * Constants expression evalautions retain symbolic products
-* Numeric expression evaluations retain rational forms (num/den)
-
+* Numeric evaluations retain rational forms (symbols * numerator/denominator)
+* 100% undo/redo for every document, section, expression change
 
 [Contributors](CONTRIBUTING.md)
 
