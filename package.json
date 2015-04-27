@@ -63,7 +63,7 @@
     "uglify-js": "latest",
     "webpack": "latest"
   },
-  "main": "./server.js",
+  "main": "./index.js",
   "scripts": {
     "docs": "jsdoc ./docs/DEVELOPERS.md -r ./src -d ./api --verbose -t ./node_modules/ink-docstrap/template -c .jsdoc.conf.json",
     "doc2": "jsdoc -r src -d docs/src --verbose -c .jsdoc.conf.json",
