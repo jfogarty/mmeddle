@@ -240,5 +240,26 @@ editor on Windows that doesn't put them on by default (I use Notepad++).
 I use **gulp** and put some effort into making sure that any scripts are equivalent
 on Windows and *nix versions. The Travis-CI integration service helps with this.
 
+## Possibly Helpful Notes
 
-##.
+### Relax Firefox localhost file access
+
+In Firefox go to the fake URL **about:config**.  Promise to be careful.
+Change **security.fileuri.strict_origin_policy** to false.
+
+### Relax Chrome localhost file access
+
+From the command line (in the chrome installation directory):
+
+    chrome --allow-file-access-from-files
+    
+### Windows Node 0.12.0 and socket.io incompatibility
+
+This annoying problem currently (Apr 2015) does not allow the latest
+socket.io to install without a NanSymbol deprecated error during the
+windows compilation. Let this finish then:
+
+    cd node_modules\socket.io\node_modules\engine.io\node_modules
+    npm install ws@latest
+    
+This is ugly but works fine and lets Windows development continue.

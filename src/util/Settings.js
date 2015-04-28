@@ -32,6 +32,21 @@ module.exports = function registerSettings(mm) {
       self._attributes = {};
     }
   }());
+  
+  /**
+   * @summary **Allow a setting with the specified attributes**
+   * @description
+   * The `_attributes` section of the settings contains the list
+   * of named entries that are allowed in this Settings.
+   * @param {Object} attributes rity)} handler 
+   *    the destination function
+   * @returns {Logger} the logger for chaining
+   */
+  Settings.prototype.allow = function allow(attributes)
+  { 
+    var self = this;
+    return self;
+  }  
 
   return Settings;
 }

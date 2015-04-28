@@ -1,6 +1,6 @@
 'use strict';
 if (typeof exports === 'object' && typeof module === 'object') {
-  var mmeddle = require('../src/mmeddle'); // In browser support
+  var mmeddle = require('./mmeddle'); // In browser support
 }
 
 var mm = mmeddle;

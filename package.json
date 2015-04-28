@@ -33,6 +33,7 @@
     "request": "latest",
     "serve-static": "latest",
     "sf": "latest",
+    "socket.io": "0.9.17",
     "ssh2": "latest"
   },
   "devDependencies": {
@@ -63,7 +64,6 @@
     "uglify-js": "latest",
     "webpack": "latest"
   },
-  "main": "./index.js",
   "scripts": {
     "docs": "jsdoc ./docs/DEVELOPERS.md -r ./src -d ./api --verbose -t ./node_modules/ink-docstrap/template -c .jsdoc.conf.json",
     "doc2": "jsdoc -r src -d docs/src --verbose -c .jsdoc.conf.json",

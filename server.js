@@ -13,6 +13,7 @@ var MMeddleServer = function () {
   var express = require('express');
   var serveStatic = require('serve-static');
   var fs = require('fs');
+  var mm = require('./src/mmeddle');
 
   var self = this;
 
@@ -21,8 +22,11 @@ var MMeddleServer = function () {
    */
   self.setupVariables = function () {
     //  Set the environment variables we need.
+    var defaultPort = 8080;
+    //defaultPort = 80;
+    
     self.ipaddress = process.env.OPENSHIFT_NODEJS_IP;
-    self.port      = process.env.OPENSHIFT_NODEJS_PORT || 8080;
+    self.port      = process.env.OPENSHIFT_NODEJS_PORT || defaultPort;
 
     if (typeof self.ipaddress === "undefined") {
       //  Log errors on OpenShift but continue w/ 127.0.0.1 - this
@@ -102,9 +106,9 @@ var MMeddleServer = function () {
    */
   self.initializeServer = function () {
     self.createRoutes();
-    // self.app = express.createServer(); // deprecated.
+    // self.app = express.createServer(); // deprecated (pre 4.0)
     self.app = express();
-
+  
     //  Add handlers for the app (from the routes).
     for (var r in self.routes) {
       self.app.get(r, self.routes[r]);
@@ -121,7 +125,7 @@ var MMeddleServer = function () {
         // Custom Cache-Control for HTML files
         res.setHeader('Cache-Control', 'public, max-age=0')
       }
-    }    
+    }
   };
 
   self.initialize = function () {
@@ -134,13 +138,47 @@ var MMeddleServer = function () {
    *  Start the server
    */
   self.start = function () {
-    //  Start the app on the specific interface (and port).
-    self.app.listen(self.port, self.ipaddress, function () {
+    // Socket.io setup.
+    //self.server = require('http').Server(self.app);
+    
+    self.server = self.app.listen(self.port, self.ipaddress, function () {
       console.log('%s: mMeddle server started on %s:%d ...',
-        Date(Date.now()), self.ipaddress, self.port);
+      Date(Date.now()), self.ipaddress, self.port);
     });
+    
+    //self.io = require('socket.io')(self.server); // new form 1.3.5
+    self.io = require('socket.io').listen(self.server); // old form 0.9.17
+    self.io.set('origins', '*:*');
+    console.log('- Socket.io initialized.');
   };
+  
+  /**
+   *  Start accepting sockets.io from clients.
+   */
+  self.acceptSockets = function () {
+    //0 - error, 1 - warn, 2 - info, 3 - debug  
+    self.io.set('log level', 2);
+    self.io.on('connection', function (socket) {
+      var id = socket.id;
+      console.log('-----whoo hoo! Connected to ', id);
+      socket.emit('news', { 
+          hello: 'world - mMeddle with this!',
+          from: mm.envText,
+          at: Date(Date.now())
+        });
+      
+      console.log('-----and now????');
+      socket.on('my other event', function (data) {
+        console.log(data);
+        console.log('-----Whoa baby!');
+      });
 
+      socket.on('request-env', function (data) {
+        socket.emit('env', process.env);
+        console.log('-----Posted environment');
+      });
+    });
+  }
 };
 
 /**
@@ -152,3 +190,4 @@ console.log('-   dirname: [%s]', __dirname);
 
 mmServer.initialize();
 mmServer.start();
+mmServer.acceptSockets();

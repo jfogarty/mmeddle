@@ -1,7 +1,7 @@
 'use strict';
 if (typeof exports === 'object' && typeof module === 'object') {
   //var Should = require('should');
-  var mmeddle = require('../..');
+  var mmeddle = require('../mmeddle');
 }
 
 (function (mm) {
