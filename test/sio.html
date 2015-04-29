@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>mMeddle - Socket.io Scratch Page</title>
+  <style>
+    #topstatusfixed {
+      position: fixed;
+      top: -1em;
+      right: 5px;
+      color: red;
+    }
+    
+    #botstatusfixed {
+      position: fixed;
+      bottom: -1em;
+      right: 5px;
+      color: red;
+    }
+
+    .scrollabletextbox {
+      height:100px;
+      width:800px;
+      font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
+      font-size: 90%;
+      overflow:scroll;
+    }
+  </style>
+</head>
+<body>
+  <p id="topstatusfixed">Top Current mMeddle Status</p>
+  <p id="botstatusfixed">Bottom mMeddle Status</p>
+  <!-- WebPacked library(s) to test against -->
+  <h2>Testing Basic Socket.io</h2>
+
+  <pre>
+    <div id='consolediv'></div>
+  </pre> 
+  <button id='connectLocal' 
+      onclick='connectSio("local")'>Connect Local</button>
+  <button id='connectRemote' 
+      onclick='connectSio("remote")'>Connect OpenShift</button>
+  <button id='connectRemoteSSL' 
+      onclick='connectSio("remote-ssl")'>Connect OpenShift-SSL</button>
+  <br>
+  <button id='fetchEnv' 
+      onclick='getEnv()'>Get Env Vars</button>
+  <button id='consoleClear' 
+      onclick='consoleClear()'>Clear</button>
+  
+  <br />
+  <button onclick='socket_connect()'>*Connect</button>
+  <button onclick='socket_reconnect()'>*Reconnect</button>
+  <button onclick='socket_disconnect()'>*Disconnect</button>
+
+  <br />
+  <p>Debugging log</p>
+  <textarea class="scrollabletextbox" id="browserlog" name="logs"></textarea>
+
+  <script src="../dist/mmeddle.js"></script>
+<!--  
+  <script src="http://localhost:8080/lib/socket.io-0.9.17.js"></script>
+-->  
+  <script src="../lib/socket.io-0.9.17.js"></script>
+  <script>
+    var mm = mmeddle;
+    mm.loggers.debugLogger.addDestination(browserLogHandler);
+    mm.loggers.errorLogger.addDestination(browserLogHandler);
+    var openShiftHost = 'mmeddle-jfogarty.rhcloud.com';
+    var localHost = '127.0.0.1';
+    
+    consoleOut('- mMeddle env: ' + mm.envText);    
+    consoleOut('- socket.io.protocol: ' + io.protocol);
+    
+    var socket;
+    var connectTo;
+    var host = window.location.hostname;
+    
+    var isLocal = host.indexOf(localHost) === 0;
+    var isOpenShift = host.indexOf(openShiftHost) === 0;
+    consoleOut('- Host: ' + host
+        + (isLocal?' [local]':'')
+        + (isOpenShift?' [openShift]':''));
+
+    var connected = false;
+    var consoleCleared = true;
+    var allowSSL = false;
+    enableButtons();
+
+    function enableButtons() {
+      document.getElementById('connectLocal').disabled = connected;
+      document.getElementById('connectRemote').disabled = connected;
+      document.getElementById('connectRemoteSSL').disabled = 
+        (!allowSSL) || connected;
+      document.getElementById('fetchEnv').disabled = (!connected);
+      document.getElementById('consoleClear').disabled = consoleCleared;
+    }
+
+    function connectSio(type) {
+      if (type === 'local') {
+        connectTo = 'http://' + localHost;
+      }
+      if (type === 'remote') {
+        connectTo = 'ws://WS-mmeddle-jfogarty.rhcloud.com/'; // alternate?
+        connectTo = 'ws://mmeddle-jfogarty.rhcloud.com:8000/';
+      }
+      if (type === 'remote-ssl') {
+        // This requires installation of a custom ssl certificate at OpenShift.
+        //You must be a 'Silver' user to use this.
+        connectTo = 'wss://mmeddle-jfogarty.rhcloud.com:8443/';
+      }
+
+      consoleOut('- Connecting to: [' + connectTo + ']');
+      socket = io.connect(connectTo);
+      socket.on('news', function (data) {
+        connected = true;
+        enableButtons();
+        consoleOut('-');
+        consoleOut('----- Recieved:');
+        consoleOut(mm.util.inspect(data));
+        socket.emit('my other event', {
+            my: 'data', 
+            from:  mm.envText,
+            at: Date(Date.now())
+        });
+
+        consoleOut('-------- Emitted my data.');
+      });
+
+      socket.on('env', function (data) {
+        consoleOut('-');
+        consoleOut('----- Remote environment:');
+        consoleOut(mm.util.inspect(data));
+        setFocus();
+      });
+
+      /* 1.0 + manager
+      mgr.on('connect_timeout', function () {
+        consoleOut('*** connect_timeout.');
+      });
+
+      mgr.on('reconnect', function (n) {
+        consoleOut('- reconnected! (' + n.toString() + ')');
+      });      
+
+      mgr.on('reconnect_attempt', function (n) {
+        consoleOut('- reconnect_attempt(' + n.toString() + ')');
+      });
+
+      mgr.on('ping', function (e) {
+        consoleOut('- ping');
+      });
+
+      mgr.on('pong', function (n) {
+        consoleOut('- pong(' + n.toString() + ')');
+      });      
+      
+      mgr.on('connect_error', function (e) {
+        consoleOut('*** connect_error:' + mm.util.inspect(e));
+      });
+
+      mgr.on('reconnect_error', function (e) {
+        consoleOut('*** reconnect_error:' + mm.util.inspect(e));
+      });
+      */
+    }
+
+    function socket_connect()
+    {
+      if (socket) {
+        consoleOut('- Socket connect: [' + connectTo + ']');
+        socket = io.connect(connectTo);
+      }
+    }
+
+    function socket_reconnect()
+    {
+      if (socket) {
+        consoleOut('- Socket reconnect: [' + connectTo + ']');
+        socket.socket.reconnect();
+      }
+    }
+
+    function socket_disconnect ()
+    {
+      if (socket) {
+        consoleOut('- Socket disconnect: [' + connectTo + ']');
+        if (socket) socket.disconnect();
+      }
+
+      connected = false;
+      enableButtons();
+    }
+
+    function getEnv() {
+      if (typeof socket === 'undefined') {
+        consoleOut('*** socket is not initialized');
+        return;
+      }
+      socket.emit('request-env', {
+        hey: 'give me some sugar baby',
+        at: Date(Date.now())
+      });
+      consoleOut('- env request sent');
+    }
+
+    function setFocus() {
+      document.getElementById('browserlog').focus();
+    }
+
+    function consoleOut(txt) {
+      if (consoleCleared) {
+        consoleCleared = false;
+        enableButtons();
+      }
+
+      //console.log(txt);
+      mm.log(txt);
+      var element = document.getElementById('consolediv');
+      var newContent = document.createTextNode(txt + '\n');
+      element.appendChild(newContent);
+    }
+
+    function consoleClear(txt) {
+      consoleCleared = true;
+      document.getElementById('consolediv').innerHTML = "";
+      enableButtons();
+      setFocus();
+    }
+
+    function browserLogHandler(message, logger, priority) {
+      var ptext = '';
+      var ptext = priority > 1 ? '(!)' : ptext;
+      var prefix = logger.origin() + ptext + ':';
+      var text = prefix + message;
+      debugOut(text);
+    }
+
+    function debugOut(txt) {
+      var element = document.getElementById('browserlog');
+      if (element) {
+        var newContent = document.createTextNode(txt + '\n');
+        element.appendChild(newContent);
+      }
+    }
+  </script>
+</body>
+</html>

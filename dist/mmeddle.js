@@ -5,7 +5,7 @@
  * mmeddle.js is a symbolic math workspace for JavaScript and Node.js.
  *
  * @version 0.1.3
- * @date    2015-04-27
+ * @date    2015-04-28
  *
  * @license
  * Copyright (C) 2015 John Fogarty <johnhenryfogarty@gmail.com> (https://github.com/jfogarty)
@@ -122,7 +122,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  mm.type = {};
 	  
-	  mm._ = __webpack_require__(5); // The underscore replacement utility library.
+	  mm._ = __webpack_require__(6); // The underscore replacement utility library.
 	  mm.Q = __webpack_require__(7); // Promises compatible with node and browsers.
 	  
 	  mm.inBrowser = inBrowser;
@@ -150,15 +150,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  //mm.format = require('sf');
 	  
 	  /* istanbul ignore next */
-	  mm.format = __webpack_require__(4);
+	  mm.format = __webpack_require__(2);
 	  
-	  __webpack_require__(2)(mm);
-	  __webpack_require__(6)(mm)
-	  __webpack_require__(3)(mm)
+	  __webpack_require__(3)(mm);
+	  __webpack_require__(4)(mm)
+	  __webpack_require__(5)(mm)
 	  
 	  /* istanbul ignore else */
 	  if (inNode) {
-	    mm.FS = __webpack_require__(15);
+	    mm.FS = __webpack_require__(9);
 	    // mmeddle.FS = require('q-io/fs-mock');
 	  }
 	  
@@ -174,50 +174,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	// export the default instance
 	module.exports = mMeddle;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(14), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), (function() { return this; }())))
 
 /***/ },
 /* 2 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	//
-	// Most utils register their dependency routines directly into the global
-	// environment object rather than returning an object themselves.  This
-	// seems to be a bit more flexible, but I'm not sure that I'm in love with
-	// the style. As always, I reserve the right to change my mind later.
-	//
-	module.exports = function(mm) {
-	  mm.util = __webpack_require__(18);
-	  mm.obj = {};
-	  mm.obj.SequencedObject = __webpack_require__(13)(mm);  
-
-	  __webpack_require__(8)(mm.util);
-	  mm.obj.Enum = __webpack_require__(9)();
-	  mm.Logger = __webpack_require__(10)(mm);
-	  
-	  mm.log = __webpack_require__(12)(mm);
-
-
-	  mm.obj.CoreObject = function CoreObject() {
-	    // core object prototype functions here.
-	  };
-
-	  mm.obj.SequencedObject = __webpack_require__(11)(mm);  
-	};
-
-
-/***/ },
-/* 3 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = function(mm) {
-	  mm.ws = {};
-	};
-
-
-/***/ },
-/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {'use strict';
@@ -637,7 +597,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 
 	  if (format == 'inspect') {
-	    return __webpack_require__(18).inspect(obj);
+	    return __webpack_require__(20).inspect(obj);
 	  }
 
 	  if (format == 'json') {
@@ -1046,10 +1006,64 @@ return /******/ (function(modules) { // webpackBootstrap
 	return sf;
 	}();
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(16).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
+
+/***/ },
+/* 3 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	//
+	// Most utils register their dependency routines directly into the global
+	// environment object rather than returning an object themselves.  This
+	// seems to be a bit more flexible, but I'm not sure that I'm in love with
+	// the style. As always, I reserve the right to change my mind later.
+	//
+	module.exports = function(mm) {
+	  mm.util = __webpack_require__(20);
+	  mm.obj = {};
+	  mm.obj.SequencedObject = __webpack_require__(10)(mm);  
+
+	  __webpack_require__(11)(mm.util);
+	  mm.obj.Enum = __webpack_require__(12)();
+	  mm.Logger = __webpack_require__(13)(mm);
+	  
+	  mm.log = __webpack_require__(14)(mm);
+
+
+	  mm.obj.CoreObject = function CoreObject() {
+	    // core object prototype functions here.
+	  };
+
+	  mm.obj.SequencedObject = __webpack_require__(15)(mm);  
+	};
+
+
+/***/ },
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Insert the Services Abstraction Layer dependencies.
+	module.exports = function(mm) {
+	  mm.storage = __webpack_require__(16)(mm);
+	  mm.users = __webpack_require__(17)(mm);
+	  mm.userStorage = __webpack_require__(18)(mm);
+
+
+	};
+
 
 /***/ },
 /* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = function(mm) {
+	  mm.ws = {};
+	};
+
+
+/***/ },
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, global) {/**
@@ -12856,21 +12870,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}.call(this));
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21)(module), (function() { return this; }())))
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// Insert the Services Abstraction Layer dependencies.
-	module.exports = function(mm) {
-	  mm.storage = __webpack_require__(17)(mm);
-	  mm.users = __webpack_require__(19)(mm);
-	  mm.userStorage = __webpack_require__(20)(mm);
-
-
-	};
-
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(26)(module), (function() { return this; }())))
 
 /***/ },
 /* 7 */
@@ -14863,10 +14863,494 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	});
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(14), __webpack_require__(27).setImmediate))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), __webpack_require__(27).setImmediate))
 
 /***/ },
 /* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// shim for using process in browser
+
+	var process = module.exports = {};
+	var queue = [];
+	var draining = false;
+
+	function drainQueue() {
+	    if (draining) {
+	        return;
+	    }
+	    draining = true;
+	    var currentQueue;
+	    var len = queue.length;
+	    while(len) {
+	        currentQueue = queue;
+	        queue = [];
+	        var i = -1;
+	        while (++i < len) {
+	            currentQueue[i]();
+	        }
+	        len = queue.length;
+	    }
+	    draining = false;
+	}
+	process.nextTick = function (fun) {
+	    queue.push(fun);
+	    if (!draining) {
+	        setTimeout(drainQueue, 0);
+	    }
+	};
+
+	process.title = 'browser';
+	process.browser = true;
+	process.env = {};
+	process.argv = [];
+	process.version = ''; // empty string to avoid regexp issues
+	process.versions = {};
+
+	function noop() {}
+
+	process.on = noop;
+	process.addListener = noop;
+	process.once = noop;
+	process.off = noop;
+	process.removeListener = noop;
+	process.removeAllListeners = noop;
+	process.emit = noop;
+
+	process.binding = function (name) {
+	    throw new Error('process.binding is not supported');
+	};
+
+	// TODO(shtylman)
+	process.cwd = function () { return '/' };
+	process.chdir = function (dir) {
+	    throw new Error('process.chdir is not supported');
+	};
+	process.umask = function() { return 0; };
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {/**
+	 * An asynchronous local file system API, based on a subset
+	 * of the `narwhal/fs` API and the `narwhal/promise` API,
+	 * such that the method names are the same but some return
+	 * values are promises instead of fully resolved values.
+	 * @module
+	 */
+
+	/*whatsupdoc*/
+
+	var FS = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())); // node
+	var Q = __webpack_require__(7);
+	var Reader = __webpack_require__(21);
+	var Writer = __webpack_require__(22);
+	var Common = __webpack_require__(23);
+	var Mock = __webpack_require__(24);
+	var Root = __webpack_require__(25);
+
+	Common.update(exports, process.cwd);
+	exports.Mock = Mock;
+	exports.Root = Root;
+
+	// facilitates AIMD (additive increase, multiplicative decrease) for backing off
+	var backOffDelay = 0;
+	var backOffFactor = 1.0001;
+	function dampen(wrapped, thisp) {
+	    var retry = function () {
+	        var args = arguments;
+	        var ready = backOffDelay ? Q.delay(backOffDelay) : Q.resolve();
+	        return ready.then(function () {
+	            return Q.when(wrapped.apply(thisp, args), function (stream) {
+	                backOffDelay = Math.max(0, backOffDelay - 1);
+	                return stream;
+	            }, function (error) {
+	                if (error.code === "EMFILE") {
+	                    backOffDelay = (backOffDelay + 1) * backOffFactor;
+	                    return retry.apply(null, args);
+	                } else {
+	                    throw error;
+	                }
+	            });
+	        });
+	    };
+	    return retry;
+	}
+
+	/**
+	 * @param {String} path
+	 * @param {Object} options (flags, mode, bufferSize, charset, begin, end)
+	 * @returns {Promise * Stream} a stream from the `q-io` module.
+	 */
+	exports.open = dampen(function (path, flags, charset, options) {
+	    var self = this;
+	    if (typeof flags == "object") {
+	        options = flags;
+	        flags = options.flags;
+	        charset = options.charset;
+	    }
+	    options = options || {};
+	    flags = flags || "r";
+	    var nodeFlags = flags.replace(/b/g, "") || "r";
+	    var nodeOptions = {
+	        "flags": nodeFlags
+	    };
+	    if ("bufferSize" in options) {
+	        nodeOptions.bufferSize = options.bufferSize;
+	    }
+	    if ("mode" in options) {
+	        nodeOptions.mode = options.mode;
+	    }
+	    if ("begin" in options) {
+	        nodeOptions.start = options.begin;
+	        nodeOptions.end = options.end - 1;
+	    }
+	    if (flags.indexOf("b") >= 0) {
+	        if (charset) {
+	            throw new Error("Can't open a binary file with a charset: " + charset);
+	        }
+	    } else {
+	        charset = charset || 'utf-8';
+	    }
+	    if (flags.indexOf("w") >= 0 || flags.indexOf("a") >= 0) {
+	        var stream = FS.createWriteStream(String(path), nodeOptions);
+	        return Writer(stream, charset);
+	    } else {
+	        var stream = FS.createReadStream(String(path), nodeOptions);
+	        return Reader(stream, charset);
+	    }
+	});
+
+	exports.remove = function (path) {
+	    path = String(path);
+	    var done = Q.defer();
+	    FS.unlink(path, function (error) {
+	        if (error) {
+	            error.message = "Can't remove " + JSON.stringify(path) + ": " + error.message;
+	            done.reject(error);
+	        } else {
+	            done.resolve();
+	        }
+	    });
+	    return done.promise;
+	};
+
+	exports.rename = function (source, target) {
+	    source = String(source);
+	    target = String(target);
+	    return Q.ninvoke(FS, "rename", source, target)
+	    .fail(function (error) {
+	        if (error.code === "EXDEV") {
+	            error.message = "source and target are on different devices: " + error.message;
+	            error.crossDevice = true;
+	        }
+	        error.message = (
+	            "Can't move " + JSON.stringify(source) + " to " +
+	            JSON.stringify(target) + " because " + error.message
+	        );
+	        throw error;
+	    });
+	};
+
+	exports.makeDirectory = function (path, mode) {
+	    path = String(path);
+	    var done = Q.defer();
+	    if (typeof mode === "string") {
+	        mode = parseInt(mode, 8);
+	    } else if (mode === void 0) {
+	        mode = parseInt('755', 8);
+	    }
+	    FS.mkdir(path, mode, function (error) {
+	        if (error) {
+	            if (error.code === "EISDIR") {
+	                error.exists = true;
+	                error.isDirectory = true;
+	                error.message = "directory already exists: " + error.message;
+	            }
+	            if (error.code === "EEXIST") {
+	                error.exists = true;
+	                error.message = "file exists at that path: " + error.message;
+	            }
+	            error.message = "Can't makeDirectory " + JSON.stringify(path) + " with mode " + mode + ": " + error.message;
+	            done.reject(error);
+	        } else {
+	            done.resolve();
+	        }
+	    });
+	    return done.promise;
+	};
+
+	exports.removeDirectory = function (path) {
+	    path = String(path);
+	    var done = Q.defer();
+	    FS.rmdir(path, function (error) {
+	        if (error) {
+	            error.message = "Can't removeDirectory " + JSON.stringify(path) + ": " + error.message;
+	            done.reject(error);
+	        } else {
+	            done.resolve();
+	        }
+	    });
+	    return done.promise;
+	};
+
+	/**
+	 */
+	exports.list = dampen(function (path) {
+	    path = String(path);
+	    var result = Q.defer();
+	    FS.readdir(path, function (error, list) {
+	        if (error) {
+	            error.message = "Can't list " + JSON.stringify(path) + ": " + error.message;
+	            return result.reject(error);
+	        } else {
+	            result.resolve(list);
+	        }
+	    });
+	    return result.promise;
+	});
+
+	/**
+	 * @param {String} path
+	 * @returns {Promise * Stat}
+	 */
+	exports.stat = function (path) {
+	    var self = this;
+	    path = String(path);
+	    var done = Q.defer();
+	    try {
+	        FS.stat(path, function (error, stat) {
+	            if (error) {
+	                error.message = "Can't stat " + JSON.stringify(path) + ": " + error;
+	                done.reject(error);
+	            } else {
+	                done.resolve(new self.Stats(stat));
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.statLink = function (path) {
+	    path = String(path);
+	    var done = Q.defer();
+	    try {
+	        FS.lstat(path, function (error, stat) {
+	            if (error) {
+	                error.message = "Can't statLink " + JSON.stringify(path) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve(stat);
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.statFd = function (fd) {
+	    fd = Number(fd);
+	    var done = Q.defer();
+	    try {
+	        FS.fstat(fd, function (error, stat) {
+	            if (error) {
+	                error.message = "Can't statFd file descriptor " + JSON.stringify(fd) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve(stat);
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.link = function (source, target) {
+	    source = String(source);
+	    target = String(target);
+	    var done = Q.defer();
+	    try {
+	        FS.link(source, target, function (error) {
+	            if (error) {
+	                error.message = "Can't link " + JSON.stringify(source) + " to " + JSON.stringify(target) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve();
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	// this lookup table translates the link types that Q-IO accepts (which have
+	// been normalized to full words to be consistent with the naming convention)
+	var linkTypes = {
+	    "file": "file",
+	    "directory": "dir",
+	    "junction": "junction"
+	};
+
+	exports.symbolicLink = function (target, relative, type) {
+	    if (!linkTypes.hasOwnProperty(type)) {
+	        console.warn(new Error("For Windows compatibility, symbolicLink must be called with a type argument \"file\", \"directory\", or \"junction\""));
+	    }
+	    type = linkTypes[type];
+	    target = String(target);
+	    relative = String(relative);
+	    var done = Q.defer();
+	    try {
+	        FS.symlink(relative, target, type || 'file', function (error) {
+	            if (error) {
+	                error.message = "Can't create symbolicLink " + JSON.stringify(target) + " to relative location " + JSON.stringify(relative) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve();
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.chown = function (path, uid, gid) {
+	    path = String(path);
+	    var done = Q.defer();
+	    try {
+	        FS.chown(path, uid, gid, function (error) {
+	            if (error) {
+	                error.message = "Can't chown (change owner) of " + JSON.stringify(path) + " to user " + JSON.stringify(uid) + " and group " + JSON.stringify(gid) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve();
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.chmod = function (path, mode) {
+	    path = String(path);
+	    mode = String(mode);
+	    var done = Q.defer();
+	    try {
+	        FS.chmod(path, mode, function (error) {
+	            if (error) {
+	                error.message = "Can't chmod (change permissions mode) of " + JSON.stringify(path) + " to (octal number) " + mode.toString(8) + ": " + error.message;
+	                done.reject(error);
+	            } else {
+	                done.resolve();
+	            }
+	        });
+	    } catch (error) {
+	        done.reject(error);
+	    }
+	    return done.promise;
+	};
+
+	exports.canonical = function (path) {
+	    var result = Q.defer();
+	    FS.realpath(path, function (error, canonicalPath) {
+	        if (error) {
+	            error.message = "Can't get canonical path of " + JSON.stringify(path) + " by way of C realpath: " + error.message;
+	            result.reject(error);
+	        } else {
+	            result.resolve(canonicalPath);
+	        }
+	    });
+	    return result.promise;
+	};
+
+	exports.readLink = function (path) {
+	    var result = Q.defer();
+	    FS.readlink(path, function (error, path) {
+	        if (error) {
+	            error.message = "Can't get link from " + JSON.stringify(path) + " by way of C readlink: " + error.message;
+	            result.reject(error);
+	        } else {
+	            result.resolve(path);
+	        }
+	    });
+	    return result.promise;
+	};
+
+	exports.mock = function (path) {
+	    return Mock.mock(this, path);
+	};
+
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * @fileOverview Hierarchical Settings
+	 * @module util/Settings
+	 */
+	'use strict';
+	module.exports = function registerSettings(mm) {
+	  var _ = mm._;
+	  var format = mm.format;
+
+	  /**
+	   * @class
+	   * @summary **Create a Settings**
+	   * @description
+	   * A Settings is a list of key value pairs - almost like a POJO.
+	   * The key differences are that settings exist in a context hierarchy
+	   * to allow inherited keys, and settings can have attributes that control
+	   * visibility, access, and modification.
+	   *
+	   * Settings are created from within a container of some sort (a workspace,
+	   * user, document, etc.) The container for a settings is expected to
+	   * in turn contain a _context member, and this Settings object will be
+	   * added to it as its _settings member.
+	   * @constructor
+	   * @param {Object} container The object to which these settings apply
+	   * @param {Object} attributes Attributes for available settings
+	   * @returns {Settings} the new set of Settings
+	   */
+	  var Settings = (function settingsCtorCreator() {
+	    return function Settings(container, attributes) {
+	      var self = this;
+	      self._container = container;
+	      self._attributes = {};
+	    }
+	  }());
+	  
+	  /**
+	   * @summary **Allow a setting with the specified attributes**
+	   * @description
+	   * The `_attributes` section of the settings contains the list
+	   * of named entries that are allowed in this Settings.
+	   * @param {Object} attributes rity)} handler 
+	   *    the destination function
+	   * @returns {Logger} the logger for chaining
+	   */
+	  Settings.prototype.allow = function allow(attributes)
+	  { 
+	    var self = this;
+	    return self;
+	  }  
+
+	  return Settings;
+	}
+
+
+/***/ },
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -14908,7 +15392,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 9 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -14923,7 +15407,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 10 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -15364,171 +15848,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 11 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * @fileOverview SequencedObject static methods and constructor.
-	 * @module util/SequencedObject
-	 */
-	'use strict';
-	module.exports = function registerSequencedObject(mm) {
-	  var qq = mm.Q,
-	      debug = mm.log.debug;
-	   var CoreObject = mm.obj.CoreObject;
-
-	  /**
-	   * @class
-	   * @summary Create a SequencedObject.
-	   * @description
-	   * An object which has an internal `q` promise that is used to sequence
-	   * some or all of the methods called on the object. Methods that need to
-	   * be sequenced (i.e. deferred or promise based) use either the
-	   * `sequencedFunc` or `deferredFunc` internally.
-	   * @constructor
-	   * @returns {SequencedObject} the new `SequencedObject`.
-	   */
-	  var SequencedObject = function SequencedObject() {
-	    var self = this;
-
-	    /**
-	     * The `Q` promise used to sequence operations on this object.
-	     * @type {Promise}
-	     * @name q
-	     * @memberOf module:util/SequencedObject~SequencedObject#
-	     */          
-	    self.q = qq(true);
-
-	    /**
-	     * The number of sequenced operations performed on this object.
-	     * @type {number}
-	     * @name sequencedOperationsCount
-	     * @memberOf module:util/SequencedObject~SequencedObject#
-	     */
-	    self.sequencedOperationsCount = 0;  
-	  }
-	  
-	  SequencedObject.prototype = Object.create(CoreObject.prototype);
-
-	  /**
-	   * @summary **Schedules a deferred function on the `q` promise**
-	   * @description
-	   * Calls from a function in your `SequencedObject` which will resolve 
-	   * or fail by calling `deferred.reject(err)` or
-	   * `deferred.resolve(returnValue)` from within a callback or event
-	   * handler routine. 
-	   * 
-	   * The function will not be called until all other currently scheduled
-	   * routines on the object have resolved. If any of the currently scheduled
-	   * routines break the promise this this routine will not be called.
-	   *    
-	   * @param {function} f A function that takes (`deferred` as its first
-	   *    argument. The remaining arguments will be the ones that were passed
-	   *    to your function.
-	   * @returns {Promise} a Promise to whatever the function returns.
-	   * @example
-	   * var YourSeqObj = function() { // Constructor for your object.
-	   *   var self = this;
-	   *   SequencedObject.call(self); // populate parent instance fields.
-	   *   self.xxxx // your objects members;
-	   *   ..
-	   * }
-	   * YourSeqObj.prototype = Object.create(SequencedObject.prototype);
-	   * 
-	   * YourSeqObj.prototype.yourFunc = function yourFunc(a1, a2, a3) {
-	   *   var self = this;
-	   *   return self.deferredFunc(a1, a2, a3, function(deferred, a1, a2, a3) {
-	   *     ... the meat of your routine to be executed in sequence ...
-	   *     ... then somewhere in a callback or event handler routine use:
-	   *       deferred.resolve(yourReturnValue); // call on success.
-	   *     or if something goes wrong:
-	   *       deferred.reject(new Error('your failure message'));  
-	   *     ...
-	   *   })
-	   * };   
-	   */
-	  SequencedObject.prototype.deferredFunc = function deferredFunc() {
-	    var self = this;
-	    var deferred = qq.defer();
-	    var func = arguments[arguments.length - 1];
-	    var fargs = Array.prototype.slice.call(arguments, 0, -1);
-	    var q = self.q;
-	    //debug('++ Sequence for "' + func.name + '" on ', q);
-	    var promise = deferred.promise;
-	    fargs.unshift(deferred);
-	    // Subsequent callers will follow this sequenced operation.
-	    self.q = promise;    
-	    q.then(function sequenced() {
-	      //debug('++++ THEN resolved Sequence for "' + func.name + '" using ', q);
-	      // The func must resolve the deferred which is passed as
-	      // the first argument to the function.
-	      try {
-	        func.apply(self, fargs); // Do the deferred operation function.
-	        self.sequencedOperationsCount++;
-	      }
-	      catch(err) {
-	        debug('**** EXCEPTION "' + func.name + '" using ', q, err);
-	        deferred.reject(err);
-	      }
-	      //debug('++++ Applied "' + func.name + '" using ', q);
-	    }, function(err) {
-	      debug('**** FAILED "' + func.name + '" using ', q, err);
-	      // trigger any error handling for users of this operation.
-	      deferred.reject(err);
-	    });
-
-	    // The callers .then will resolve only when this operation in
-	    // the sequence is completed - regardless of whether there have
-	    // been other operations scheduled on the object later.
-	    //debug('++ Sequence for "' + func.name + '" RETURNED ', promise);    
-	    return promise;
-	  }
-
-	  /**
-	   * @summary **Clears a broken `q` promise**
-	   * @description
-	   * Once a function in your `SequencedObject` has broken a promise
-	   * (or called `deferred.reject`) then all subsequent operations will
-	   * immediately fail, returning the same broken promise.
-	   * 
-	   * If a failure has (or may have) happened on your object, then call
-	   * `clearFailure()` first. 
-	   * @example
-	   * yourObj.doSomethingThatMayFail()
-	   * .then{function(success) {
-	   *   ... handle the success ...
-	   * }, function(fail) {
-	   *   ... handle the failure ...  
-	   *   yourObj.clearFailure(); // Without this, thingToDoNow will fail.
-	   *   yourObj.thingToDoNow();
-	   * });
-	   */
-	  SequencedObject.prototype.clearFailure = function clearFailure() {
-	    var self = this;
-	    self.q = qq(true);
-	  };
-
-	  /**
-	   * @summary **Schedule operations on the object**
-	   * @description
-	   * Places a one or more functions on the queue of this sequenced object.
-	   * @example
-	   *   yourObj.next(successFunc, failFunc, progressFunc) ...
-	   *   // note this is identical to:
-	   *   yourObj.q.then(successFunc, failFunc, progressFunc) ...
-	   */
-	  SequencedObject.prototype.next = function () {
-	    // Don't define a .then function or Q will try to do odd things
-	    // with it.  This is fancy enough for now.
-	    var self = this;
-	    return self.q.then.apply(self.q, arguments);
-	  };  
-
-	  return SequencedObject;
-	}
-
-/***/ },
-/* 12 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use srict';
@@ -15696,491 +16016,707 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 13 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * @fileOverview Hierarchical Settings
-	 * @module util/Settings
-	 */
-	'use strict';
-	module.exports = function registerSettings(mm) {
-	  var _ = mm._;
-	  var format = mm.format;
-
-	  /**
-	   * @class
-	   * @summary **Create a Settings**
-	   * @description
-	   * A Settings is a list of key value pairs - almost like a POJO.
-	   * The key differences are that settings exist in a context hierarchy
-	   * to allow inherited keys, and settings can have attributes that control
-	   * visibility, access, and modification.
-	   *
-	   * Settings are created from within a container of some sort (a workspace,
-	   * user, document, etc.) The container for a settings is expected to
-	   * in turn contain a _context member, and this Settings object will be
-	   * added to it as its _settings member.
-	   * @constructor
-	   * @param {Object} container The object to which these settings apply
-	   * @param {Object} attributes Attributes for available settings
-	   * @returns {Settings} the new set of Settings
-	   */
-	  var Settings = (function settingsCtorCreator() {
-	    return function Settings(container, attributes) {
-	      var self = this;
-	      self._container = container;
-	      self._attributes = {};
-	    }
-	  }());
-	  
-	  /**
-	   * @summary **Allow a setting with the specified attributes**
-	   * @description
-	   * The `_attributes` section of the settings contains the list
-	   * of named entries that are allowed in this Settings.
-	   * @param {Object} attributes rity)} handler 
-	   *    the destination function
-	   * @returns {Logger} the logger for chaining
-	   */
-	  Settings.prototype.allow = function allow(attributes)
-	  { 
-	    var self = this;
-	    return self;
-	  }  
-
-	  return Settings;
-	}
-
-
-/***/ },
-/* 14 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// shim for using process in browser
-
-	var process = module.exports = {};
-	var queue = [];
-	var draining = false;
-
-	function drainQueue() {
-	    if (draining) {
-	        return;
-	    }
-	    draining = true;
-	    var currentQueue;
-	    var len = queue.length;
-	    while(len) {
-	        currentQueue = queue;
-	        queue = [];
-	        var i = -1;
-	        while (++i < len) {
-	            currentQueue[i]();
-	        }
-	        len = queue.length;
-	    }
-	    draining = false;
-	}
-	process.nextTick = function (fun) {
-	    queue.push(fun);
-	    if (!draining) {
-	        setTimeout(drainQueue, 0);
-	    }
-	};
-
-	process.title = 'browser';
-	process.browser = true;
-	process.env = {};
-	process.argv = [];
-	process.version = ''; // empty string to avoid regexp issues
-	process.versions = {};
-
-	function noop() {}
-
-	process.on = noop;
-	process.addListener = noop;
-	process.once = noop;
-	process.off = noop;
-	process.removeListener = noop;
-	process.removeAllListeners = noop;
-	process.emit = noop;
-
-	process.binding = function (name) {
-	    throw new Error('process.binding is not supported');
-	};
-
-	// TODO(shtylman)
-	process.cwd = function () { return '/' };
-	process.chdir = function (dir) {
-	    throw new Error('process.chdir is not supported');
-	};
-	process.umask = function() { return 0; };
-
-
-/***/ },
 /* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(process) {/**
-	 * An asynchronous local file system API, based on a subset
-	 * of the `narwhal/fs` API and the `narwhal/promise` API,
-	 * such that the method names are the same but some return
-	 * values are promises instead of fully resolved values.
-	 * @module
+	/**
+	 * @fileOverview SequencedObject static methods and constructor.
+	 * @module util/SequencedObject
 	 */
+	'use strict';
+	module.exports = function registerSequencedObject(mm) {
+	  var qq = mm.Q,
+	      debug = mm.log.debug;
+	   var CoreObject = mm.obj.CoreObject;
 
-	/*whatsupdoc*/
+	  /**
+	   * @class
+	   * @summary Create a SequencedObject.
+	   * @description
+	   * An object which has an internal `q` promise that is used to sequence
+	   * some or all of the methods called on the object. Methods that need to
+	   * be sequenced (i.e. deferred or promise based) use either the
+	   * `sequencedFunc` or `deferredFunc` internally.
+	   * @constructor
+	   * @returns {SequencedObject} the new `SequencedObject`.
+	   */
+	  var SequencedObject = function SequencedObject() {
+	    var self = this;
 
-	var FS = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())); // node
-	var Q = __webpack_require__(7);
-	var Reader = __webpack_require__(22);
-	var Writer = __webpack_require__(23);
-	var Common = __webpack_require__(24);
-	var Mock = __webpack_require__(25);
-	var Root = __webpack_require__(26);
+	    /**
+	     * The `Q` promise used to sequence operations on this object.
+	     * @type {Promise}
+	     * @name q
+	     * @memberOf module:util/SequencedObject~SequencedObject#
+	     */          
+	    self.q = qq(true);
 
-	Common.update(exports, process.cwd);
-	exports.Mock = Mock;
-	exports.Root = Root;
+	    /**
+	     * The number of sequenced operations performed on this object.
+	     * @type {number}
+	     * @name sequencedOperationsCount
+	     * @memberOf module:util/SequencedObject~SequencedObject#
+	     */
+	    self.sequencedOperationsCount = 0;  
+	  }
+	  
+	  SequencedObject.prototype = Object.create(CoreObject.prototype);
 
-	// facilitates AIMD (additive increase, multiplicative decrease) for backing off
-	var backOffDelay = 0;
-	var backOffFactor = 1.0001;
-	function dampen(wrapped, thisp) {
-	    var retry = function () {
-	        var args = arguments;
-	        var ready = backOffDelay ? Q.delay(backOffDelay) : Q.resolve();
-	        return ready.then(function () {
-	            return Q.when(wrapped.apply(thisp, args), function (stream) {
-	                backOffDelay = Math.max(0, backOffDelay - 1);
-	                return stream;
-	            }, function (error) {
-	                if (error.code === "EMFILE") {
-	                    backOffDelay = (backOffDelay + 1) * backOffFactor;
-	                    return retry.apply(null, args);
-	                } else {
-	                    throw error;
-	                }
-	            });
-	        });
-	    };
-	    return retry;
+	  /**
+	   * @summary **Schedules a deferred function on the `q` promise**
+	   * @description
+	   * Calls from a function in your `SequencedObject` which will resolve 
+	   * or fail by calling `deferred.reject(err)` or
+	   * `deferred.resolve(returnValue)` from within a callback or event
+	   * handler routine. 
+	   * 
+	   * The function will not be called until all other currently scheduled
+	   * routines on the object have resolved. If any of the currently scheduled
+	   * routines break the promise this this routine will not be called.
+	   *    
+	   * @param {function} f A function that takes (`deferred` as its first
+	   *    argument. The remaining arguments will be the ones that were passed
+	   *    to your function.
+	   * @returns {Promise} a Promise to whatever the function returns.
+	   * @example
+	   * var YourSeqObj = function() { // Constructor for your object.
+	   *   var self = this;
+	   *   SequencedObject.call(self); // populate parent instance fields.
+	   *   self.xxxx // your objects members;
+	   *   ..
+	   * }
+	   * YourSeqObj.prototype = Object.create(SequencedObject.prototype);
+	   * 
+	   * YourSeqObj.prototype.yourFunc = function yourFunc(a1, a2, a3) {
+	   *   var self = this;
+	   *   return self.deferredFunc(a1, a2, a3, function(deferred, a1, a2, a3) {
+	   *     ... the meat of your routine to be executed in sequence ...
+	   *     ... then somewhere in a callback or event handler routine use:
+	   *       deferred.resolve(yourReturnValue); // call on success.
+	   *     or if something goes wrong:
+	   *       deferred.reject(new Error('your failure message'));  
+	   *     ...
+	   *   })
+	   * };   
+	   */
+	  SequencedObject.prototype.deferredFunc = function deferredFunc() {
+	    var self = this;
+	    var deferred = qq.defer();
+	    var func = arguments[arguments.length - 1];
+	    var fargs = Array.prototype.slice.call(arguments, 0, -1);
+	    var q = self.q;
+	    //debug('++ Sequence for "' + func.name + '" on ', q);
+	    var promise = deferred.promise;
+	    fargs.unshift(deferred);
+	    // Subsequent callers will follow this sequenced operation.
+	    self.q = promise;    
+	    q.then(function sequenced() {
+	      //debug('++++ THEN resolved Sequence for "' + func.name + '" using ', q);
+	      // The func must resolve the deferred which is passed as
+	      // the first argument to the function.
+	      try {
+	        func.apply(self, fargs); // Do the deferred operation function.
+	        self.sequencedOperationsCount++;
+	      }
+	      catch(err) {
+	        debug('**** EXCEPTION "' + func.name + '" using ', q, err);
+	        deferred.reject(err);
+	      }
+	      //debug('++++ Applied "' + func.name + '" using ', q);
+	    }, function(err) {
+	      debug('**** FAILED "' + func.name + '" using ', q, err);
+	      // trigger any error handling for users of this operation.
+	      deferred.reject(err);
+	    });
+
+	    // The callers .then will resolve only when this operation in
+	    // the sequence is completed - regardless of whether there have
+	    // been other operations scheduled on the object later.
+	    //debug('++ Sequence for "' + func.name + '" RETURNED ', promise);    
+	    return promise;
+	  }
+
+	  /**
+	   * @summary **Clears a broken `q` promise**
+	   * @description
+	   * Once a function in your `SequencedObject` has broken a promise
+	   * (or called `deferred.reject`) then all subsequent operations will
+	   * immediately fail, returning the same broken promise.
+	   * 
+	   * If a failure has (or may have) happened on your object, then call
+	   * `clearFailure()` first. 
+	   * @example
+	   * yourObj.doSomethingThatMayFail()
+	   * .then{function(success) {
+	   *   ... handle the success ...
+	   * }, function(fail) {
+	   *   ... handle the failure ...  
+	   *   yourObj.clearFailure(); // Without this, thingToDoNow will fail.
+	   *   yourObj.thingToDoNow();
+	   * });
+	   */
+	  SequencedObject.prototype.clearFailure = function clearFailure() {
+	    var self = this;
+	    self.q = qq(true);
+	  };
+
+	  /**
+	   * @summary **Schedule operations on the object**
+	   * @description
+	   * Places a one or more functions on the queue of this sequenced object.
+	   * @example
+	   *   yourObj.next(successFunc, failFunc, progressFunc) ...
+	   *   // note this is identical to:
+	   *   yourObj.q.then(successFunc, failFunc, progressFunc) ...
+	   */
+	  SequencedObject.prototype.next = function () {
+	    // Don't define a .then function or Q will try to do odd things
+	    // with it.  This is fancy enough for now.
+	    var self = this;
+	    return self.q.then.apply(self.q, arguments);
+	  };  
+
+	  return SequencedObject;
 	}
-
-	/**
-	 * @param {String} path
-	 * @param {Object} options (flags, mode, bufferSize, charset, begin, end)
-	 * @returns {Promise * Stream} a stream from the `q-io` module.
-	 */
-	exports.open = dampen(function (path, flags, charset, options) {
-	    var self = this;
-	    if (typeof flags == "object") {
-	        options = flags;
-	        flags = options.flags;
-	        charset = options.charset;
-	    }
-	    options = options || {};
-	    flags = flags || "r";
-	    var nodeFlags = flags.replace(/b/g, "") || "r";
-	    var nodeOptions = {
-	        "flags": nodeFlags
-	    };
-	    if ("bufferSize" in options) {
-	        nodeOptions.bufferSize = options.bufferSize;
-	    }
-	    if ("mode" in options) {
-	        nodeOptions.mode = options.mode;
-	    }
-	    if ("begin" in options) {
-	        nodeOptions.start = options.begin;
-	        nodeOptions.end = options.end - 1;
-	    }
-	    if (flags.indexOf("b") >= 0) {
-	        if (charset) {
-	            throw new Error("Can't open a binary file with a charset: " + charset);
-	        }
-	    } else {
-	        charset = charset || 'utf-8';
-	    }
-	    if (flags.indexOf("w") >= 0 || flags.indexOf("a") >= 0) {
-	        var stream = FS.createWriteStream(String(path), nodeOptions);
-	        return Writer(stream, charset);
-	    } else {
-	        var stream = FS.createReadStream(String(path), nodeOptions);
-	        return Reader(stream, charset);
-	    }
-	});
-
-	exports.remove = function (path) {
-	    path = String(path);
-	    var done = Q.defer();
-	    FS.unlink(path, function (error) {
-	        if (error) {
-	            error.message = "Can't remove " + JSON.stringify(path) + ": " + error.message;
-	            done.reject(error);
-	        } else {
-	            done.resolve();
-	        }
-	    });
-	    return done.promise;
-	};
-
-	exports.rename = function (source, target) {
-	    source = String(source);
-	    target = String(target);
-	    return Q.ninvoke(FS, "rename", source, target)
-	    .fail(function (error) {
-	        if (error.code === "EXDEV") {
-	            error.message = "source and target are on different devices: " + error.message;
-	            error.crossDevice = true;
-	        }
-	        error.message = (
-	            "Can't move " + JSON.stringify(source) + " to " +
-	            JSON.stringify(target) + " because " + error.message
-	        );
-	        throw error;
-	    });
-	};
-
-	exports.makeDirectory = function (path, mode) {
-	    path = String(path);
-	    var done = Q.defer();
-	    if (typeof mode === "string") {
-	        mode = parseInt(mode, 8);
-	    } else if (mode === void 0) {
-	        mode = parseInt('755', 8);
-	    }
-	    FS.mkdir(path, mode, function (error) {
-	        if (error) {
-	            if (error.code === "EISDIR") {
-	                error.exists = true;
-	                error.isDirectory = true;
-	                error.message = "directory already exists: " + error.message;
-	            }
-	            if (error.code === "EEXIST") {
-	                error.exists = true;
-	                error.message = "file exists at that path: " + error.message;
-	            }
-	            error.message = "Can't makeDirectory " + JSON.stringify(path) + " with mode " + mode + ": " + error.message;
-	            done.reject(error);
-	        } else {
-	            done.resolve();
-	        }
-	    });
-	    return done.promise;
-	};
-
-	exports.removeDirectory = function (path) {
-	    path = String(path);
-	    var done = Q.defer();
-	    FS.rmdir(path, function (error) {
-	        if (error) {
-	            error.message = "Can't removeDirectory " + JSON.stringify(path) + ": " + error.message;
-	            done.reject(error);
-	        } else {
-	            done.resolve();
-	        }
-	    });
-	    return done.promise;
-	};
-
-	/**
-	 */
-	exports.list = dampen(function (path) {
-	    path = String(path);
-	    var result = Q.defer();
-	    FS.readdir(path, function (error, list) {
-	        if (error) {
-	            error.message = "Can't list " + JSON.stringify(path) + ": " + error.message;
-	            return result.reject(error);
-	        } else {
-	            result.resolve(list);
-	        }
-	    });
-	    return result.promise;
-	});
-
-	/**
-	 * @param {String} path
-	 * @returns {Promise * Stat}
-	 */
-	exports.stat = function (path) {
-	    var self = this;
-	    path = String(path);
-	    var done = Q.defer();
-	    try {
-	        FS.stat(path, function (error, stat) {
-	            if (error) {
-	                error.message = "Can't stat " + JSON.stringify(path) + ": " + error;
-	                done.reject(error);
-	            } else {
-	                done.resolve(new self.Stats(stat));
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.statLink = function (path) {
-	    path = String(path);
-	    var done = Q.defer();
-	    try {
-	        FS.lstat(path, function (error, stat) {
-	            if (error) {
-	                error.message = "Can't statLink " + JSON.stringify(path) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve(stat);
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.statFd = function (fd) {
-	    fd = Number(fd);
-	    var done = Q.defer();
-	    try {
-	        FS.fstat(fd, function (error, stat) {
-	            if (error) {
-	                error.message = "Can't statFd file descriptor " + JSON.stringify(fd) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve(stat);
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.link = function (source, target) {
-	    source = String(source);
-	    target = String(target);
-	    var done = Q.defer();
-	    try {
-	        FS.link(source, target, function (error) {
-	            if (error) {
-	                error.message = "Can't link " + JSON.stringify(source) + " to " + JSON.stringify(target) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve();
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	// this lookup table translates the link types that Q-IO accepts (which have
-	// been normalized to full words to be consistent with the naming convention)
-	var linkTypes = {
-	    "file": "file",
-	    "directory": "dir",
-	    "junction": "junction"
-	};
-
-	exports.symbolicLink = function (target, relative, type) {
-	    if (!linkTypes.hasOwnProperty(type)) {
-	        console.warn(new Error("For Windows compatibility, symbolicLink must be called with a type argument \"file\", \"directory\", or \"junction\""));
-	    }
-	    type = linkTypes[type];
-	    target = String(target);
-	    relative = String(relative);
-	    var done = Q.defer();
-	    try {
-	        FS.symlink(relative, target, type || 'file', function (error) {
-	            if (error) {
-	                error.message = "Can't create symbolicLink " + JSON.stringify(target) + " to relative location " + JSON.stringify(relative) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve();
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.chown = function (path, uid, gid) {
-	    path = String(path);
-	    var done = Q.defer();
-	    try {
-	        FS.chown(path, uid, gid, function (error) {
-	            if (error) {
-	                error.message = "Can't chown (change owner) of " + JSON.stringify(path) + " to user " + JSON.stringify(uid) + " and group " + JSON.stringify(gid) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve();
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.chmod = function (path, mode) {
-	    path = String(path);
-	    mode = String(mode);
-	    var done = Q.defer();
-	    try {
-	        FS.chmod(path, mode, function (error) {
-	            if (error) {
-	                error.message = "Can't chmod (change permissions mode) of " + JSON.stringify(path) + " to (octal number) " + mode.toString(8) + ": " + error.message;
-	                done.reject(error);
-	            } else {
-	                done.resolve();
-	            }
-	        });
-	    } catch (error) {
-	        done.reject(error);
-	    }
-	    return done.promise;
-	};
-
-	exports.canonical = function (path) {
-	    var result = Q.defer();
-	    FS.realpath(path, function (error, canonicalPath) {
-	        if (error) {
-	            error.message = "Can't get canonical path of " + JSON.stringify(path) + " by way of C realpath: " + error.message;
-	            result.reject(error);
-	        } else {
-	            result.resolve(canonicalPath);
-	        }
-	    });
-	    return result.promise;
-	};
-
-	exports.readLink = function (path) {
-	    var result = Q.defer();
-	    FS.readlink(path, function (error, path) {
-	        if (error) {
-	            error.message = "Can't get link from " + JSON.stringify(path) + " by way of C readlink: " + error.message;
-	            result.reject(error);
-	        } else {
-	            result.resolve(path);
-	        }
-	    });
-	    return result.promise;
-	};
-
-	exports.mock = function (path) {
-	    return Mock.mock(this, path);
-	};
-
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(14)))
 
 /***/ },
 /* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview Storage abstractions
+	 * @module sal/storage
+	 */ 
+	 module.exports = function(mm) {
+	  var qq = mm.Q,
+	      debug = mm.log.debug;
+	  
+	//  var SequencedObject = mm.obj.SequencedObject;
+	 
+	  var storage = {};
+	  //var users = mm.users;
+
+	  storage.space = {};
+	/**
+	 * Write a value into storage.
+	 *
+	 * @memberOf storage
+	 * @param {string} the username for the collection.
+	 * @param {string} the collection name.
+	 * @param {string} the item name.
+	 * @param {string} the value of the item to store.
+	 * @returns {Promise} resolves when item is being stored.
+	 * @example
+	 *
+	 * var animals = [
+	 *   { cat: 'edmund' },
+	 *   { cat: 'rosie' },
+	 *   { dog: 'silly' }
+	 *  ];
+	 *  
+	 * var promise = storage.store('john', 'allAnimals', 'myAnimals', animals);
+	 * promise.then(function(r) { console.log('- Stored: ', r )});
+	 * // => true
+	 */
+	  storage.store = function (userName, collectionName, itemName, value) {
+	    debug('- Item:', value);  
+	    return qq.fcall(function() {
+	      debug('-- Item:', value);
+	      return JSON.stringify(value);
+	    })
+	    .delay(400)
+	    .then(function(s) {
+	      var location = {
+	        user: userName,
+	        collection: collectionName,
+	        item: itemName
+	      };
+
+	      debug('- Stored: "{user}/{collection}/{item}" as "{1}"', location, s);
+	      debug('- Stored: "{0:inspect}"', location);
+	      debug('- Stored: "{0:json}"', location);
+	    })
+	  }
+
+	  storage.remove = function (userName, collectionName, item) {
+	    return storage;
+	  }
+
+	  storage.readFile = function (filename, dataHandler) {
+	    return storage;
+	  }
+	  
+	  return storage;
+	}
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview The Loggers used by mMeddleSequencedObject static methods 
+	 *       and constructor.
+	 * @module sal/users
+	 */ 
+	module.exports = function registerSalUsers(mm) {
+	  var text2ua = mm.util.text2ua,
+	      ua2hex = mm.util.ua2hex,
+	      debug = mm.log.debug;
+	  
+	  var SequencedObject = mm.obj.SequencedObject,
+	      Enum = mm.obj.Enum;
+	      
+	  var sha256 = __webpack_require__(31);
+
+	  var T = 10;
+	  
+	  // The cache of users and user management methods.  
+	  var users = {};
+	  users.inMemoryUserCache = {};
+	  
+	  /**
+	   * @summary **Create a PersistentUser**
+	   * @description
+	   * A PersistentUser contains the information about a user that is
+	   * persistently stored in files, or a database.
+	   * @constructor
+	   * @param {User} u the User used to create this one.
+	   * @returns {PersistentUser} the new persistent user.
+	   */  
+	  var PersistentUser = (function persistentUserCtorCreator() {
+	    var ctor = function PersistentUser(u) {
+	      var self = this;
+	      self.name = u.name;
+	      self.privatePassword = u.privatePassword;
+	      self.creationDate = u.creationDate;
+	      self.pbkdf2Salt = u.pbkdf2Salt;
+	    };
+
+	    return ctor;
+	  }());
+
+	  /**
+	   * @summary **Create a User**
+	   * @description
+	   * A User holds information about a person or authority that has
+	   * access rights to some part of a workspace and its storage.
+	   * Users are SequencedObjects since most of the activites on a given
+	   * user must occur in specific orders.
+	   * @constructor
+	   * @param {string} userName the name of the user's alias.
+	   * @returns {User} the new user
+	   */  
+	  var User = (function userCtorCreator() {
+	    // static initialization here.
+	    var STATUS = new Enum('unknown|loaded|saved|pending|created|active|failed');
+
+	    var ctor = function User(userName) {
+	      var self = this;
+
+	      SequencedObject.call(self); // populate parent instance fields.
+	      self.privatePassword = '';
+	      self.name = userName;
+	      self.STATUS = STATUS;
+	      self.status = self.STATUS.unknown;
+	      
+	      function setPassword(pwd) { 
+	        self.privatePassword = pwd; 
+	      }
+
+	      function getPassword() { 
+	        return self.privatePassword; 
+	      }
+
+	      function passwordMatches(testPassword) {
+	        return self.privatePassword === testPassword;
+	      }
+
+	      self.setPassword = setPassword;
+	      self.passwordMatches = passwordMatches;
+	      self.getPassword = getPassword;
+
+	      self.lock = function lockUser() { 
+	        self.getPassword = function userIsLocked() { return ''; }
+	      }
+	    }
+	    return ctor;
+	  }());
+
+	  User.prototype = Object.create(SequencedObject.prototype);
+	  User.prototype.PBKDF2_ROUNDS = 1000; // A reasonable number of rounds.
+	  User.prototype.PBKDF2_DKLEN = 16; // 16 byte derived key.
+
+	  /**
+	   * @summary Loads a User from persistent storage
+	   * @description
+	   * The PersistentUser in storage is looked up by the name alias
+	   * loaded into this User object. All existing fields in the user are
+	   * replaced by those from storage.
+	   * @returns {Promise} a promise to the User
+	   */
+	  User.prototype.load = function loadUser () {
+	    var self = this;
+	    return self.deferredFunc(function loadSequenced(deferred) {
+	      //var statusMessage = 'loading user: ' + self.name;
+	      setTimeout(function() {
+	          var u = users.inMemoryUserCache[self.name];
+	          if (u) {
+	            self.name = u.name;
+	            self.privatePassword = u.privatePassword;
+	            self.creationDate = u.creationDate;
+	            self.pbkdf2Salt = u.pbkdf2Salt;
+	            self.status = self.STATUS.loaded;
+	            var finishedMessage = 'loaded "' + self.name + '"';
+	            debug(finishedMessage, self.sequencedOperationsCount);
+	            deferred.resolve(self);
+	          }
+	          else {
+	            var notLoadedMessage = 'not loaded "' + self.name + '"';
+	            debug(notLoadedMessage, self.sequencedOperationsCount);
+	            self.status = self.STATUS.failed;            
+	            deferred.reject(new Error(notLoadedMessage));
+	          }
+	      }, T);
+	    })
+	  };
+
+	  /**
+	   * @summary Save a User into persistent storage
+	   * @description
+	   * The PersistentUser in storage is replaced by information from this
+	   * one, or a new user is created in storage.
+	   * @returns {Promise} a promise to the User
+	   */
+	  User.prototype.save = function saveUser () {
+	    var self = this;
+	    return self.deferredFunc(function saveSequenced(deferred) {
+	      var statusMessage = 'saving user: "' + self.name + '"';
+	      debug(statusMessage);
+	      setTimeout(function() {
+	          var u = users.inMemoryUserCache[self.name];
+	          if (u) {
+	            if (self.privatePassword === u.privatePassword) {
+	              self.status = self.STATUS.loaded;
+	              var finishedMessage = 'already saved "' + self.name + '"';
+	              debug(finishedMessage, self.sequencedOperationsCount);
+	              deferred.resolve(self);
+	            }
+	            else {
+	              var failedMessage = '*save failed for "' + self.name + '"';
+	              debug(failedMessage);
+	              deferred.reject(new Error(failedMessage));
+	            }
+	          }
+	          else {
+	            u = new PersistentUser(self);
+	            self.status = self.STATUS.saved;
+	            users.inMemoryUserCache[u.name] = u;
+	            var savedMessage = 'saved "' + self.name + '"';
+	            debug(savedMessage, self.sequencedOperationsCount);
+	            deferred.resolve(self);
+	          }
+	      }, T);
+	    })
+	  };
+	  
+	  /**
+	   * @summary Create a password for a User
+	   * @description
+	   * The User is given a password. Persistent storage is not accessed.
+	   * The plain text password is immediately encoded as a PBKDF2 hash.
+	   * @param {string} password the plain text of a password.
+	   * @returns {Promise} a promise to the User
+	   */
+	  User.prototype.create = function createUser(password) {
+	    var self = this;
+	    return self.deferredFunc(password,
+	      function createSequenced(deferred, password) {
+	      self.creationDate = new Date();
+	      self.status = self.STATUS.pending;
+	      if (password) {
+	        //statusMessage = 'computing ' + self.name;
+	        // The PBKDF2 salt is per user and is based on the sub millisecond
+	        // datetime for when the user was created. Its a small comfort.
+	        self.pbkdf2Salt = ua2hex(text2ua(self.creationDate.toISOString()));
+	        var uIntArrayPassword = sha256.pbkdf2(
+	            text2ua(password), 
+	            self.pbkdf2Salt,
+	            self.PBKDF2_ROUNDS,
+	            self.PBKDF2_DKLEN);
+	        self.setPassword(ua2hex(uIntArrayPassword));
+	        self.status = self.STATUS.created;
+	      }
+
+	      setTimeout(function() {
+	          var createdMessage = 'created user"' + self.name + '"';
+	          debug(createdMessage);
+	          deferred.resolve(self);
+	      }, T);
+	    })
+	  };
+
+	  /**
+	   * @summary Login the User
+	   * @description
+	   * The plain text password is checked against the User to determine
+	   * if there is a match. If there is a match then private information
+	   * about this user will be loaded from storage.
+	   * @param {string} password the plain text of a password to check.
+	   * @returns {Promise} a promise to the User
+	   */
+	  User.prototype.login = function loginUser(password) {
+	    var self = this;
+	    return self.deferredFunc(password,
+	      function loginSequenced(deferred, password) {
+	      var testPassword = ua2hex(sha256.pbkdf2(
+	          text2ua(password), 
+	          self.pbkdf2Salt,
+	          self.PBKDF2_ROUNDS,
+	          self.PBKDF2_DKLEN));
+	      debug('-- login test pwd:', '[' + testPassword + ']');
+	      debug('-- login user pwd:', '[' + self.getPassword() + ']');
+	      setTimeout(function() {
+	        if (self.passwordMatches(testPassword)) {
+	          self.status = self.STATUS.active;
+	          var activatedMessage = 'logged in ' + self.name;
+	          debug(activatedMessage);
+	          deferred.resolve(self);
+	        }
+	        else {
+	          self.status = self.STATUS.failed;
+	          var failedMessage = '*login failed for ' + self.name;
+	          debug(failedMessage);
+	          deferred.reject(new Error(failedMessage));
+	          //debug('=== Deferred:', deferred);
+	        }
+	      }, T);
+	    })
+	  };
+
+	  /**
+	   * @summary Remove the User
+	   * @description
+	   * The user is removed from storage.
+	   * @returns {Promise} a promise to the User
+	   */
+	  User.prototype.remove = function removeUser() {
+	    var self = this;
+	    return self.deferredFunc(function deleteSequenced(deferred) {
+	      setTimeout(function() {
+	          var finishedMessage = 'deleted ' + self.name;
+	          debug(finishedMessage);
+	          deferred.resolve(self);
+	      }, T); 
+	    })
+	  };
+
+	  users.User = User;
+	  return users;
+	}
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	module.exports = function registerSalUserStorage(mm) {
+	//var SequencedObject = mm.obj.SequencedObject;
+
+	  var us = {};
+	  
+	  
+	  
+	/*  
+	  
+	  // The cache of users and user management methods.  
+	  var users = {};
+	  users.inMemoryUserCache = {};
+	  
+	  var PersistentUser = (function persistentUserCtorCreator() {
+	    var ctor = function PersistentUser(u) {
+	      var self = this;
+	      self.name = u.name;
+	      self.privatePassword = u.privatePassword;
+	      self.creationDate = u.creationDate;
+	      self.pbkdf2Salt = u.pbkdf2Salt;
+	    };
+
+	    return ctor;
+	  }());
+
+	  var User = (function userCtorCreator() {
+	    // static initialization here.
+	    var STATUS = new Enum('unknown|loaded|saved|pending|created|active|failed');
+
+	    var ctor = function User(userName) {
+	      var self = this;
+
+	      SequencedObject.call(self); // populate parent instance fields.
+	      self.privatePassword = '';
+	      self.name = userName;
+	      self.STATUS = STATUS;
+	      self.status = self.STATUS.unknown;
+	      
+	      function setPassword(pwd) { 
+	        self.privatePassword = pwd; 
+	      }
+
+	      function getPassword() { 
+	        return self.privatePassword; 
+	      }
+
+	      function passwordMatches(testPassword) {
+	        return self.privatePassword === testPassword;
+	      }
+
+	      self.setPassword = setPassword;
+	      self.passwordMatches = passwordMatches;
+	      self.getPassword = getPassword;
+
+	      self.lock = function lockUser() { 
+	        self.getPassword = function userIsLocked() { return ''; }
+	      }
+	    }
+	    return ctor;
+	  }());
+
+	  User.prototype = Object.create(SequencedObject.prototype);
+	  User.prototype.PBKDF2_ROUNDS = 1000; // A reasonable number of rounds.
+	  User.prototype.PBKDF2_DKLEN = 16; // 16 byte derived key.
+
+	  User.prototype.load = function loadUser () {
+	    var self = this;
+	    return self.sequencedFunc(function loadSequenced(deferred) {
+	      //var statusMessage = 'loading user: ' + self.name;
+	      setTimeout(function() {
+	          var u = users.inMemoryUserCache[self.name];
+	          if (u) {
+	            self.name = u.name;
+	            self.privatePassword = u.privatePassword;
+	            self.creationDate = u.creationDate;
+	            self.pbkdf2Salt = u.pbkdf2Salt;
+	            self.status = self.STATUS.loaded;
+	            var finishedMessage = 'loaded "' + self.name + '"';
+	            debug(finishedMessage, self.sequencedOperationsCount);
+	            deferred.resolve(self);
+	          }
+	          else {
+	            var notLoadedMessage = 'not loaded "' + self.name + '"';
+	            debug(notLoadedMessage, self.sequencedOperationsCount);
+	            self.status = self.STATUS.failed;            
+	          }
+	      }, T);
+	    })
+	  };
+
+	  User.prototype.save = function saveUser () {
+	    var self = this;
+	    return self.sequencedFunc(function saveSequenced(deferred) {
+	      var statusMessage = 'saving user: "' + self.name + '"';
+	      debug(statusMessage);
+	      setTimeout(function() {
+	          var u = users.inMemoryUserCache[self.name];
+	          if (u) {
+	            if (self.privatePassword === u.privatePassword) {
+	              self.status = self.STATUS.loaded;
+	              var finishedMessage = 'already saved "' + self.name + '"';
+	              debug(finishedMessage, self.sequencedOperationsCount);
+	              deferred.resolve(self);
+	            }
+	            else {
+	              var failedMessage = '*save failed for "' + self.name + '"';
+	              debug(failedMessage);
+	              deferred.reject(new Error(failedMessage));
+	            }
+	          }
+	          else {
+	            u = new PersistentUser(self);
+	            self.status = self.STATUS.saved;
+	            users.inMemoryUserCache[u.name] = u;
+	            var savedMessage = 'saved "' + self.name + '"';
+	            debug(savedMessage, self.sequencedOperationsCount);
+	            deferred.resolve(self);
+	          }
+	      }, T);
+	    })
+	  };
+	  
+	  User.prototype.create = function createUser(password) {
+	    var self = this;
+	    return self.sequencedFunc(password,
+	      function createSequenced(deferred, password) {
+	      self.creationDate = new Date();
+	      self.status = self.STATUS.pending;
+	      if (password) {
+	        //statusMessage = 'computing ' + self.name;
+	        // The PBKDF2 salt is per user and is based on the sub millisecond
+	        // datetime for when the user was created. Its a small comfort.
+	        self.pbkdf2Salt = ua2hex(text2ua(self.creationDate.toISOString()));
+	        var uIntArrayPassword = sha256.pbkdf2(
+	            text2ua(password), 
+	            self.pbkdf2Salt,
+	            self.PBKDF2_ROUNDS,
+	            self.PBKDF2_DKLEN);
+	        self.setPassword(ua2hex(uIntArrayPassword));
+	        self.status = self.STATUS.created;
+	      }
+
+	      setTimeout(function() {
+	          var createdMessage = 'created user"' + self.name + '"';
+	          debug(createdMessage);
+	          deferred.resolve(self);
+	      }, T);
+	    })
+	  };
+
+	  User.prototype.login = function loginUser(password) {
+	    var self = this;
+	    return self.sequencedFunc(password,
+	      function loginSequenced(deferred, password) {
+	      var testPassword = ua2hex(sha256.pbkdf2(
+	          text2ua(password), 
+	          self.pbkdf2Salt,
+	          self.PBKDF2_ROUNDS,
+	          self.PBKDF2_DKLEN));
+	      debug('-- login test pwd:', '[' + testPassword + ']');
+	      debug('-- login user pwd:', '[' + self.getPassword() + ']');
+	      setTimeout(function() {
+	        if (self.passwordMatches(testPassword)) {
+	          self.status = self.STATUS.active;
+	          var activatedMessage = 'logged in ' + self.name;
+	          debug(activatedMessage);
+	          deferred.resolve(self);
+	        }
+	        else {
+	          self.status = self.STATUS.failed;
+	          var failedMessage = '*login failed for ' + self.name;
+	          debug(failedMessage);
+	          deferred.reject(new Error(failedMessage));
+	          //debug('=== Deferred:', deferred);
+	        }
+	      }, T);
+	    })
+	  };
+
+	  User.prototype.remove = function removeUser() {
+	    var self = this;
+	    return self.sequencedFunc(function deleteSequenced(deferred) {
+	      setTimeout(function() {
+	          var finishedMessage = 'deleted ' + self.name;
+	          debug(finishedMessage);
+	          deferred.resolve(self);
+	      }, T); 
+	    })
+	  };
+	*/
+
+	  return us;
+	}
+
+/***/ },
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {/*!
@@ -16190,9 +16726,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @license  MIT
 	 */
 
-	var base64 = __webpack_require__(33)
-	var ieee754 = __webpack_require__(35)
-	var isArray = __webpack_require__(32)
+	var base64 = __webpack_require__(36)
+	var ieee754 = __webpack_require__(33)
+	var isArray = __webpack_require__(34)
 
 	exports.Buffer = Buffer
 	exports.SlowBuffer = SlowBuffer
@@ -17515,81 +18051,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(16).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
 
 /***/ },
-/* 17 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview Storage abstractions
-	 * @module sal/storage
-	 */ 
-	 module.exports = function(mm) {
-	  var qq = mm.Q,
-	      debug = mm.log.debug;
-	  
-	//  var SequencedObject = mm.obj.SequencedObject;
-	 
-	  var storage = {};
-	  //var users = mm.users;
-
-	  storage.space = {};
-	/**
-	 * Write a value into storage.
-	 *
-	 * @memberOf storage
-	 * @param {string} the username for the collection.
-	 * @param {string} the collection name.
-	 * @param {string} the item name.
-	 * @param {string} the value of the item to store.
-	 * @returns {Promise} resolves when item is being stored.
-	 * @example
-	 *
-	 * var animals = [
-	 *   { cat: 'edmund' },
-	 *   { cat: 'rosie' },
-	 *   { dog: 'silly' }
-	 *  ];
-	 *  
-	 * var promise = storage.store('john', 'allAnimals', 'myAnimals', animals);
-	 * promise.then(function(r) { console.log('- Stored: ', r )});
-	 * // => true
-	 */
-	  storage.store = function (userName, collectionName, itemName, value) {
-	    debug('- Item:', value);  
-	    return qq.fcall(function() {
-	      debug('-- Item:', value);
-	      return JSON.stringify(value);
-	    })
-	    .delay(400)
-	    .then(function(s) {
-	      var location = {
-	        user: userName,
-	        collection: collectionName,
-	        item: itemName
-	      };
-
-	      debug('- Stored: "{user}/{collection}/{item}" as "{1}"', location, s);
-	      debug('- Stored: "{0:inspect}"', location);
-	      debug('- Stored: "{0:json}"', location);
-	    })
-	  }
-
-	  storage.remove = function (userName, collectionName, item) {
-	    return storage;
-	  }
-
-	  storage.readFile = function (filename, dataHandler) {
-	    return storage;
-	  }
-	  
-	  return storage;
-	}
-
-/***/ },
-/* 18 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global, process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -18117,7 +18582,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	exports.isPrimitive = isPrimitive;
 
-	exports.isBuffer = __webpack_require__(31);
+	exports.isBuffer = __webpack_require__(28);
 
 	function objectToString(o) {
 	  return Object.prototype.toString.call(o);
@@ -18161,7 +18626,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 *     prototype.
 	 * @param {function} superCtor Constructor function to inherit prototype from.
 	 */
-	exports.inherits = __webpack_require__(36);
+	exports.inherits = __webpack_require__(32);
 
 	exports._extend = function(origin, add) {
 	  // Don't do anything if add isn't an object
@@ -18179,491 +18644,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return Object.prototype.hasOwnProperty.call(obj, prop);
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(14)))
-
-/***/ },
-/* 19 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview The Loggers used by mMeddleSequencedObject static methods 
-	 *       and constructor.
-	 * @module sal/users
-	 */ 
-	module.exports = function registerSalUsers(mm) {
-	  var text2ua = mm.util.text2ua,
-	      ua2hex = mm.util.ua2hex,
-	      debug = mm.log.debug;
-	  
-	  var SequencedObject = mm.obj.SequencedObject,
-	      Enum = mm.obj.Enum;
-	      
-	  var sha256 = __webpack_require__(30);
-
-	  var T = 10;
-	  
-	  // The cache of users and user management methods.  
-	  var users = {};
-	  users.inMemoryUserCache = {};
-	  
-	  /**
-	   * @summary **Create a PersistentUser**
-	   * @description
-	   * A PersistentUser contains the information about a user that is
-	   * persistently stored in files, or a database.
-	   * @constructor
-	   * @param {User} u the User used to create this one.
-	   * @returns {PersistentUser} the new persistent user.
-	   */  
-	  var PersistentUser = (function persistentUserCtorCreator() {
-	    var ctor = function PersistentUser(u) {
-	      var self = this;
-	      self.name = u.name;
-	      self.privatePassword = u.privatePassword;
-	      self.creationDate = u.creationDate;
-	      self.pbkdf2Salt = u.pbkdf2Salt;
-	    };
-
-	    return ctor;
-	  }());
-
-	  /**
-	   * @summary **Create a User**
-	   * @description
-	   * A User holds information about a person or authority that has
-	   * access rights to some part of a workspace and its storage.
-	   * Users are SequencedObjects since most of the activites on a given
-	   * user must occur in specific orders.
-	   * @constructor
-	   * @param {string} userName the name of the user's alias.
-	   * @returns {User} the new user
-	   */  
-	  var User = (function userCtorCreator() {
-	    // static initialization here.
-	    var STATUS = new Enum('unknown|loaded|saved|pending|created|active|failed');
-
-	    var ctor = function User(userName) {
-	      var self = this;
-
-	      SequencedObject.call(self); // populate parent instance fields.
-	      self.privatePassword = '';
-	      self.name = userName;
-	      self.STATUS = STATUS;
-	      self.status = self.STATUS.unknown;
-	      
-	      function setPassword(pwd) { 
-	        self.privatePassword = pwd; 
-	      }
-
-	      function getPassword() { 
-	        return self.privatePassword; 
-	      }
-
-	      function passwordMatches(testPassword) {
-	        return self.privatePassword === testPassword;
-	      }
-
-	      self.setPassword = setPassword;
-	      self.passwordMatches = passwordMatches;
-	      self.getPassword = getPassword;
-
-	      self.lock = function lockUser() { 
-	        self.getPassword = function userIsLocked() { return ''; }
-	      }
-	    }
-	    return ctor;
-	  }());
-
-	  User.prototype = Object.create(SequencedObject.prototype);
-	  User.prototype.PBKDF2_ROUNDS = 1000; // A reasonable number of rounds.
-	  User.prototype.PBKDF2_DKLEN = 16; // 16 byte derived key.
-
-	  /**
-	   * @summary Loads a User from persistent storage
-	   * @description
-	   * The PersistentUser in storage is looked up by the name alias
-	   * loaded into this User object. All existing fields in the user are
-	   * replaced by those from storage.
-	   * @returns {Promise} a promise to the User
-	   */
-	  User.prototype.load = function loadUser () {
-	    var self = this;
-	    return self.deferredFunc(function loadSequenced(deferred) {
-	      //var statusMessage = 'loading user: ' + self.name;
-	      setTimeout(function() {
-	          var u = users.inMemoryUserCache[self.name];
-	          if (u) {
-	            self.name = u.name;
-	            self.privatePassword = u.privatePassword;
-	            self.creationDate = u.creationDate;
-	            self.pbkdf2Salt = u.pbkdf2Salt;
-	            self.status = self.STATUS.loaded;
-	            var finishedMessage = 'loaded "' + self.name + '"';
-	            debug(finishedMessage, self.sequencedOperationsCount);
-	            deferred.resolve(self);
-	          }
-	          else {
-	            var notLoadedMessage = 'not loaded "' + self.name + '"';
-	            debug(notLoadedMessage, self.sequencedOperationsCount);
-	            self.status = self.STATUS.failed;            
-	            deferred.reject(new Error(notLoadedMessage));
-	          }
-	      }, T);
-	    })
-	  };
-
-	  /**
-	   * @summary Save a User into persistent storage
-	   * @description
-	   * The PersistentUser in storage is replaced by information from this
-	   * one, or a new user is created in storage.
-	   * @returns {Promise} a promise to the User
-	   */
-	  User.prototype.save = function saveUser () {
-	    var self = this;
-	    return self.deferredFunc(function saveSequenced(deferred) {
-	      var statusMessage = 'saving user: "' + self.name + '"';
-	      debug(statusMessage);
-	      setTimeout(function() {
-	          var u = users.inMemoryUserCache[self.name];
-	          if (u) {
-	            if (self.privatePassword === u.privatePassword) {
-	              self.status = self.STATUS.loaded;
-	              var finishedMessage = 'already saved "' + self.name + '"';
-	              debug(finishedMessage, self.sequencedOperationsCount);
-	              deferred.resolve(self);
-	            }
-	            else {
-	              var failedMessage = '*save failed for "' + self.name + '"';
-	              debug(failedMessage);
-	              deferred.reject(new Error(failedMessage));
-	            }
-	          }
-	          else {
-	            u = new PersistentUser(self);
-	            self.status = self.STATUS.saved;
-	            users.inMemoryUserCache[u.name] = u;
-	            var savedMessage = 'saved "' + self.name + '"';
-	            debug(savedMessage, self.sequencedOperationsCount);
-	            deferred.resolve(self);
-	          }
-	      }, T);
-	    })
-	  };
-	  
-	  /**
-	   * @summary Create a password for a User
-	   * @description
-	   * The User is given a password. Persistent storage is not accessed.
-	   * The plain text password is immediately encoded as a PBKDF2 hash.
-	   * @param {string} password the plain text of a password.
-	   * @returns {Promise} a promise to the User
-	   */
-	  User.prototype.create = function createUser(password) {
-	    var self = this;
-	    return self.deferredFunc(password,
-	      function createSequenced(deferred, password) {
-	      self.creationDate = new Date();
-	      self.status = self.STATUS.pending;
-	      if (password) {
-	        //statusMessage = 'computing ' + self.name;
-	        // The PBKDF2 salt is per user and is based on the sub millisecond
-	        // datetime for when the user was created. Its a small comfort.
-	        self.pbkdf2Salt = ua2hex(text2ua(self.creationDate.toISOString()));
-	        var uIntArrayPassword = sha256.pbkdf2(
-	            text2ua(password), 
-	            self.pbkdf2Salt,
-	            self.PBKDF2_ROUNDS,
-	            self.PBKDF2_DKLEN);
-	        self.setPassword(ua2hex(uIntArrayPassword));
-	        self.status = self.STATUS.created;
-	      }
-
-	      setTimeout(function() {
-	          var createdMessage = 'created user"' + self.name + '"';
-	          debug(createdMessage);
-	          deferred.resolve(self);
-	      }, T);
-	    })
-	  };
-
-	  /**
-	   * @summary Login the User
-	   * @description
-	   * The plain text password is checked against the User to determine
-	   * if there is a match. If there is a match then private information
-	   * about this user will be loaded from storage.
-	   * @param {string} password the plain text of a password to check.
-	   * @returns {Promise} a promise to the User
-	   */
-	  User.prototype.login = function loginUser(password) {
-	    var self = this;
-	    return self.deferredFunc(password,
-	      function loginSequenced(deferred, password) {
-	      var testPassword = ua2hex(sha256.pbkdf2(
-	          text2ua(password), 
-	          self.pbkdf2Salt,
-	          self.PBKDF2_ROUNDS,
-	          self.PBKDF2_DKLEN));
-	      debug('-- login test pwd:', '[' + testPassword + ']');
-	      debug('-- login user pwd:', '[' + self.getPassword() + ']');
-	      setTimeout(function() {
-	        if (self.passwordMatches(testPassword)) {
-	          self.status = self.STATUS.active;
-	          var activatedMessage = 'logged in ' + self.name;
-	          debug(activatedMessage);
-	          deferred.resolve(self);
-	        }
-	        else {
-	          self.status = self.STATUS.failed;
-	          var failedMessage = '*login failed for ' + self.name;
-	          debug(failedMessage);
-	          deferred.reject(new Error(failedMessage));
-	          //debug('=== Deferred:', deferred);
-	        }
-	      }, T);
-	    })
-	  };
-
-	  /**
-	   * @summary Remove the User
-	   * @description
-	   * The user is removed from storage.
-	   * @returns {Promise} a promise to the User
-	   */
-	  User.prototype.remove = function removeUser() {
-	    var self = this;
-	    return self.deferredFunc(function deleteSequenced(deferred) {
-	      setTimeout(function() {
-	          var finishedMessage = 'deleted ' + self.name;
-	          debug(finishedMessage);
-	          deferred.resolve(self);
-	      }, T); 
-	    })
-	  };
-
-	  users.User = User;
-	  return users;
-	}
-
-/***/ },
-/* 20 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	module.exports = function registerSalUserStorage(mm) {
-	//var SequencedObject = mm.obj.SequencedObject;
-
-	  var us = {};
-	  
-	  
-	  
-	/*  
-	  
-	  // The cache of users and user management methods.  
-	  var users = {};
-	  users.inMemoryUserCache = {};
-	  
-	  var PersistentUser = (function persistentUserCtorCreator() {
-	    var ctor = function PersistentUser(u) {
-	      var self = this;
-	      self.name = u.name;
-	      self.privatePassword = u.privatePassword;
-	      self.creationDate = u.creationDate;
-	      self.pbkdf2Salt = u.pbkdf2Salt;
-	    };
-
-	    return ctor;
-	  }());
-
-	  var User = (function userCtorCreator() {
-	    // static initialization here.
-	    var STATUS = new Enum('unknown|loaded|saved|pending|created|active|failed');
-
-	    var ctor = function User(userName) {
-	      var self = this;
-
-	      SequencedObject.call(self); // populate parent instance fields.
-	      self.privatePassword = '';
-	      self.name = userName;
-	      self.STATUS = STATUS;
-	      self.status = self.STATUS.unknown;
-	      
-	      function setPassword(pwd) { 
-	        self.privatePassword = pwd; 
-	      }
-
-	      function getPassword() { 
-	        return self.privatePassword; 
-	      }
-
-	      function passwordMatches(testPassword) {
-	        return self.privatePassword === testPassword;
-	      }
-
-	      self.setPassword = setPassword;
-	      self.passwordMatches = passwordMatches;
-	      self.getPassword = getPassword;
-
-	      self.lock = function lockUser() { 
-	        self.getPassword = function userIsLocked() { return ''; }
-	      }
-	    }
-	    return ctor;
-	  }());
-
-	  User.prototype = Object.create(SequencedObject.prototype);
-	  User.prototype.PBKDF2_ROUNDS = 1000; // A reasonable number of rounds.
-	  User.prototype.PBKDF2_DKLEN = 16; // 16 byte derived key.
-
-	  User.prototype.load = function loadUser () {
-	    var self = this;
-	    return self.sequencedFunc(function loadSequenced(deferred) {
-	      //var statusMessage = 'loading user: ' + self.name;
-	      setTimeout(function() {
-	          var u = users.inMemoryUserCache[self.name];
-	          if (u) {
-	            self.name = u.name;
-	            self.privatePassword = u.privatePassword;
-	            self.creationDate = u.creationDate;
-	            self.pbkdf2Salt = u.pbkdf2Salt;
-	            self.status = self.STATUS.loaded;
-	            var finishedMessage = 'loaded "' + self.name + '"';
-	            debug(finishedMessage, self.sequencedOperationsCount);
-	            deferred.resolve(self);
-	          }
-	          else {
-	            var notLoadedMessage = 'not loaded "' + self.name + '"';
-	            debug(notLoadedMessage, self.sequencedOperationsCount);
-	            self.status = self.STATUS.failed;            
-	          }
-	      }, T);
-	    })
-	  };
-
-	  User.prototype.save = function saveUser () {
-	    var self = this;
-	    return self.sequencedFunc(function saveSequenced(deferred) {
-	      var statusMessage = 'saving user: "' + self.name + '"';
-	      debug(statusMessage);
-	      setTimeout(function() {
-	          var u = users.inMemoryUserCache[self.name];
-	          if (u) {
-	            if (self.privatePassword === u.privatePassword) {
-	              self.status = self.STATUS.loaded;
-	              var finishedMessage = 'already saved "' + self.name + '"';
-	              debug(finishedMessage, self.sequencedOperationsCount);
-	              deferred.resolve(self);
-	            }
-	            else {
-	              var failedMessage = '*save failed for "' + self.name + '"';
-	              debug(failedMessage);
-	              deferred.reject(new Error(failedMessage));
-	            }
-	          }
-	          else {
-	            u = new PersistentUser(self);
-	            self.status = self.STATUS.saved;
-	            users.inMemoryUserCache[u.name] = u;
-	            var savedMessage = 'saved "' + self.name + '"';
-	            debug(savedMessage, self.sequencedOperationsCount);
-	            deferred.resolve(self);
-	          }
-	      }, T);
-	    })
-	  };
-	  
-	  User.prototype.create = function createUser(password) {
-	    var self = this;
-	    return self.sequencedFunc(password,
-	      function createSequenced(deferred, password) {
-	      self.creationDate = new Date();
-	      self.status = self.STATUS.pending;
-	      if (password) {
-	        //statusMessage = 'computing ' + self.name;
-	        // The PBKDF2 salt is per user and is based on the sub millisecond
-	        // datetime for when the user was created. Its a small comfort.
-	        self.pbkdf2Salt = ua2hex(text2ua(self.creationDate.toISOString()));
-	        var uIntArrayPassword = sha256.pbkdf2(
-	            text2ua(password), 
-	            self.pbkdf2Salt,
-	            self.PBKDF2_ROUNDS,
-	            self.PBKDF2_DKLEN);
-	        self.setPassword(ua2hex(uIntArrayPassword));
-	        self.status = self.STATUS.created;
-	      }
-
-	      setTimeout(function() {
-	          var createdMessage = 'created user"' + self.name + '"';
-	          debug(createdMessage);
-	          deferred.resolve(self);
-	      }, T);
-	    })
-	  };
-
-	  User.prototype.login = function loginUser(password) {
-	    var self = this;
-	    return self.sequencedFunc(password,
-	      function loginSequenced(deferred, password) {
-	      var testPassword = ua2hex(sha256.pbkdf2(
-	          text2ua(password), 
-	          self.pbkdf2Salt,
-	          self.PBKDF2_ROUNDS,
-	          self.PBKDF2_DKLEN));
-	      debug('-- login test pwd:', '[' + testPassword + ']');
-	      debug('-- login user pwd:', '[' + self.getPassword() + ']');
-	      setTimeout(function() {
-	        if (self.passwordMatches(testPassword)) {
-	          self.status = self.STATUS.active;
-	          var activatedMessage = 'logged in ' + self.name;
-	          debug(activatedMessage);
-	          deferred.resolve(self);
-	        }
-	        else {
-	          self.status = self.STATUS.failed;
-	          var failedMessage = '*login failed for ' + self.name;
-	          debug(failedMessage);
-	          deferred.reject(new Error(failedMessage));
-	          //debug('=== Deferred:', deferred);
-	        }
-	      }, T);
-	    })
-	  };
-
-	  User.prototype.remove = function removeUser() {
-	    var self = this;
-	    return self.sequencedFunc(function deleteSequenced(deferred) {
-	      setTimeout(function() {
-	          var finishedMessage = 'deleted ' + self.name;
-	          debug(finishedMessage);
-	          deferred.resolve(self);
-	      }, T); 
-	    })
-	  };
-	*/
-
-	  return us;
-	}
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(8)))
 
 /***/ },
 /* 21 */
-/***/ function(module, exports, __webpack_require__) {
-
-	module.exports = function(module) {
-		if(!module.webpackPolyfill) {
-			module.deprecate = function() {};
-			module.paths = [];
-			// module.parent = undefined by default
-			module.children = [];
-			module.webpackPolyfill = 1;
-		}
-		return module;
-	}
-
-
-/***/ },
-/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {
@@ -18800,10 +18784,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(16).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
 
 /***/ },
-/* 23 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process, Buffer) {
@@ -18920,16 +18904,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(14), __webpack_require__(16).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8), __webpack_require__(19).Buffer))
 
 /***/ },
-/* 24 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {var Q = __webpack_require__(7);
-	var Boot = __webpack_require__(28);
-	var RootFs = __webpack_require__(26);
-	var MockFs = __webpack_require__(25);
+	var Boot = __webpack_require__(29);
+	var RootFs = __webpack_require__(25);
+	var MockFs = __webpack_require__(24);
 
 	// TODO patternToRegExp
 	// TODO glob
@@ -19419,19 +19403,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(16).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
 
 /***/ },
-/* 25 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {
 	var Q = __webpack_require__(7);
-	var Boot = __webpack_require__(28);
-	var Common = __webpack_require__(24);
-	var BufferStream = __webpack_require__(29);
-	var Reader = __webpack_require__(22);
-	var Set = __webpack_require__(37);
+	var Boot = __webpack_require__(29);
+	var Common = __webpack_require__(23);
+	var BufferStream = __webpack_require__(30);
+	var Reader = __webpack_require__(21);
+	var Set = __webpack_require__(35);
 
 	module.exports = MockFs;
 
@@ -19975,19 +19959,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	// cycle breaking
-	var FS = __webpack_require__(15);
+	var FS = __webpack_require__(9);
 
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(16).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
 
 /***/ },
-/* 26 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
 	var Q = __webpack_require__(7);
-	var BOOT = __webpack_require__(28);
-	var COMMON = __webpack_require__(24);
+	var BOOT = __webpack_require__(29);
+	var COMMON = __webpack_require__(23);
 
 	module.exports = RootFs;
 
@@ -20132,10 +20116,26 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
+/* 26 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = function(module) {
+		if(!module.webpackPolyfill) {
+			module.deprecate = function() {};
+			module.paths = [];
+			// module.parent = undefined by default
+			module.children = [];
+			module.webpackPolyfill = 1;
+		}
+		return module;
+	}
+
+
+/***/ },
 /* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(setImmediate, clearImmediate) {var nextTick = __webpack_require__(14).nextTick;
+	/* WEBPACK VAR INJECTION */(function(setImmediate, clearImmediate) {var nextTick = __webpack_require__(8).nextTick;
 	var apply = Function.prototype.apply;
 	var slice = Array.prototype.slice;
 	var immediateIds = {};
@@ -20217,6 +20217,17 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
+	module.exports = function isBuffer(arg) {
+	  return arg && typeof arg === 'object'
+	    && typeof arg.copy === 'function'
+	    && typeof arg.fill === 'function'
+	    && typeof arg.readUInt8 === 'function';
+	}
+
+/***/ },
+/* 29 */
+/***/ function(module, exports, __webpack_require__) {
+
 	/* WEBPACK VAR INJECTION */(function(process) {(function (exports) {
 
 	// -- kriskowal Kris Kowal Copyright (C) 2009-2010 MIT License
@@ -20238,7 +20249,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return str.replace(/[-[\]{}()*+?.\\^$|,#\s]/g, "\\$&");
 	};
 
-	var path = __webpack_require__(34);
+	var path = __webpack_require__(37);
 
 	/**
 	 * @name ROOT
@@ -20465,7 +20476,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 	exports.root = function (path) {
 	    if (!exports.isAbsolute(path))
-	        path = __webpack_require__(15).absolute(path);
+	        path = __webpack_require__(9).absolute(path);
 	    var parts = exports.split(path);
 	    return exports.join(parts[0], "");
 	};
@@ -20525,15 +20536,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	})(true ? exports : FS_BOOT = {});
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(14)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
 
 /***/ },
-/* 29 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {
 	var Q = __webpack_require__(7);
-	var Reader = __webpack_require__(22);
+	var Reader = __webpack_require__(21);
 
 	module.exports = BufferStream;
 	function BufferStream(chunks, charset) {
@@ -20591,10 +20602,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(16).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(19).Buffer))
 
 /***/ },
-/* 30 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -20871,18 +20882,126 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 31 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = function isBuffer(arg) {
-	  return arg && typeof arg === 'object'
-	    && typeof arg.copy === 'function'
-	    && typeof arg.fill === 'function'
-	    && typeof arg.readUInt8 === 'function';
+	if (typeof Object.create === 'function') {
+	  // implementation from standard node.js 'util' module
+	  module.exports = function inherits(ctor, superCtor) {
+	    ctor.super_ = superCtor
+	    ctor.prototype = Object.create(superCtor.prototype, {
+	      constructor: {
+	        value: ctor,
+	        enumerable: false,
+	        writable: true,
+	        configurable: true
+	      }
+	    });
+	  };
+	} else {
+	  // old school shim for old browsers
+	  module.exports = function inherits(ctor, superCtor) {
+	    ctor.super_ = superCtor
+	    var TempCtor = function () {}
+	    TempCtor.prototype = superCtor.prototype
+	    ctor.prototype = new TempCtor()
+	    ctor.prototype.constructor = ctor
+	  }
 	}
 
+
 /***/ },
-/* 32 */
+/* 33 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports.read = function(buffer, offset, isLE, mLen, nBytes) {
+	  var e, m,
+	      eLen = nBytes * 8 - mLen - 1,
+	      eMax = (1 << eLen) - 1,
+	      eBias = eMax >> 1,
+	      nBits = -7,
+	      i = isLE ? (nBytes - 1) : 0,
+	      d = isLE ? -1 : 1,
+	      s = buffer[offset + i];
+
+	  i += d;
+
+	  e = s & ((1 << (-nBits)) - 1);
+	  s >>= (-nBits);
+	  nBits += eLen;
+	  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8);
+
+	  m = e & ((1 << (-nBits)) - 1);
+	  e >>= (-nBits);
+	  nBits += mLen;
+	  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8);
+
+	  if (e === 0) {
+	    e = 1 - eBias;
+	  } else if (e === eMax) {
+	    return m ? NaN : ((s ? -1 : 1) * Infinity);
+	  } else {
+	    m = m + Math.pow(2, mLen);
+	    e = e - eBias;
+	  }
+	  return (s ? -1 : 1) * m * Math.pow(2, e - mLen);
+	};
+
+	exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
+	  var e, m, c,
+	      eLen = nBytes * 8 - mLen - 1,
+	      eMax = (1 << eLen) - 1,
+	      eBias = eMax >> 1,
+	      rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0),
+	      i = isLE ? 0 : (nBytes - 1),
+	      d = isLE ? 1 : -1,
+	      s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0;
+
+	  value = Math.abs(value);
+
+	  if (isNaN(value) || value === Infinity) {
+	    m = isNaN(value) ? 1 : 0;
+	    e = eMax;
+	  } else {
+	    e = Math.floor(Math.log(value) / Math.LN2);
+	    if (value * (c = Math.pow(2, -e)) < 1) {
+	      e--;
+	      c *= 2;
+	    }
+	    if (e + eBias >= 1) {
+	      value += rt / c;
+	    } else {
+	      value += rt * Math.pow(2, 1 - eBias);
+	    }
+	    if (value * c >= 2) {
+	      e++;
+	      c /= 2;
+	    }
+
+	    if (e + eBias >= eMax) {
+	      m = 0;
+	      e = eMax;
+	    } else if (e + eBias >= 1) {
+	      m = (value * c - 1) * Math.pow(2, mLen);
+	      e = e + eBias;
+	    } else {
+	      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen);
+	      e = 0;
+	    }
+	  }
+
+	  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8);
+
+	  e = (e << mLen) | m;
+	  eLen += mLen;
+	  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8);
+
+	  buffer[offset + i - d] |= s * 128;
+	};
+
+
+/***/ },
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -20921,7 +21040,186 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 33 */
+/* 35 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var Shim = __webpack_require__(38);
+	var List = __webpack_require__(39);
+	var FastSet = __webpack_require__(40);
+	var GenericCollection = __webpack_require__(41);
+	var GenericSet = __webpack_require__(42);
+	var PropertyChanges = __webpack_require__(43);
+	var RangeChanges = __webpack_require__(44);
+
+	module.exports = Set;
+
+	function Set(values, equals, hash, getDefault) {
+	    if (!(this instanceof Set)) {
+	        return new Set(values, equals, hash, getDefault);
+	    }
+	    equals = equals || Object.equals;
+	    hash = hash || Object.hash;
+	    getDefault = getDefault || Function.noop;
+	    this.contentEquals = equals;
+	    this.contentHash = hash;
+	    this.getDefault = getDefault;
+	    // a list of values in insertion order, used for all operations that depend
+	    // on iterating in insertion order
+	    this.order = new this.Order(undefined, equals);
+	    // a set of nodes from the order list, indexed by the corresponding value,
+	    // used for all operations that need to quickly seek  value in the list
+	    this.store = new this.Store(
+	        undefined,
+	        function (a, b) {
+	            return equals(a.value, b.value);
+	        },
+	        function (node) {
+	            return hash(node.value);
+	        }
+	    );
+	    this.length = 0;
+	    this.addEach(values);
+	}
+
+	Set.Set = Set; // hack so require("set").Set will work in MontageJS
+
+	Object.addEach(Set.prototype, GenericCollection.prototype);
+	Object.addEach(Set.prototype, GenericSet.prototype);
+	Object.addEach(Set.prototype, PropertyChanges.prototype);
+	Object.addEach(Set.prototype, RangeChanges.prototype);
+
+	Set.prototype.Order = List;
+	Set.prototype.Store = FastSet;
+
+	Set.prototype.constructClone = function (values) {
+	    return new this.constructor(values, this.contentEquals, this.contentHash, this.getDefault);
+	};
+
+	Set.prototype.has = function (value) {
+	    var node = new this.order.Node(value);
+	    return this.store.has(node);
+	};
+
+	Set.prototype.get = function (value) {
+	    var node = new this.order.Node(value);
+	    node = this.store.get(node);
+	    if (node) {
+	        return node.value;
+	    } else {
+	        return this.getDefault(value);
+	    }
+	};
+
+	Set.prototype.add = function (value) {
+	    var node = new this.order.Node(value);
+	    if (!this.store.has(node)) {
+	        var index = this.length;
+	        if (this.dispatchesRangeChanges) {
+	            this.dispatchBeforeRangeChange([value], [], index);
+	        }
+	        this.order.add(value);
+	        node = this.order.head.prev;
+	        this.store.add(node);
+	        this.length++;
+	        if (this.dispatchesRangeChanges) {
+	            this.dispatchRangeChange([value], [], index);
+	        }
+	        return true;
+	    }
+	    return false;
+	};
+
+	Set.prototype["delete"] = function (value) {
+	    var node = new this.order.Node(value);
+	    if (this.store.has(node)) {
+	        var node = this.store.get(node);
+	        if (this.dispatchesRangeChanges) {
+	            this.dispatchBeforeRangeChange([], [value], node.index);
+	        }
+	        this.store["delete"](node); // removes from the set
+	        this.order.splice(node, 1); // removes the node from the list
+	        this.length--;
+	        if (this.dispatchesRangeChanges) {
+	            this.dispatchRangeChange([], [value], node.index);
+	        }
+	        return true;
+	    }
+	    return false;
+	};
+
+	Set.prototype.pop = function () {
+	    if (this.length) {
+	        var result = this.order.head.prev.value;
+	        this["delete"](result);
+	        return result;
+	    }
+	};
+
+	Set.prototype.shift = function () {
+	    if (this.length) {
+	        var result = this.order.head.next.value;
+	        this["delete"](result);
+	        return result;
+	    }
+	};
+
+	Set.prototype.one = function () {
+	    if (this.length > 0) {
+	        return this.store.one().value;
+	    }
+	};
+
+	Set.prototype.clear = function () {
+	    var clearing;
+	    if (this.dispatchesRangeChanges) {
+	        clearing = this.toArray();
+	        this.dispatchBeforeRangeChange([], clearing, 0);
+	    }
+	    this.store.clear();
+	    this.order.clear();
+	    this.length = 0;
+	    if (this.dispatchesRangeChanges) {
+	        this.dispatchRangeChange([], clearing, 0);
+	    }
+	};
+
+	Set.prototype.reduce = function (callback, basis /*, thisp*/) {
+	    var thisp = arguments[2];
+	    var list = this.order;
+	    var index = 0;
+	    return list.reduce(function (basis, value) {
+	        return callback.call(thisp, basis, value, index++, this);
+	    }, basis, this);
+	};
+
+	Set.prototype.reduceRight = function (callback, basis /*, thisp*/) {
+	    var thisp = arguments[2];
+	    var list = this.order;
+	    var index = this.length - 1;
+	    return list.reduceRight(function (basis, value) {
+	        return callback.call(thisp, basis, value, index--, this);
+	    }, basis, this);
+	};
+
+	Set.prototype.iterate = function () {
+	    return this.order.iterate();
+	};
+
+	Set.prototype.log = function () {
+	    var set = this.store;
+	    return set.log.apply(set, arguments);
+	};
+
+	Set.prototype.makeObservable = function () {
+	    this.order.makeObservable();
+	};
+
+
+
+/***/ },
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -21051,7 +21349,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 34 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -21279,305 +21577,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(14)))
-
-/***/ },
-/* 35 */
-/***/ function(module, exports, __webpack_require__) {
-
-	exports.read = function(buffer, offset, isLE, mLen, nBytes) {
-	  var e, m,
-	      eLen = nBytes * 8 - mLen - 1,
-	      eMax = (1 << eLen) - 1,
-	      eBias = eMax >> 1,
-	      nBits = -7,
-	      i = isLE ? (nBytes - 1) : 0,
-	      d = isLE ? -1 : 1,
-	      s = buffer[offset + i];
-
-	  i += d;
-
-	  e = s & ((1 << (-nBits)) - 1);
-	  s >>= (-nBits);
-	  nBits += eLen;
-	  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8);
-
-	  m = e & ((1 << (-nBits)) - 1);
-	  e >>= (-nBits);
-	  nBits += mLen;
-	  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8);
-
-	  if (e === 0) {
-	    e = 1 - eBias;
-	  } else if (e === eMax) {
-	    return m ? NaN : ((s ? -1 : 1) * Infinity);
-	  } else {
-	    m = m + Math.pow(2, mLen);
-	    e = e - eBias;
-	  }
-	  return (s ? -1 : 1) * m * Math.pow(2, e - mLen);
-	};
-
-	exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
-	  var e, m, c,
-	      eLen = nBytes * 8 - mLen - 1,
-	      eMax = (1 << eLen) - 1,
-	      eBias = eMax >> 1,
-	      rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0),
-	      i = isLE ? 0 : (nBytes - 1),
-	      d = isLE ? 1 : -1,
-	      s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0;
-
-	  value = Math.abs(value);
-
-	  if (isNaN(value) || value === Infinity) {
-	    m = isNaN(value) ? 1 : 0;
-	    e = eMax;
-	  } else {
-	    e = Math.floor(Math.log(value) / Math.LN2);
-	    if (value * (c = Math.pow(2, -e)) < 1) {
-	      e--;
-	      c *= 2;
-	    }
-	    if (e + eBias >= 1) {
-	      value += rt / c;
-	    } else {
-	      value += rt * Math.pow(2, 1 - eBias);
-	    }
-	    if (value * c >= 2) {
-	      e++;
-	      c /= 2;
-	    }
-
-	    if (e + eBias >= eMax) {
-	      m = 0;
-	      e = eMax;
-	    } else if (e + eBias >= 1) {
-	      m = (value * c - 1) * Math.pow(2, mLen);
-	      e = e + eBias;
-	    } else {
-	      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen);
-	      e = 0;
-	    }
-	  }
-
-	  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8);
-
-	  e = (e << mLen) | m;
-	  eLen += mLen;
-	  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8);
-
-	  buffer[offset + i - d] |= s * 128;
-	};
-
-
-/***/ },
-/* 36 */
-/***/ function(module, exports, __webpack_require__) {
-
-	if (typeof Object.create === 'function') {
-	  // implementation from standard node.js 'util' module
-	  module.exports = function inherits(ctor, superCtor) {
-	    ctor.super_ = superCtor
-	    ctor.prototype = Object.create(superCtor.prototype, {
-	      constructor: {
-	        value: ctor,
-	        enumerable: false,
-	        writable: true,
-	        configurable: true
-	      }
-	    });
-	  };
-	} else {
-	  // old school shim for old browsers
-	  module.exports = function inherits(ctor, superCtor) {
-	    ctor.super_ = superCtor
-	    var TempCtor = function () {}
-	    TempCtor.prototype = superCtor.prototype
-	    ctor.prototype = new TempCtor()
-	    ctor.prototype.constructor = ctor
-	  }
-	}
-
-
-/***/ },
-/* 37 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var Shim = __webpack_require__(38);
-	var List = __webpack_require__(39);
-	var FastSet = __webpack_require__(40);
-	var GenericCollection = __webpack_require__(41);
-	var GenericSet = __webpack_require__(42);
-	var PropertyChanges = __webpack_require__(43);
-	var RangeChanges = __webpack_require__(44);
-
-	module.exports = Set;
-
-	function Set(values, equals, hash, getDefault) {
-	    if (!(this instanceof Set)) {
-	        return new Set(values, equals, hash, getDefault);
-	    }
-	    equals = equals || Object.equals;
-	    hash = hash || Object.hash;
-	    getDefault = getDefault || Function.noop;
-	    this.contentEquals = equals;
-	    this.contentHash = hash;
-	    this.getDefault = getDefault;
-	    // a list of values in insertion order, used for all operations that depend
-	    // on iterating in insertion order
-	    this.order = new this.Order(undefined, equals);
-	    // a set of nodes from the order list, indexed by the corresponding value,
-	    // used for all operations that need to quickly seek  value in the list
-	    this.store = new this.Store(
-	        undefined,
-	        function (a, b) {
-	            return equals(a.value, b.value);
-	        },
-	        function (node) {
-	            return hash(node.value);
-	        }
-	    );
-	    this.length = 0;
-	    this.addEach(values);
-	}
-
-	Set.Set = Set; // hack so require("set").Set will work in MontageJS
-
-	Object.addEach(Set.prototype, GenericCollection.prototype);
-	Object.addEach(Set.prototype, GenericSet.prototype);
-	Object.addEach(Set.prototype, PropertyChanges.prototype);
-	Object.addEach(Set.prototype, RangeChanges.prototype);
-
-	Set.prototype.Order = List;
-	Set.prototype.Store = FastSet;
-
-	Set.prototype.constructClone = function (values) {
-	    return new this.constructor(values, this.contentEquals, this.contentHash, this.getDefault);
-	};
-
-	Set.prototype.has = function (value) {
-	    var node = new this.order.Node(value);
-	    return this.store.has(node);
-	};
-
-	Set.prototype.get = function (value) {
-	    var node = new this.order.Node(value);
-	    node = this.store.get(node);
-	    if (node) {
-	        return node.value;
-	    } else {
-	        return this.getDefault(value);
-	    }
-	};
-
-	Set.prototype.add = function (value) {
-	    var node = new this.order.Node(value);
-	    if (!this.store.has(node)) {
-	        var index = this.length;
-	        if (this.dispatchesRangeChanges) {
-	            this.dispatchBeforeRangeChange([value], [], index);
-	        }
-	        this.order.add(value);
-	        node = this.order.head.prev;
-	        this.store.add(node);
-	        this.length++;
-	        if (this.dispatchesRangeChanges) {
-	            this.dispatchRangeChange([value], [], index);
-	        }
-	        return true;
-	    }
-	    return false;
-	};
-
-	Set.prototype["delete"] = function (value) {
-	    var node = new this.order.Node(value);
-	    if (this.store.has(node)) {
-	        var node = this.store.get(node);
-	        if (this.dispatchesRangeChanges) {
-	            this.dispatchBeforeRangeChange([], [value], node.index);
-	        }
-	        this.store["delete"](node); // removes from the set
-	        this.order.splice(node, 1); // removes the node from the list
-	        this.length--;
-	        if (this.dispatchesRangeChanges) {
-	            this.dispatchRangeChange([], [value], node.index);
-	        }
-	        return true;
-	    }
-	    return false;
-	};
-
-	Set.prototype.pop = function () {
-	    if (this.length) {
-	        var result = this.order.head.prev.value;
-	        this["delete"](result);
-	        return result;
-	    }
-	};
-
-	Set.prototype.shift = function () {
-	    if (this.length) {
-	        var result = this.order.head.next.value;
-	        this["delete"](result);
-	        return result;
-	    }
-	};
-
-	Set.prototype.one = function () {
-	    if (this.length > 0) {
-	        return this.store.one().value;
-	    }
-	};
-
-	Set.prototype.clear = function () {
-	    var clearing;
-	    if (this.dispatchesRangeChanges) {
-	        clearing = this.toArray();
-	        this.dispatchBeforeRangeChange([], clearing, 0);
-	    }
-	    this.store.clear();
-	    this.order.clear();
-	    this.length = 0;
-	    if (this.dispatchesRangeChanges) {
-	        this.dispatchRangeChange([], clearing, 0);
-	    }
-	};
-
-	Set.prototype.reduce = function (callback, basis /*, thisp*/) {
-	    var thisp = arguments[2];
-	    var list = this.order;
-	    var index = 0;
-	    return list.reduce(function (basis, value) {
-	        return callback.call(thisp, basis, value, index++, this);
-	    }, basis, this);
-	};
-
-	Set.prototype.reduceRight = function (callback, basis /*, thisp*/) {
-	    var thisp = arguments[2];
-	    var list = this.order;
-	    var index = this.length - 1;
-	    return list.reduceRight(function (basis, value) {
-	        return callback.call(thisp, basis, value, index--, this);
-	    }, basis, this);
-	};
-
-	Set.prototype.iterate = function () {
-	    return this.order.iterate();
-	};
-
-	Set.prototype.log = function () {
-	    var set = this.store;
-	    return set.log.apply(set, arguments);
-	};
-
-	Set.prototype.makeObservable = function () {
-	    this.order.makeObservable();
-	};
-
-
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(8)))
 
 /***/ },
 /* 38 */
