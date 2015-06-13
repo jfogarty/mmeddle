@@ -11,9 +11,9 @@ beforeEach(function(){
 })
 
 describe('mmeddle', function(){
-  describe('ws', function(){
-    it('should be empty when first initialized', function(){
-      mm.should.have.property('ws');
+  describe('envText', function(){
+    it('should be exist when first initialized', function(){
+      mm.should.have.property('envText');
     })
   })
 })

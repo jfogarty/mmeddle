@@ -1,9 +1,10 @@
 #!/usr/bin/env node
+'use strict';
 /**
  * cli.js
  * https://github.com/jfogarty/mmeddle
  *
- * mmeddle.js is a symbolic math workspace for browsers and Node.js.
+ * mmeddle.js is a symbolic mmath workspace for browsers and Node.js.
  * It features pluggable types, operators, units, and functions.
  *
  * Usage:
@@ -23,9 +24,10 @@
  *     cat script.txt | mmeddle > results.txt  Run input stream, output to file
  *  
  * @credits
- * mMeddle makes extensive use of the truly excellent mathjs package by Jos de Jong
- * <wjosdejong@gmail.com> (https://github.com/josdejong) for numerical evaluation, and
- * significant code and ideas from mathjs have been hacked into mmeddle.
+ * mMeddle makes extensive use of the truly excellent mathjs package by 
+ * Jos de Jong <wjosdejong@gmail.com> (https://github.com/josdejong) for 
+ * numerical evaluation, and significant code and ideas from mathjs have
+*  been hacked into mmeddle.
  *
  * @license
  * Copyright (C) 2015 John Fogarty <johnhenryfogarty@gmail.com> (https://github.com/jfogarty)
@@ -43,157 +45,146 @@
  * the License.
  */
 
-var mmeddle = require('../index');
-var fs = require('fs');
+ module.exports = (function runCli () {
+  process.title = 'mMeddleCLI';
+  var mm = require('../index');
+  var check         = mm.check;
+  var _             = check(mm._);
+  var qq            = check(mm.Q);
+  var Logger        = check(mm.Logger);
+  var Lexer         = check(mm.core.Lexer);
+  var Parser        = check(mm.core.Parser);
+  var MMath         = check(mm.core.MMath);
+  var CliConsole    = check(mm.core.CliConsole);
+  var ClientSession = check(mm.core.ClientSession);
+  var MMeddleClient = check(mm.core.MMeddleClient);
+  var CliCommands   = check(mm.core.CliCommands);
+  
+  var mmath  = check(new MMath());
+  var ls  = new mm.storage.LocalStorage();
 
-/**
- * auto complete a text
- * @param {String} text
- * @return {[Array, String]} completions
- */
-function completer (text) {
-  var name;
-  var matches = [];
-  var m = /[a-zA-Z_0-9]+$/.exec(text);
-  if (m) {
-    var keyword = m[0];
+  /**
+   * Handle the mMeddle CLI on a CliConsole.
+   * @param {Commander} program Command line options for the program
+   */
+  function runCli (program) {
+    // Sets up a log file that receives timestamped log messages from the
+    // various logger types.
+    var mConsole = new CliConsole();
+    mm.log.setCliConsole(mConsole);
+    mConsole.clearScreen();
+    mm.log('----- mMeddle CLI v0.1.3 -----');
 
-    // commandline keywords
-    ['exit', 'quit', 'clear'].forEach(function (cmd) {
-      if (cmd.indexOf(keyword) == 0) {
-        matches.push(cmd);
-      }
-    });
+    if (!program.nolog) {
+      mm.log.setupAppDebugLog(__filename, program.debugon);
+    }
+    mm.config = mm.config.appLoad(__filename);
+    mm.log.debug('----- CLI Configuration -----\n', mm.config);
 
-    // math functions and constants
-    var ignore = ['expr', 'type'];
-    for (var func in math) {
-      if (math.hasOwnProperty(func)) {
-        if (func.indexOf(keyword) == 0 && ignore.indexOf(func) == -1) {
-          matches.push(func);
-        }
-      }
+    var host = mm.config.localUrl;
+    var cs = new ClientSession('CLI:');
+    var mmc = new MMeddleClient(host, cs);
+    
+    var cliCmds = new CliCommands(mConsole, cs);
+    cs.bindClient(mmc);
+    cs.loadLocalWorkspace();
+    cs.loadLocalUser(mConsole);
+    
+    if (!cs.user.isAnonymous()) {
+      mm.log('- Hello {0} {1}.', cs.user.firstName, cs.user.lastName);    
     }
 
-    // remove duplicates
-    matches = matches.filter(function(elem, pos, arr) {
-      return arr.indexOf(elem) == pos;
+    var ws = cs.ws;
+    if (ws.name) {
+      mm.log('- Loaded Local Workspace [{0}]: {1} variables', 
+          ws.name, ws.varsCount);
+    }
+    else {
+      mm.log('- Loaded Local Workspace: {0} variables', ws.varsCount);
+    }
+    var parser = check(new Parser(cs, ws, mmath));
+
+    mmc.connectWorkspace()
+    .then(function() {
+      mm.log('- Connected to server {0}', host);
+      cs.emitLogMessage('CLI connected!');
+    })
+  
+    cliCmds.rootCommandSet.defaultHandler(evaluateExpression);
+  
+    mConsole.setLineHandler(handleLine, '->');
+    mConsole.onClose(function() {
+      mm.log('- CLI Closed.');
+      mm.log();
+      process.exit(0);
     });
-  }
 
-  return [matches, keyword];
-}
+    function evaluateExpression(context) {
+      // evaluate expression
+      var line = context.text;
+      var expr = line.trim();
+      if (expr) {
+        parser.evaluate(expr);
+      }
+      return true;
+    }
 
-/**
- * Run stream, read and evaluate input and stream that to output.
- * Text lines read from the input are evaluated, and the results are send to
- * the output.
- * @param input   Input stream
- * @param output  Output stream
- */
-function runStream (input, output) {
-  var readline = require('readline'),
-      rl = readline.createInterface({
-        input: input || process.stdin,
-        output: output || process.stdout,
-        completer: completer
+    function handleLine(line) {
+      cliCmds.rootCommandSet.doCmd(line, cs)
+      .then(function (d) {
+        if (d instanceof Error) {
+          mm.log('Command error:', d);
+        }
+      },
+      function (e) {
+        //mm.log.error('Command failure:', e.stack);
+        mm.log.error('Command failure:', e);
       });
-
-  if (rl.output.isTTY) {
-    rl.setPrompt('> ');
-    rl.prompt();
+      return true; // Accept the command line.
+    } // End of handler.
+  }
+ 
+  /**
+   * Output a usage message
+   */
+  function outputUsage() {
+    [
+       'mmeddle.js',
+       'http://mmeddle-jfogarty.rhcloud.com  https://github.com/jfogarty/mmeddle',
+       '',
+       'mMeddle is a symbolic mmath workspace for JavaScript and Node.js.',
+       'It features pluggable types, operators, units, and functions.',
+       '',
+       'This command line interface allows you to enter and manipulate a',
+       'mmeddle workspace in an awkward and limited fashion.',
+       '',
+       'Usage:',
+       '    mmeddle [scriptfile] {OPTIONS}',
+       '',
+       '       --help, -h  Show this message',
+       '',
+       'Example usage:',
+       '    mmeddle                                Open a command prompt',
+       '    mmeddle script.txt                     Run a script file',
+       '    mmeddle script.txt > results.txt       Run a script file, output to file',
+       ''
+    ].forEach(function(line) { mm.log(line); });
   }
 
-  rl.on('close', function() {
-    console.log();
+  var program = require('commander');
+  program
+    .version(require('../src/version'))
+    .description('a command line interface for mMeddle workspaces')
+    // note --usage is NOT a good idea since it conflicts with commander.
+    .option('-u, --use', 'Show usage information and exit')
+    .option('-d, --debugon', 'Show debug logging to the console')
+    .option('-l, --nolog', 'Suppress writing to the log file')
+    .parse(process.argv);
+    
+  if (program.use) {
+    outputUsage();
     process.exit(0);
-  });
-}
+  }
 
-/**
- * Simulate saving a big object.
- */
-function fakeSave () {
-
-  var multimeter = require('multimeter');
-  var multi = multimeter(process);
-
-  multi.drop(function (bar) {
-      var iv = setInterval(function () {
-          var p = bar.percent();
-          bar.percent(p + 1);
-          
-          if (p >= 100) clearInterval(iv);
-      }, 25);
-  });
-}
-
-/**
- * Output a help message
- */
-function outputHelp() {
-  console.log('mmeddle.js');
-  console.log('http://mmeddle.org  http://jfogarty.org/mmeddle');
-  console.log();
-  console.log('mmeddle.js is a symbolic math workspace for JavaScript and Node.js.');
-  console.log('It features pluggable types, operators, units, and functions.');
-  console.log();
-  console.log('This node command line interface allows you to enter and manipulate a');
-  console.log('mmeddle workspace in an awkward and llimited fashion.');
-  console.log();
-  console.log('Usage:');
-  console.log('    mmeddle [scriptfile] {OPTIONS}');
-  console.log();
-  console.log('Options:');
-  console.log('    --version, -v  Show application version');
-  console.log('       --help, -h  Show this message');
-  console.log();
-  console.log('Example usage:');
-  console.log('    mmeddle                                Open a command prompt');
-  console.log('    mmeddle script.txt                     Run a script file');
-  console.log('    mmeddle script.txt > results.txt       Run a script file, output to file');
-  console.log('    cat script.txt | mmeddle               Run input streaml');
-  console.log('    cat script.txt | mmeddle > results.txt Run input stream, output to file');
-  console.log();
-}
-
-function increaseVerbosity(v, total) {
-  return total + 1;
-}
-
-var program = require('commander');
-console.log('-parsing: ' + process.argv);
-program
-  .version(require('../src/version'))
-  .description("a command line interface for mmeddle.js.")
-  .option('-p, --peppers', 'Add peppers')
-  .option('-P, --pineapple', 'Add pineapple')
-  .option('-b, --bbq', 'Add bbq sauce')
-  .option('-s, --size <size>', 'Pizza size', /^(large|medium|small)$/i, 'medium')
-  .option('-v, --verbose', 'A value that can be increased', increaseVerbosity, 1)
-  .command('install [name]', 'install one or more packages')
-  .command('search [query]', 'search with optional query')
-  .command('list', 'list packages installed');
-  
-program
-  .command('save [target]')
-  .description('save the current workspace and all documents')
-  .option("-f, --fast", "Fast save")
-  .action(function(target, options){
-    var mode = options.fast || "normal";
-    target = target || 'all';
-    console.log('-- Program size: %j', program.size);
-    console.log('-- Saving %s env(s) with %s mode', target, mode);
-  });
-  
-//program.on('--help', function(){
-//  outputHelp();
-//  //program.outputHelp();
-//  process.exit(1); // Displaying help is not a successful run.
-//});
- 
-program.parse(process.argv);  
-
-// Process input and output, based on the command line arguments
-console.log('-parsed leaves: ' + process.argv);
-
+  runCli(program);
+}());

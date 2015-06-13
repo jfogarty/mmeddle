@@ -13,6 +13,10 @@
 [depstat-url]: https://david-dm.org/jfogarty/mmeddle
 [depstat-image]: https://david-dm.org/jfogarty/mmeddle.svg
 
+[openshift-mm-url]: http://mmeddle-jfogarty.rhcloud.com
+[openshift-mm-bvt-url]: http://mmeddle-jfogarty.rhcloud.com/test/testMocha.html
+[openshift-mm-api-url]: http://mmeddle-jfogarty.rhcloud.com/api/index.html
+
 A symbolic math workspace for browsers and Node.js. It features pluggable types, operators, units, and functions.
 
 ![backgound math art](images/art/mathart1.jpg)
@@ -33,12 +37,12 @@ For the next few months this project is closed to external developers.
 * Dimensional analysis and validation across all levels of each expression
 * Workspace composition that incorporates other live math documents
 * Integer, Real, Complex, Vector, Matrix, Tensor and Logic type system plugins
-* Operators with rules of repacement and inference (assoc, comm, dist, elmination, etc.)
+* Operators with rules of replacement and inference (assoc, comm, dist, elimination, etc.)
 * Plugins for SI and US Customary unit systems
 * Implicit unit conversions to common base dimensions (including affine transforms)
 * LaTex and mmeddle format symbolic expression entry
 * MathML and LaTex math format outputs for document ready math
-* Constants expression evalautions retain symbolic products
+* Constants expression evaluations retain symbolic products
 * Numeric evaluations retain rational forms (symbols * numerator/denominator)
 * 100% undo/redo for every document, section, expression change
 
@@ -46,6 +50,8 @@ For the next few months this project is closed to external developers.
 
 [Developers](docs/DEVELOPERS.md)
 
-[The API is generated into ./api/index.html](api/index.html)
+[The current mMeddle test server (OpenShift hosted)][openshift-mm-url]
+
+[The current API (OpenShift hosted)][openshift-mm-api-url]
 
 #### End of document.

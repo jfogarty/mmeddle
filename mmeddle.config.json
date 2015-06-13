@@ -1,0 +1,6 @@
+/* mMeddle Configuration file. */
+{
+  debug: true,
+  boring: 'twit',
+  localUrl: 'http://127.0.0.1:8080'
+}

@@ -1,0 +1,14 @@
+/* 
+ *
+ *   my superuser mMeddle Configuration file. 
+ *
+ */
+{
+// xyzzy
+  administrator: true,
+  otherThing: 2323423,
+  anotherThing: "There's not enough to test",
+  "keys"   : 'can be quoted, but it is not required',
+  quotesCanBeEitherKind: 'The "real" JSON uses only double quotes',
+  boring: 'werm'
+}

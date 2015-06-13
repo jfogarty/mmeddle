@@ -1,0 +1,1287 @@
+/*
+    Generated CSS file.  Do not edit.
+*/
+.icon-address-book-new {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-appointment-new {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-bookmark-new {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-contact-new {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-document-new {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-document-open {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-document-print-preview {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-document-print {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-document-properties {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-document-save-as {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-document-save {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-edit-clear {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-edit-copy {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-edit-cut {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-edit-delete {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-edit-find-replace {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-edit-find {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-edit-paste {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-edit-redo {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-edit-select-all {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-edit-undo {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-folder-new {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-format-indent-less {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-format-indent-more {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-format-justify-center {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-format-justify-fill {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-format-justify-left {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-format-justify-right {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-format-text-bold {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-format-text-italic {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-format-text-strikethrough {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-format-text-underline {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-go-bottom {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-go-down {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-go-first {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-go-home {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-go-jump {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-go-last {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-go-next {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-go-previous {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-go-top {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-go-up {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-list-add {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-list-remove {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-mail-forward {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-mail-mark-junk {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-mail-mark-not-junk {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-mail-message-new {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-mail-reply-all {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-mail-reply-sender {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-mail-send-receive {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-media-eject {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-media-playback-pause {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-media-playback-start {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-media-playback-stop {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-media-record {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-media-seek-backward {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-media-seek-forward {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-media-skip-backward {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-media-skip-forward {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-process-stop {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-system-lock-screen {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-system-log-out {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-system-search {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-system-shutdown {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-tab-new {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-view-fullscreen {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-view-refresh {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-window-new {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-accessories-calculator {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-accessories-character-map {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-accessories-text-editor {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-help-browser {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-internet-group-chat {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-internet-mail {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-internet-news-reader {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-internet-web-browser {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-office-calendar {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-desktop-accessibility {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-desktop-assistive-technology {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-desktop-font {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-desktop-keyboard-shortcuts {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-desktop-locale {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-desktop-multimedia {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-desktop-remote-desktop {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-desktop-screensaver {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-desktop-theme {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-desktop-wallpaper {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-system-network-proxy {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-system-session {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-system-windows {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-system-file-manager {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-system-installer {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-system-software-update {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-system-users {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-utilities-system-monitor {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-utilities-terminal {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-applications-accessories {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-applications-development {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-applications-games {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-applications-graphics {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-applications-internet {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-applications-multimedia {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-applications-office {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-applications-other {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-applications-system {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-desktop-peripherals {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-desktop {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-preferences-system {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-audio-card {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-audio-input-microphone {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-battery {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-camera-photo {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-camera-video {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-computer {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-drive-harddisk {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-drive-optical {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-drive-removable-media {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-input-gaming {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-input-keyboard {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-input-mouse {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-media-flash {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-media-floppy {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-media-optical {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-multimedia-player {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-network-wired {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-network-wireless {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-printer {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-video-display {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-emblem-favorite {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-emblem-important {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-emblem-photos {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-emblem-readonly {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-emblem-symbolic-link {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-emblem-system {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-emblem-unreadable {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-angel {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-crying {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-devilish {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-glasses {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-grin {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-kiss {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-monkey {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-plain {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-sad {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-smile-big {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-smile {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-surprise {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-face-wink {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-application-certificate {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-application-x-executable {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-audio-x-generic {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-font-x-generic {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-image-x-generic {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-package-x-generic {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-text-html {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-text-x-generic-template {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-text-x-generic {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-text-x-script {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-video-x-generic {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-x-office-address-book {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-x-office-calendar {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-x-office-document-template {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-x-office-document {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-x-office-drawing-template {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-x-office-drawing {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-x-office-presentation-template {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-x-office-presentation {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-x-office-spreadsheet-template {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-x-office-spreadsheet {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-folder-remote {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-folder-saved-search {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-folder {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-network-server {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-network-workgroup {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-start-here {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-user-desktop {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-user-home {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-user-trash {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-audio-volume-high {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-audio-volume-low {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-audio-volume-medium {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-audio-volume-muted {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-battery-caution {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-dialog-error {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-dialog-information {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-dialog-warning {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -168px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-folder-drag-accept {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -210px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-folder-open {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -252px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-folder-visiting {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -294px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-image-loading {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -336px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-image-missing {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -378px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-mail-attachment {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -420px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-network-error {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -462px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-network-idle {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -504px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-network-offline {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -546px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-network-receive {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px 0px;
+  width: 32px;
+  height: 32px;
+}
+.icon-network-transmit-receive {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -42px;
+  width: 32px;
+  height: 32px;
+}
+.icon-network-transmit {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -84px;
+  width: 32px;
+  height: 32px;
+}
+.icon-network-wireless-encrypted {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -126px;
+  width: 32px;
+  height: 32px;
+}
+.icon-printer-error {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -168px;
+  width: 32px;
+  height: 32px;
+}
+.icon-software-update-available {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -210px;
+  width: 32px;
+  height: 32px;
+}
+.icon-software-update-urgent {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -252px;
+  width: 32px;
+  height: 32px;
+}
+.icon-user-trash-full {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -294px;
+  width: 32px;
+  height: 32px;
+}
+.icon-weather-clear-night {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -336px;
+  width: 32px;
+  height: 32px;
+}
+.icon-weather-clear {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -378px;
+  width: 32px;
+  height: 32px;
+}
+.icon-weather-few-clouds-night {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -420px;
+  width: 32px;
+  height: 32px;
+}
+.icon-weather-few-clouds {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -462px;
+  width: 32px;
+  height: 32px;
+}
+.icon-weather-overcast {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -504px;
+  width: 32px;
+  height: 32px;
+}
+.icon-weather-severe-alert {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -588px -546px;
+  width: 32px;
+  height: 32px;
+}
+.icon-weather-showers-scattered {
+  background-image: url(../images/toolsprites32.png);
+  background-position: 0px -588px;
+  width: 32px;
+  height: 32px;
+}
+.icon-weather-showers {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -42px -588px;
+  width: 32px;
+  height: 32px;
+}
+.icon-weather-snow {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -84px -588px;
+  width: 32px;
+  height: 32px;
+}
+.icon-weather-storm {
+  background-image: url(../images/toolsprites32.png);
+  background-position: -126px -588px;
+  width: 32px;
+  height: 32px;
+}

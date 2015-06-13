@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>mMeddle-webcli-Command Line Interface</title>
+<!--  
+  <link href="../css/main.css" type="text/css" rel="stylesheet"/>
+-->  
+  <link rel="shortcut icon" href="../images/icons/mmTTab.ico">
+  
+  <style>
+    #topstatusfixed {
+      position: fixed;
+      top: -1em;
+      right: 5px;
+      color: red;
+    }
+    
+    #botstatusfixed {
+      position: fixed;
+      bottom: -1em;
+      right: 5px;
+      color: red;
+    }
+
+    .scrollabletextbox {
+      height:100px;
+      width:800px;
+      font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
+      font-size: 90%;
+      overflow:scroll;
+    }
+
+    #cliInText {
+      width: 800px;
+    }
+
+</style>
+<link rel="icon"      
+    }
+  </style>
+</head>
+<body>
+  <p id="topstatusfixed">Top Current mMeddle Status</p>
+  <p id="botstatusfixed">Bottom mMeddle Status</p>
+  <!-- WebPacked library(s) to test against -->
+  <h2>mMeddle Test Command Line Interface</h2>
+
+  <pre>
+    <div id="consolediv"></div>
+  </pre>    
+  <label id="inTextPrompt" for="cliIn" >Command:</label>
+  <input id="cliInText"   name="cliIn" autofocus
+          type="text" onchange="g_cliInput();" />
+<!--  
+  <p>Debugging log</p>
+  <textarea class="scrollabletextbox" id="browserlog" name="logs"></textarea>
+-->
+
+  <script src="../dist/mmeddle.min.js"></script>
+  <script>
+    var mm = mmeddle;
+    var check         = mm.check;
+    var _             = check(mm._);
+    var qq            = check(mm.Q);
+    var Logger        = check(mm.Logger);
+    var Lexer         = check(mm.core.Lexer);
+    var Parser        = check(mm.core.Parser);
+    var MMath         = check(mm.core.MMath);
+    var CliConsole    = check(mm.core.CliConsole);
+    var ClientSession = check(mm.core.ClientSession);
+    var MMeddleClient = check(mm.core.MMeddleClient);
+    var CliCommands   = check(mm.core.CliCommands);
+    
+    var mmath  = check(new MMath());
+    
+    g_consoleOut('- mMeddle env: ' + mm.envText);
+    var mConsole = new WebConsole();
+    
+    g_runCli();
+
+    function g_cliInput() {
+      var input = document.getElementById('cliInText');
+      var text = input.value;
+      input.value = '';
+      mConsole.enter(text);
+    }
+    
+    function g_cliInputPassword(isPassword) {
+      var input = document.getElementById('cliInText');
+      input.type = isPassword ? 'password' : 'text';
+    }
+
+    function g_setCommandLineFocus() {
+      document.getElementById('cliInText').focus();
+    }
+
+    function g_consoleOut(txt) {
+      var element = document.getElementById('consolediv');
+      var newContent = document.createTextNode(txt + '\n');
+      element.appendChild(newContent);
+    }
+
+    function g_consoleClear(txt) {
+      document.getElementById('consolediv').innerHTML = "";
+    }
+    
+    function g_consoleClear(txt) {
+      document.getElementById('consolediv').innerHTML = "";
+    }
+
+    function g_setPrompt(prompt) {
+      document.getElementById('inTextPrompt').innerHTML = prompt;
+    }
+
+    //------------------------------------------------------------------------
+    // A very simple mConsole compatible console.
+    function WebConsole() {
+      var self = this;
+      self.lastLine = '';
+      self.error = null;
+      self.saveOnlyUnique = false;
+      self.closeHandler = null;
+      self.maxPasswordLength = 15;
+
+      function makeLine (text) {
+        return {
+          textLine: text,
+          multiLine: false
+        };
+      }
+
+      self.handlers = []; // The stack of input handlers;
+      self.handler = {
+        func: null,     // caller must supply one.
+        prompt: 'Cmd:',
+        pwdMode: false  // show * during input.
+      };
+
+      self.pendingInputs = [];
+      self.currentInput = makeLine('');
+      self.savedInputLines = [];
+      self.savedInitialLine = '';
+      self.scrollingPrevious = true;
+
+      self.writeLine = function writeLine(text) {
+        g_consoleOut(text);
+      }
+
+      self.setLineHandler = 
+      function setLineHandler(handler, prompt, passwordMode) {
+        // Use the previous prompt if one is not supplied.
+        if (!prompt) prompt = self.handler.prompt;
+        self.handlers.push(self.handler);
+        self.handler = {
+          func: handler,
+          prompt: prompt,
+          pwdMode: passwordMode
+        };
+        g_setPrompt(self.handler.prompt);
+        g_cliInputPassword(self.handler.pwdMode);
+      }
+      
+      self.clearScreen = function clearScreen() {
+        g_consoleClear();
+      }
+
+      self.onClose = function onClose(func) {
+        self.closeHandler = func;
+      }
+      
+      self.close = function close() {
+        if (self.closeHandler) self.closeHandler();
+      }
+      
+      self.setCompleter = function setCompleter(func) {
+      }
+
+      self.ask = function ask (query, obj, field, isPwd) {
+        if (obj && obj.field) {
+          return qq(obj);
+        }
+        var qD = qq.defer();
+        self.setLineHandler(function(answer) {
+          if (answer) {
+            if (obj) {
+              obj[field] = answer;
+              qD.resolve(obj);
+            }
+            else {
+              qD.resolve(answer);
+            }
+          }
+          else {
+            qD.reject(new Error('Blank line not allowed. Entry abandoned'));
+          }
+          return false; // Only ask once.
+        }, query, isPwd === true ? true : false);
+        return qD.promise;
+      }
+      
+      // Handles Enter for single line entries.
+      self.enter = function enter(textLine) {
+        self.lastLine = textLine;
+        var displayText = textLine;
+        if (self.handler.pwdMode) {
+          displayText = _.repeat('*', self.maxPasswordLength);
+        }
+        mm.log(self.handler.prompt + displayText);
+        
+        while (self.handler.func) {
+          // Execute the current command line handler.
+          var response = self.handler.func(self.lastLine);
+          // This handler no longer wants to do the job.
+          if (response === false) {
+            self.handler = self.handlers.pop();
+            g_setPrompt(self.handler.prompt);
+            g_cliInputPassword(self.handler.pwdMode);
+            return; // All done.
+          }
+          else if (response === true) {
+            return; // All is well, all done.
+          }
+          else if (_.isString(response)) {
+            // Allow the handler to act as a translator for the input.
+            self.handler = self.handlers.pop();
+            g_setPrompt(self.handler.prompt);
+            g_cliInputPassword(self.handler.pwdMode);
+            self.lastLine = response;
+          }
+          else {
+            throw new Error('Invalid line handler response');
+          }
+        }
+      }
+    } //WebConsole
+    
+    /**
+     * Handle the mMeddle CLI on a CliConsole.
+     * @param {Commander} program Command line options for the program
+     */
+    function g_runCli (program) {
+      // Sets up a log file that receives timestamped log messages from the
+      // various logger types.
+
+      mm.log.setCliConsole(mConsole);
+      mConsole.clearScreen();
+      mm.log('----- mMeddle CLI v0.1.3 -----');
+
+      //mm.config = mm.config.appLoad(__filename);
+      mm.loggers.debugLogger.removeDestination('*');
+      mm.log.debug('----- CLI Configuration -----\n', mm.config);
+
+      var host = mm.config.localUrl;
+      var cs = new ClientSession('WebCLI:');
+      var mmc = new MMeddleClient(host, cs);
+      
+      var cliCmds = new CliCommands(mConsole, cs);
+      cs.bindClient(mmc);
+      cs.loadLocalWorkspace();
+      cs.loadLocalUser(loadLocalUser);
+      
+      if (!cs.user.isAnonymous()) {
+        mm.log('- Hello {0} {1}.', cs.user.firstName, cs.user.lastName);    
+      }
+
+      var ws = cs.ws;
+      mm.log('- Loaded Local Workspace: {0} variables', ws.varsCount);
+      var parser = check(new Parser(cs, ws, mmath));
+
+      mmc.connectWorkspace()
+      .then(function() {
+        mm.log('- Connected to server {0}', host);
+        cs.emitLogMessage('WebCLI connected.');
+      })
+    
+      cliCmds.rootCommandSet.defaultHandler(evaluateExpression);
+    
+      mConsole.setLineHandler(handleLine, 'Command:');
+      mConsole.onClose(function() {
+        mm.log('- WebCLI Closed.');
+        mm.log();
+      });
+
+      function evaluateExpression(context) {
+        // evaluate expression
+        var line = context.text;
+        var expr = line.trim();
+        if (expr) {
+          parser.evaluate(expr);
+        }
+        return true;
+      }
+
+      function handleLine(line) {
+        cliCmds.rootCommandSet.doCmd(line, cs)
+        .then(function (d) {
+          g_setCommandLineFocus();
+          if (d instanceof Error) {
+            mm.log('Command error:', d);
+          }
+        },
+        function (e) {
+          g_setCommandLineFocus();
+          mm.log.error('Command failure:', e.stack);
+        });
+        return true; // Accept the command line.
+      } // End of handler.
+    }
+    
+  </script>
+</body>
+</html>

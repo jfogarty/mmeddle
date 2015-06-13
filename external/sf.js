@@ -22,7 +22,13 @@ function padRight(str, char, totalWidth) {
 
 function formatNumber(num, format) {
   format = format || "0";
+  
+  // JFogarty - 4/30/2015.
+  if (format === '0') {
+    return num.toString();
+  }
 
+  //console.log('+++ NUM=', num, ' format=', format);
   var hex = format.match(/^([xX])([0-9]*)$/);
   if (hex) {
     var str = num.toString(16);

@@ -4,8 +4,8 @@
  */
 'use strict';
 module.exports = function registerSettings(mm) {
-  var _ = mm._;
-  var format = mm.format;
+  //var _ = mm._;
+  //var format = mm.format;
 
   /**
    * @class

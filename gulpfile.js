@@ -1,17 +1,20 @@
-var fs        = require('fs'),
-    del       = require('del'),
-    gulp      = require('gulp'),
-    gbump     = require('gulp-bump'),
-    gjshint   = require('gulp-jshint'),
-    ggit      = require('gulp-git'),
-    gmocha    = require('gulp-mocha'),
-    gshell    = require('gulp-shell')
-    gsize     = require('gulp-size'),
-    gutil     = require('gulp-util'),
-    gwebpack  = require('gulp-webpack'),
-    path      = require('path'),
-    webpack   = require('webpack'),
-    uglify    = require('uglify-js');
+var fs         = require('fs'),
+    del        = require('del'),
+    gulp       = require('gulp'),
+    glob       = require('glob'),
+    g_bump     = require('gulp-bump'),
+    g_if       = require('gulp-if');
+    g_jshint   = require('gulp-jshint'),
+    g_git      = require('gulp-git'),
+    g_mocha    = require('gulp-mocha'),
+    g_shell    = require('gulp-shell')
+    g_size     = require('gulp-size'),
+    g_util     = require('gulp-util'),
+    g_webpack  = require('gulp-webpack'),
+    path       = require('path'),
+    webpack    = require('webpack'),
+    uglify     = require('uglify-js'),
+    _          = require('lodash');
 
 var paths = {    
   ENTRY:    './index.js',
@@ -25,16 +28,16 @@ var paths = {
   REF_DEST: './docs/reference/functions/',
   NODE_BIN: './node_modules/.bin',
 
-  images:  'images/**/*',
-  src:     ['index.js', 'src/**/*.js'],
-  allsrc:  ['test/**/*.js', '!test/libs/*.js', 'index.js', 'src/**/*.js'],
-  lintsrc: ['test/**/*.js', '!test/libs/*.js', 'index.js', 'src/**/*.js'
-           , 'testm/**/*.js', 'scratch/**/*.js'],
-  tests:   ['test/**/*.js']
+//  images:  './images/**/*',
+  SRC_glob:     ['index.js', 'src/**/*.js'],
+  ALLJS_glob:   ['test/**/*.js', '!test/libs/*.js', 'index.js', 'src/**/*.js'],
+  LINTSRC_glob: ['test/**/*.js', '!test/libs/*.js', 'index.js', 'src/**/*.js',
+                 'testm/**/*.js', 'scratch/**/*.js'],
+  TESTS_glob:   ['test/**/*.js']
 };
 
 var pkg = require('./package.json');
-var disableMinify = false;
+var disableMinify = process.env.MMEDDLE_MIN ? false : true;
 
 paths.MMEDDLE_JS     = path.join(paths.DIST, paths.FILE);
 paths.MMEDDLE_MIN_JS = path.join(paths.DIST, paths.FILE_MIN);
@@ -42,7 +45,11 @@ paths.MMEDDLE_MAP_JS = path.join(paths.DIST, paths.FILE_MAP);
 
 var g_banner = false;
 var g_versionUpdated = false;
-    
+
+//----------------------------------------------------------------------------
+// Functions
+//----------------------------------------------------------------------------
+
 // Make package.json script commands into windows/unix compatible
 // shell commands that are found in the ./node_modules/.bin directory.
 function nodeBin(cmd) {
@@ -52,13 +59,30 @@ function nodeBin(cmd) {
  return cmdParts.join(' ');
 }
 
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Browser Packaging and Distribution
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+function cleanDistDirectory(cb) {
+  del([path.join(paths.DIST, '*')], function(err, deletedFiles) {
+    if (deletedFiles.length > 0) {
+      g_util.log('Files deleted:', deletedFiles.join(', '));
+    }
+    else {
+      g_util.log('No files deleted.');
+    }
+    cb();
+  });
+}
+
 // generate banner with today's date and correct version
 function createBanner() {
   // Create the new banner only once.
   if (!g_banner) {
-    var today = gutil.date(new Date(), 'yyyy-mm-dd'); // today, formatted as yyyy-mm-dd
+    // today, formatted as yyyy-mm-dd
+    var today = g_util.date(new Date(), 'yyyy-mm-dd');
     var version = pkg.version;
-    gutil.log('createBanner:' + paths.MMEDDLE_JS);
+    g_util.log('createBanner:' + paths.MMEDDLE_JS);
     g_banner = String(fs.readFileSync(paths.HEADER))
         .replace('@@date', today)
         .replace('@@version', version);
@@ -72,7 +96,7 @@ function updateVersionFile() {
     return;
   }
   
-  gutil.log('updateVersionFile:' + paths.MMEDDLE_JS);
+  g_util.log('updateVersionFile:' + paths.MMEDDLE_JS);
   var version = pkg.version;
   // generate file with version number
   fs.writeFileSync(paths.VERSION, 'module.exports = \'' + version + '\';\n' +
@@ -80,10 +104,10 @@ function updateVersionFile() {
       '// Changes made in this file will be overwritten.\n');
   g_versionUpdated = true;
 }
-
+// WebPack the mMeddle library into a browser loadable file.
 function bundle() {
   // update the banner contents (has a date in it which should stay up to date)
-  gutil.log('bundle:' + paths.MMEDDLE_JS);
+  g_util.log('bundle:' + paths.MMEDDLE_JS);
   var banner = createBanner();
   var bannerPlugin = new webpack.BannerPlugin(banner, {
     entryOnly: true,
@@ -93,8 +117,8 @@ function bundle() {
   bannerPlugin.banner = banner;
   updateVersionFile();
   return gulp.src(paths.ENTRY)
-    .pipe(gwebpack({
-        output: {
+    .pipe(g_webpack({
+        output: { 
           library: 'mmeddle',
           libraryTarget: 'umd',
           filename: paths.FILE
@@ -107,51 +131,188 @@ function bundle() {
       }, null,
       function(err, stats) {
         if (err) {
-          gutil.log('******************NOT bundled ' + paths.MMEDDLE_JS);
-          gutil.log(err);
+          g_util.log('******************NOT bundled ' + paths.MMEDDLE_JS);
+          g_util.log(err);
         }
-        gutil.log('bundled ' + paths.MMEDDLE_JS);
+        g_util.log('bundled ' + paths.MMEDDLE_JS);
       }))
-    .pipe(gsize({ title: "Full source browser script: " + paths.MMEDDLE_JS }))
+    .pipe(g_size({ title: "Full source browser script: " + paths.MMEDDLE_JS }))
     .pipe(gulp.dest(paths.DIST));
 }
 
-gulp.task('bundle', ['validate', 'test'], function () {
-  return bundle();
-});
+function minify() {
+  var result = uglify.minify([paths.MMEDDLE_JS], {
+      mangle: false, // JF - See if this helps
+      //compress: {}
+      compress: false, // JF - See if this helps
+      outSourceMap: paths.FILE_MAP,
+      output: {
+        comments: /@license/
+      }
+    });
+  fs.writeFileSync(paths.MMEDDLE_MIN_JS, result.code);
+  fs.writeFileSync(paths.MMEDDLE_MAP_JS, result.map);
+  g_util.log('Minified ' + paths.MMEDDLE_MIN_JS);
+  g_util.log('Mapped ' + paths.MMEDDLE_MAP_JS);
+  return gulp.src(paths.MMEDDLE_MIN_JS)
+      .pipe(g_size({ title: "Minimized browser script: " + paths.MMEDDLE_MIN_JS }));
+}
 
-gulp.task('minify', ['bundle'], function () {
-  if (!disableMinify) {
-    var result = uglify.minify([paths.MMEDDLE_JS], {
-        outSourceMap: paths.FILE_MAP,
-        output: {
-          comments: /@license/
-        }
-      });
-    fs.writeFileSync(paths.MMEDDLE_MIN_JS, result.code);
-    fs.writeFileSync(paths.MMEDDLE_MAP_JS, result.map);
-    gutil.log('Minified ' + paths.MMEDDLE_MIN_JS);
-    gutil.log('Mapped ' + paths.MMEDDLE_MAP_JS);
-    return gulp.src(paths.MMEDDLE_MIN_JS)
-        .pipe(gsize({ title: "Minimized browser script: " + paths.MMEDDLE_MIN_JS }));
-  }
-});
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Browser user interface CSS-Sprites generation
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function genSprites(done) {
+  var spritesmith = require('spritesmith');
+  var imageSizes = ['16', '22', '32'];
+  var count = 0;
+  var execs = imageSizes.length;
+  imageSizes.forEach( function(size) {
+    var iconDir = size + 'x' + size;
+    // create an array of all icons of the same size.
+    glob('./images/icons/' + iconDir + '/**/*.png', function (er, sprites) {
+      if (er) throw err;
+      var fn = 'toolsprites' + size;
+      var n = sprites.length;
+      spritesmith({
+          src: sprites,
+          padding: 10
+        }, 
+        function(err, result) {
+          count++;
+          if (err) throw err;
+          var fo = './images/' + fn + '.png'; // generated file.
+          var fref = fo; // file as referenced from the URL.
+          var fcss = './css/' + fn + '.css'; // the generated css file.
 
-// test various item for consistency
-gulp.task('validate', function (cb) {
-  gutil.log('validate:' + paths.MMEDDLE_JS);
-  // A no-op for now.
-  gutil.log('validated:' + paths.MMEDDLE_JS);
-  cb();
-});
+          // Output the image
+          fs.writeFileSync(fo, result.image, 'binary');
+         
+          // Generate the css.
+          var css = '/*\n' +
+            '    Generated CSS file.  Do not edit.\n' +
+            '*/\n';
+          _.forEach(result.coordinates, function(n, key, self) {
+            var png = key.substr(key.lastIndexOf('/') + 1);
+            var prefix = '.icon-';
+            var klass = prefix + png.substr(0, png.lastIndexOf('.'));
+            var x = 0 - self[key].x;
+            var y = 0 - self[key].y;
+            var w = self[key].width;
+            var h = self[key].height;
+            css += klass + ' {\n';
+            css += '  background-image: url(.' + fref + ');\n';
+            css += '  background-position: ' + x + 'px ' + y +'px;\n';
+            css += '  width: ' + w + 'px;\n';
+            css += '  height: ' + h + 'px;\n';
+            css += '}\n';
+          });
+          fs.writeFileSync(fcss, css);
+          g_util.log('Sprite created: ', fo, 'from', n, 'icons');
+          if (count >= execs) done();
+      })        
+    })
+  })
+}
 
+function convertSprites(done) {
+  var im = require('imagemagick');
+  var imageSizes = ['16', '22', '32'];
+  var count = 0;
+  var execs = imageSizes.length * 2;
+  imageSizes.forEach( function(size) {
+    var fn = 'toolsprites' + size;
+    
+    // Start async task to convert one image to grayscale
+    im.convert([
+      './images/' + fn + '.png',
+      '-colorspace', 'gray',
+      './images/' + fn + '_gray.png'],
+    function(err, stdout) {
+        count++;
+        if (err) throw err;
+        g_util.log('Image converted: ', fn + '_gray.png', stdout);
+        if (count >= execs) done();
+    })
+    
+    // Start async task to convert one image to focused (slight shadow)
+    im.convert([
+      './images/' + fn + '.png',
+      '-colorspace', 'gray',
+      '-fill', 'black', '-colorize', '20%',
+      './images/' + fn + '_focus.png'],
+    function(err, stdout) {
+        count++;
+        if (err) throw err;
+        g_util.log('Image converted: ', fn + '_focus.png', stdout);
+        if (count >= execs) done();
+    })
+  })
+}
+
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Testing, code quality and coverage
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function doLint(cb) {
-  gulp.src(paths.lintsrc)
-      .pipe(gjshint('.jshintrc'))
-      .pipe(gjshint.reporter('jshint-stylish'));
-  gutil.log(gutil.colors.green(' JSHINT  *completed*'));
+  gulp.src(paths.LINTSRC_glob)
+      .pipe(g_jshint('.jshintrc'))
+      .pipe(g_jshint.reporter('jshint-stylish'));
+  g_util.log(g_util.colors.green(' JSHINT  *completed*'));
   cb();
 }
+
+function mochaTests() {
+  return gulp.src(paths.TESTS_glob, {read: false})
+      .pipe(g_mocha({
+        ui: 'bdd',
+        //reporter: 'nyan'
+        //reporter: 'progress'
+        //reporter: 'dot'
+        //reporter: 'min' 
+        //reporter: 'spec'
+        reporter: 'list'
+      }));
+}
+
+// ***** Note - as of 1-may-2015 Karma tests are not yet running although
+// it does successfully launch the browsers (chrome, firefox, and phantomJS)
+// and tries to start some tests.
+function karmaTests(done) {
+  var karma = require('karma').server;
+  karma.start({
+    configFile: __dirname + '/karma.conf.js',
+    singleRun: true
+  }, done);
+}
+
+//----------------------------------------------------------------------------
+// Gulp Tasks.
+//----------------------------------------------------------------------------
+
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Browser user interface tool generation
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+gulp.task('sprites', ['genSprites'], function(done) {
+  convertSprites(done);
+});
+
+gulp.task('genSprites', function(done) {
+  genSprites(done);
+});
+
+gulp.task('convertSprites', function(done) {
+  convertSprites(done);
+});
+
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Testing, code quality and coverage
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// test various items for consistency
+gulp.task('validate', function (cb) {
+  g_util.log('validate:' + paths.MMEDDLE_JS);
+  // A no-op for now.
+  g_util.log('validated:' + paths.MMEDDLE_JS);
+  cb();
+});
 
 // Wrapper to run Lint by itself.
 gulp.task('lint', [], doLint);
@@ -160,45 +321,71 @@ gulp.task('lint', [], doLint);
 gulp.task('testm', ['test']);
 
 // Run the PhantomJS browser based tests a bit indirectly.
-gulp.task('testb', ['bundle', 'minify'], gshell.task([
+gulp.task('testb', ['bundle', 'minify'], g_shell.task([
   nodeBin(pkg.scripts.testb)
 ]));
 
 // Run the PhantomJS browser based tests a bit indirectly.
 gulp.task('testmb', ['testm'], function() {
   return bundle()
-    .pipe(gshell([ nodeBin(pkg.scripts.testb) ]));
+    .pipe(g_shell([ nodeBin(pkg.scripts.testb) ]));
 });
 
 // Run Mocha tests on all test.*js files.
 gulp.task('test', ['lint'], function () {
-    return gulp.src(paths.tests, {read: false})
-        .pipe(gmocha({
-          ui: 'bdd',
-          //reporter: 'nyan'
-          //reporter: 'progress'
-          //reporter: 'dot'
-          //reporter: 'min' 
-          //reporter: 'spec'
-          reporter: 'list'
-        }));
-});  
-
-gulp.task('clean', function (cb) {
-  del([path.join(paths.DIST, '*')], function(err, deletedFiles) {
-    if (deletedFiles.length > 0) {
-      gutil.log('Files deleted:', deletedFiles.join(', '));
-    }
-    else {
-      gutil.log('No files deleted.');
-    }
-    cb();
-  });
+  return mochaTests();
 });
 
+// Run Karma browser tests
+gulp.task('testk', function (done) {
+  karmaTests(done);
+});
+
+// Run the Istanbul code coverage reporter based on the mocha tests.
+gulp.task('coverage', g_shell.task([
+  nodeBin(pkg.scripts.coverage)
+]));
+
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Browser Packaging and Distribution
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+gulp.task('clean', function (cb) {
+  return cleanDistDirectory(cb);
+});
+
+gulp.task('bundle', ['validate', 'test'], function () {
+  return bundle();
+});
+
+gulp.task('minify', ['bundle'], function () {
+  if (!disableMinify) {
+    return minify();
+  }
+});
+
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Documentation
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+gulp.task('docs', g_shell.task([
+  nodeBin(pkg.scripts.docs)
+]));
+
+// Open generated web pages 
+gulp.task('showcoverage', g_shell.task([
+  path.join('.', 'coverage', 'lcov-report', 'index.html')
+], { ignoreErrors: true }));
+
+gulp.task('showdocs', g_shell.task([
+  path.join('.', 'docs', 'src', 'index.html')
+], { ignoreErrors: true }));
+
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Publication - NPM, Git
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Increment the version number.
 gulp.task('bump', function () {
   return gulp.src(['./package.json', './bower.json'])
-    .pipe(gbump())
+    .pipe(g_bump())
     .pipe(gulp.dest('./'));
 });
 
@@ -213,11 +400,11 @@ gulp.task('commit-tag-push', function () {
     message += ' - ' + process.env.GIT_COMMIT_MESSAGE;
   }
 
-  gutil.log('Commit Tag and Push as: "' + message + '"');
+  g_util.log('Commit Tag and Push as: "' + message + '"');
   return gulp.src('./')
-    .pipe(ggit.commit(message))
-    .pipe(ggit.tag(v, message))
-    .pipe(ggit.push('origin', 'master', '--tags'))
+    .pipe(g_git.commit(message))
+    .pipe(g_git.tag(v, message))
+    .pipe(g_git.push('origin', 'master', '--tags'))
     .pipe(gulp.dest('./'));
 });
 
@@ -229,38 +416,24 @@ gulp.task('npm', function (done) {
     ).on('close', done);
 });
 
-// Run the Istanbul code coverage reporter based on the mocha tests.
-gulp.task('coverage', gshell.task([
-  nodeBin(pkg.scripts.coverage)
-]));
-
-gulp.task('docs', gshell.task([
-  nodeBin(pkg.scripts.docs)
-]));
-
-// Open generated web pages 
-gulp.task('showcoverage', gshell.task([
-  path.join('.', 'coverage', 'lcov-report', 'index.html')
-], { ignoreErrors: true }));
-
-gulp.task('showdocs', gshell.task([
-  path.join('.', 'docs', 'src', 'index.html')
-], { ignoreErrors: true }));
-
-// The default task (called when you run `gulp`)
-gulp.task('default', ['testm', 'bundle', 'minify'], gshell.task([
-  'echo ---------- Generating javadocs ----------',
-  nodeBin(pkg.scripts.docs)
-]));
-
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Aggregate build sets
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Watch task to automatically test and lint when the source code changes
 gulp.task('watch', ['minify'], function () {
   // Just do tests while watching.
-  gulp.watch(paths.allsrc, ['testm']);
+  gulp.watch(paths.ALLJS_glob, ['testm']);
 });
 
 // Watch to automatically test, lint, then build and test in browser.
 gulp.task('watchb', ['testm', 'bundle'], function () {
   // Just do tests while watching.
-  gulp.watch(paths.allsrc, ['testmb']);
+  gulp.watch(paths.ALLJS_glob, ['testmb']);
 });
+
+// The default task (called when you run `gulp`)
+gulp.task('default', ['testm', 'bundle', 'minify'], g_shell.task([
+  'echo ---------- Generating javadocs ----------',
+  nodeBin(pkg.scripts.docs)
+]));
+ 

@@ -41,7 +41,9 @@ node_modules
 /docs/src/
 /docx/
 /testm/
+/toolsm/
 /scratch/
+/storage/
 /coverage/
 *.swp
 

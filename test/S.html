@@ -1,0 +1,506 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Slappey II Monthly Accounting</title>
+  <link rel="shortcut icon" href="../images/icons/mmTTab.ico">
+  
+  <style>
+    #topstatusfixed {
+      position: fixed;
+      top: -1em;
+      right: 5px;
+      color: red;
+    }
+    
+    #botstatusfixed {
+      position: fixed;
+      bottom: -1em;
+      right: 5px;
+      color: red;
+    }
+
+    .scrollabletextbox {
+      height:100px;
+      width:800px;
+      font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
+      font-size: 90%;
+      overflow:scroll;
+    }
+
+  </style>
+  
+  <script src="../dist/mmeddle.js"></script>
+  <script>
+    var i = 0;
+  
+    var mm = mmeddle;
+    mm.dom = {};
+    mm.dom.settings = {};
+    var ls = new mm.storage.LocalStorage();
+    
+    mm.dom.setById = function setById (id, message) {
+      document.getElementById(id).innerHTML = message;
+    }
+
+    mm.dom.setTextById  = function setTextById (id, message) {
+      document.getElementById(id).textContent = message;
+    }
+
+    //-------------------------------------------------------------------------
+    
+    mm.dom.SS = function (id) {
+      return document.getElementById(id)
+    }
+    
+    mm.dom.SSV = function (id) {
+      return document.getElementById(id).value;
+    }
+
+    //-------------------------------------------------------------------------
+        
+    mm.slappey = {};
+    mm.slappey.account = {};
+    mm.slappey.account.items = [];
+
+    mm.slappey.setStatus = function setStatus(message) {
+      mm.dom.setById("topstatusfixed", message);
+    }
+    
+    mm.slappey.setStatus = function setStatus(message) {
+      mm.dom.setById("topstatusfixed", message);
+    }
+    
+    mm.slappey.writeLine = function writeLine(txt) {
+      var element = document.getElementById('consolediv');
+      var newContent = document.createTextNode(txt + '\n');
+      element.appendChild(newContent);
+    }
+    
+    mm.slappey.consoleClear = function consoleClear() {
+      document.getElementById('consolediv').innerHTML = "";
+    }
+    
+    mm.slappey._calc = function _calc() {
+      var dt = Date.parse(mm.dom.SSV('startingDate'));
+      var startDate = new Date(dt);
+      var weekDay = startDate.getDay();
+      mm.slappey.weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      var er = parseFloat(mm.dom.SSV('exchangeRate'));
+      var fm = parseFloat(mm.dom.SSV('fixedMonthly'));
+      mm.slappey.account.startingDate = startDate;
+      mm.slappey.account.startingDay = mm.slappey.weekDays[weekDay];
+      mm.slappey.account.exchangeRate = er;
+      mm.slappey.account.fixedMonthly = fm;
+    }
+    
+    mm.slappey.calc = function calc() {
+      mm.slappey.consoleClear();
+      mm.log('i=', i++);
+      mm.slappey._calc();
+      mm.log('Account:', mm.slappey.account);
+    }    
+    
+    mm.slappey.addItem = function addItem(e) {
+      var ev = this;
+      mm.slappey.consoleClear();
+      mm.log('i=', i++);
+      
+      mm.log('ev=[', ev, ']');
+      mm.log('e=[', e, ']');
+      
+      var rows = mm.dom.SS('ExpenseRows');
+      mm.log('RowIndex', rows.rowIndex);
+      mm.log('RowIndex2', mm.dom.SS('ExpenseRows2').rowIndex);
+    }
+  </script>
+  
+  <style>
+    body {
+      font: 10.5pt arial;
+      color: #4d4d4d;
+      line-height: 150%;
+      width: 500px;
+    }
+
+    code {
+      background-color: #f5f5f5;
+    }
+
+    #eqeditor {
+      width: 500px;
+      height: 500px;
+    }
+    
+    #inputSlider { 
+      height: 75px; width: 49px; background: #D5CCBB; color: black; 
+    }
+    
+    #monthlyFields {
+      width: 800px; 
+      background: #D5CCBB; 
+      color: black; 
+    }
+    
+    .decimal2 {
+      width: 5em;
+    }
+    
+    .int2 {
+      width: 2em;
+      text-align:right;
+    }
+
+    .int4 {
+      width: 6em;
+    }
+
+    .day3 {
+      width: 3em;
+      disabled: true;
+    }
+    
+    .expenseDesc {
+      width: 24em;
+    }
+
+    #pesoExchange {
+      width: 100px;
+    }
+    
+    .itemDesc {
+      width: 80px;
+    }
+
+    .itemAmtPesos {
+      width: 40px;
+      text-align:right;
+    }
+
+    .itemAmtDlls {
+      width: 40px;
+      text-align:right;
+    }
+  </style>
+</head>
+<body>
+  <h2>Slappey II Monthly Accounting</h3>
+  <p id="topstatusfixed"></p>
+  
+  <fieldset id="monthlyFields">
+    <label >Starting Date: <input id="startingDate" 
+      type="date" value="6/1/2015">
+
+    <label>&nbsp;&nbsp;Pesos per Dollar:<input id="exchangeRate" class="decimal2"
+      type="text" value="15.30" />
+    </label>
+    
+    <label>&nbsp;&nbsp;Monthly Fixed Expenses:
+      <input id="fixedMonthly" class="decimal2"
+        type="text" value="340"/> 
+    </label>
+  </fieldset>
+  
+  <br>
+  <div id="dynodiv"></div>
+  <br>
+  
+  <input type=button name=add value="Calculate" onclick="mm.slappey.calc()">
+  <br>
+  
+  <button onclick="mm.slappey.save()">Save Month</button>
+  
+  <pre>
+    <div id="consolediv"></div>
+  </pre>    
+
+  <script>
+    mm.log.setWriteLine(mm.slappey.writeLine);
+    mm.log('----- Slappey Sloppy Accounting.');
+
+    function _element(name)  { return document.createElement(name) }
+    function _textNode(text) { return document.createTextNode(text) }
+
+    mm.slappey.EditTable = function EditTable(baseNode, itemDefs) {
+      var tdom = this;
+      mm.log('Creating Edit Table');
+      tdom.headingTextNodes = [];
+      tdom.itemDefs = itemDefs;
+      
+      var table = _element('table');
+      var thead = table.createTHead();
+      var theadRow = _element('tr');
+      thead.appendChild(theadRow);
+      
+      tdom.itemDefs.forEach( function (item) {
+        var headingText = item.h;
+        var th    = _element('th');
+        var label = _element('label');
+        var txt   = _textNode(headingText);
+        label.appendChild(txt);
+        th.appendChild(label);
+        theadRow.appendChild(th);
+        // Make the headings available in the tdom.
+        tdom.headingTextNodes.push(txt);
+      });
+
+      tdom.tbody = table.createTBody();
+      baseNode.appendChild(table);
+      return tdom;
+    }
+
+    mm.slappey.EditTable.prototype.emitOptions =
+    function emitOptions (node, optionTable) {
+      var keys = _.keys(optionTable);
+      keys.forEach(function (key) {
+        var option = _element('option');
+        option.value = key;
+        option.innerHTML = optionTable[key];
+        node.appendChild(option);
+      });
+    }
+
+    mm.slappey.EditTable.prototype.deleteRow =
+    function deleteRow (row) {
+      var tdom = this;
+      if (row > 0 || tdom.tbody.rows.length > 1) {
+        tdom.tbody.deleteRow(row);
+      }
+    }
+
+    mm.slappey.EditTable.prototype.setIvFocus =
+    function setIvFocus(tr, col) {
+      var tdom = this;
+      var cols = tr.cells;
+      var td = cols[col];
+      var iv = td.childNodes[0];
+      iv.focus();
+    }
+    
+    mm.slappey.EditTable.prototype.getValue = function setIvFocus(row, col) {
+      var tdom = this;
+      var tr = tdom.tbody.rows[row];
+      if (_.isString(col)) {
+        var n = 0;
+        tdom.itemDefs.forEach(function (item) {
+          if (item.h === col) col = n;
+          n++;
+        });
+      }
+ 
+      var cols = tr.cells;
+      var td = cols[col];
+      var iv = td.childNodes[0];
+      return iv.value;
+    }
+
+    mm.slappey.EditTable.prototype.newRow =
+    function newRow(row) {
+      var tdom = this;
+      var tr = _element('tr');
+
+      var columnCount = tdom.itemDefs.length;
+      var row = row ? row : tdom.tbody.rows.length;
+      var tr = tdom.tbody.insertRow(row);
+
+      var weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];      
+      var dt = Date.parse(mm.dom.SSV('startingDate'));
+      var startDate = new Date(dt);
+      var thisDate = startDate;
+
+      var col = 0;
+      tdom.itemDefs.forEach( function (item) {
+        var td = _element('td');
+        var hdg         = item.h;
+        var type        = item.t;
+        var className   = item.c;
+        var value       = item.v;
+        var func        = item.f;
+        
+        var iv;
+        if (_.isString(type)) {
+          if (type === 'button') {
+            iv = _element('input');
+            iv.type = 'button';
+          }
+          else {
+            iv = _element('input');
+            iv.type = 'text';
+          }
+        }
+        else {
+          iv = _element('select');
+          tdom.emitOptions(iv, type);
+        }
+
+        if (hdg === 'Date') {
+          if (row > 0) {
+            var dayOfMonth = tdom.getValue(row - 1, 'Date');
+            thisDate = startDate;
+            thisDate.setDate(dayOfMonth);
+          }
+
+          iv.value = thisDate.getDate();
+        }
+
+        if (hdg === 'Day') {
+          iv.value = weekDays[thisDate.getDay()]
+        }
+
+        var f = (function closure() {
+          var _item = item;
+          var _iv = iv;
+          var _tr = tr;
+          var _col = col;
+          var _onEvent = func;
+          return function () {
+            _onEvent(_item, _iv, _tr, _tr.rowIndex - 1, _col, tdom);
+          };
+        }());
+
+        // If the field has a an event handler, then define it.
+        if (func) {
+          if (type === 'button') {
+            iv.onclick = f;
+          }
+          else {
+            iv.onchange = f;
+          }
+        }
+
+        // Handle keyboard based navigation 
+        iv.onkeydown = (function closure() {
+          var _tr = tr;
+          var _col = col;
+          return function (event) {
+            var handled = false;
+            var keynum = event.which;
+            var row = _tr.rowIndex - 1;
+            var rowCount = tdom.tbody.rows.length;
+            if (keynum == 37) { // Arrow Left
+              if (_col > 0) {
+                tdom.setIvFocus(_tr, _col - 1);
+              }
+              handled = true;
+            }
+            else if (keynum == 39) { // Arrow Right
+              if (_col + 1 < columnCount) {
+                tdom.setIvFocus(_tr, _col + 1);
+                handled = true;
+              }
+            }
+            else if (keynum == 38) { // Arrow Up
+              if (row > 0) {
+                tdom.setIvFocus(tdom.tbody.rows[row - 1], _col);
+                handled = true;
+              }
+            }
+            else if (keynum == 40) { // Arrow Down
+              if (row + 1 < rowCount) {
+                tdom.setIvFocus(tdom.tbody.rows[row + 1], _col);
+                handled = true;
+              }
+            }
+            if (handled) {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+          }
+        }());
+
+        if (className) iv.className = className;
+        if (value) iv.value = value;
+        
+        td.appendChild(iv);
+        tr.appendChild(td);
+        col++;
+      });
+    }
+
+    function xadd(item, iv, tr, row, col, tdom) {
+      //mm.log('[' + item.h + '] Row:', row, 'Col:', col, 'Val:', iv.value);
+      tdom.newRow(row + 1);
+    }
+    
+    function xdel(item, iv, tr, row, col, tdom) {
+     //mm.log('[' + item.h + '] Row:', row, 'Col:', col, 'Val:', iv.value);
+     tdom.deleteRow(row)
+    }
+
+    function xedit(item, iv, tr, row, col, tdom) {
+      mm.log('[' + item.h + '] Row:', row, 'Col:', col, 'Val:', iv.value);
+    }
+
+    function xtoWD(item, iv, tr, row, col, tdom) {
+      mm.log('[' + item.h + '] Row:', row, 'Col:', col, 'Val:', iv.value);
+      var weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];      
+      var dt = Date.parse(mm.dom.SSV('startingDate'));
+      var thisDate = new Date(dt);
+      var cols = tr.cells;
+      dayOfMonth = cols[col].childNodes[0].value;
+      thisDate.setDate(parseInt(dayOfMonth));
+      var dayInput = cols[col + 1].childNodes[0];
+      dayInput.value = weekDays[thisDate.getDay()]
+    }
+    
+    function xtoD(item, iv, tr, row, col, tdom) {
+      mm.log('[' + item.h + '] Row:', row, 'Col:', col, 'Val:', iv.value);
+      var vv = parseFloat(iv.value);
+      var er = parseFloat(mm.dom.SSV('exchangeRate'));
+      mm.log(vv, er, '$$: ', vv / er);
+      var cols = tr.cells;
+      var td = cols[col + 1];
+      var dollarInput = td.childNodes[0];
+      dollarInput.value = Math.round(vv / er);
+      //mm.log('DOLLARS = ', td.cellIndex);
+    }
+    
+    function xtoP(item, iv, tr, row, col, tdom) {
+      mm.log('[' + item.h + '] Row:', row, 'Col:', col, 'Val:', iv.value);
+      var vv = parseFloat(iv.value);
+      var er = parseFloat(mm.dom.SSV('exchangeRate'));
+      mm.log(vv, er, '$$: ', vv / er);
+      var cols = tr.cells;
+      var td = cols[col - 1];
+      var pesoInput = td.childNodes[0];
+      pesoInput.value = Math.round(vv * er);
+    }
+    
+     mm.slappey.expenseTypes = {
+      '-': '',
+      B : 'B - Boat Repairs, supplies, maintenance',
+      C : 'C - Communications, mail, wifi',
+      E : 'E - Entertainment, books, movies, museums',
+      F : 'F - Fuel, oil, propane',
+      H : 'H - Household managment, clothes, etc.',
+      I : 'I - Insurance, healthcare, dental',
+      J : 'J - Junk food and drinks',
+      L : 'L - Laundry, showers',
+      M : 'M - Marinas and mooring',
+      O : 'O - Outfitting, major parts and repairs',
+      P : 'P - Provisions',
+      R : 'R - Restaurants, eating out',
+      Q : 'Q - Customs, immigration, fees',
+      T : 'T - Travel, taxis, buses, planes',
+      X : 'X - eXotic',
+    }
+
+    mm.slappey.tbl = new mm.slappey.EditTable(
+        mm.dom.SS('dynodiv'), [
+        { h: 'Del',           t:'button',     v:'-',            f: xdel },
+        { h: 'Date',          t:'int',        c:'int2',         f: xtoWD },
+        { h: 'Day',           t:'day',        c:'day3',         f: xedit },
+        { h: 'Expense Type',  t: mm.slappey.expenseTypes,       f: xedit },
+        { h: 'Description',   t:'text',       c:'expenseDesc',  f: xedit },
+        { h: 'Pesos',         t:'int',        c:'itemAmtPesos', f: xtoD },
+        { h: 'Dollars',       t:'int',        c:'itemAmtDlls',  f: xtoP },
+        { h: 'Add',           t:'button',     v:'+',            f: xadd }]);
+
+    mm.slappey.tbl.newRow();
+    mm.slappey.tbl.newRow();
+    mm.slappey.tbl.newRow();
+    mm.slappey.tbl.newRow();
+        
+  </script>
+</body>
+</html>

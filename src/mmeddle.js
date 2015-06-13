@@ -11,7 +11,9 @@
  * This populates `module.exports` with an object containing access to all
  * the other required components.
  */ 
-function create() {
+module.exports = (function mMeddleCreate() {
+  var mm = {};
+
   // Test for ES5 support
   /* istanbul ignore if */
   if (typeof Object.create !== 'function') {
@@ -26,27 +28,54 @@ function create() {
   var inBrowser = !inNode;
   var inPhantom = false;
 
-  /**
-   * mmeddle factory function. Creates a new instance of mmeddle with a workspace.
-   */
-  var mm = {};
-  mm.create = create;
+  mm.check = function(v) {
+    if (typeof v === 'undefined' || !v) {
+      console.log( '*** Uninitialized mMeddle linkage. Abandon all hope.');
+      throw new Error('Uninitialized mMeddle linkage. Abandon all hope.');
+    }
+    return v;
+  }
 
-  mm.type = {};
-  
-  mm._ = require('lodash'); // The underscore replacement utility library.
+  mm._ = require('lodash'); // The underscore utility library.
   mm.Q = require('q'); // Promises compatible with node and browsers.
-  
-  mm.inBrowser = inBrowser;
-  mm.inNode    = inNode;
+  mm.Q.longStackSupport = true;
+
+  mm.socketClient = {};  
+  mm.socketClient.io = require('socket.io-client');
+  mm.socketServer = {};
+
+  mm.config = {};  
+  mm.config.inBrowser = inBrowser;
+  mm.config.inNode    = inNode;
+
   /* istanbul ignore next */
   mm.envText = inNode ? 'Node.js' : 'Browser';
+
+  mm.path = require('path');  
+  mm.config.baseDir = __dirname;
+
+  mm.config.openShiftHost = 'mmeddle-jfogarty.rhcloud.com';
+  mm.config.localHost = '127.0.0.1';
+  mm.config.localUrl  = 'http://' + mm.config.localHost + ':8080';
+  mm.config.remoteUrl = 'ws://mmeddle-jfogarty.rhcloud.com:8000/';
   
+  if (inNode) {
+    mm.config.baseDir = mm.path.join(__dirname, '..');
+    mm.fs     = require('fs');
+    mm.del    = require('del');
+    mm.mkdirp = require('mkdirp');
+    mm.socketServer.io = require('socket.io');
+  }
+  else {
+    // There is not even a mock window when running in node.
+    mm.window = window;  // jshint ignore:line
+  }
+
   /* istanbul ignore if */
   if (inBrowser) {
     var userAgent = navigator.userAgent;
     inPhantom = userAgent.indexOf('PhantomJS') >= 0;
-    mm.inPhantom = inPhantom;
+    mm.config.inPhantom = inPhantom;
     if (inPhantom) {
       mm.envText += '-PhantomJS';
     }
@@ -56,32 +85,27 @@ function create() {
      mm.envText += '(' + global.process.version + ')';
   }
   
-  //mm.format = require('string-template');
-  //Other candidates.
-  //mm.format = require('string-format');
-  //mm.format = require('sf');
-  
   /* istanbul ignore next */
-  mm.format = require('../external/sf');
-  
+  mm.format = mm.check(require('../external/sf'));
+
+  // Self registering modules.
   require('./util/')(mm);
+  mm.config.openShift = mm.util.ifEnvOption('OPENSHIFT_NODEJS_IP');
+  
+  // Turn config into an actual Config object.
+  mm.config = new mm.obj.Config().init(mm.config);
+  
   require('./sal/')(mm)
   require('./core/')(mm)
-  
+ 
   /* istanbul ignore else */
   if (inNode) {
-    mm.FS = require('q-io/fs');
+    require('./server/')(mm)
+    // mm.FS = require('q-io/fs');
     // mmeddle.FS = require('q-io/fs-mock');
   }
   
-  // return the new instance
+  require('./test/')(mm)
+  mm.log('- mMeddle on ' + mm.envText + ' initialized.');
   return mm;
-}
-
-// create an isolated instance of mmeddle with its own workspace.
-var mMeddle = create();
-
-mMeddle.log('- mMeddle on ' + mMeddle.envText + ' initialized.');
-
-// export the default instance
-module.exports = mMeddle;
+}())

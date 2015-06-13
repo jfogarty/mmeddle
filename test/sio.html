@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>mMeddle - Socket.io Scratch Page</title>
+  <link rel="shortcut icon" href="../images/icons/mmTTab.ico">
   <style>
     #topstatusfixed {
       position: fixed;
@@ -58,12 +59,9 @@
   <textarea class="scrollabletextbox" id="browserlog" name="logs"></textarea>
 
   <script src="../dist/mmeddle.js"></script>
-<!--  
-  <script src="http://localhost:8080/lib/socket.io-0.9.17.js"></script>
--->  
-  <script src="../lib/socket.io-0.9.17.js"></script>
   <script>
     var mm = mmeddle;
+    var io = mm.socketClient.io;
     mm.loggers.debugLogger.addDestination(browserLogHandler);
     mm.loggers.errorLogger.addDestination(browserLogHandler);
     var openShiftHost = 'mmeddle-jfogarty.rhcloud.com';
@@ -98,7 +96,7 @@
 
     function connectSio(type) {
       if (type === 'local') {
-        connectTo = 'http://' + localHost;
+        connectTo = 'http://' + localHost + ':8080';
       }
       if (type === 'remote') {
         connectTo = 'ws://WS-mmeddle-jfogarty.rhcloud.com/'; // alternate?
@@ -133,36 +131,6 @@
         consoleOut(mm.util.inspect(data));
         setFocus();
       });
-
-      /* 1.0 + manager
-      mgr.on('connect_timeout', function () {
-        consoleOut('*** connect_timeout.');
-      });
-
-      mgr.on('reconnect', function (n) {
-        consoleOut('- reconnected! (' + n.toString() + ')');
-      });      
-
-      mgr.on('reconnect_attempt', function (n) {
-        consoleOut('- reconnect_attempt(' + n.toString() + ')');
-      });
-
-      mgr.on('ping', function (e) {
-        consoleOut('- ping');
-      });
-
-      mgr.on('pong', function (n) {
-        consoleOut('- pong(' + n.toString() + ')');
-      });      
-      
-      mgr.on('connect_error', function (e) {
-        consoleOut('*** connect_error:' + mm.util.inspect(e));
-      });
-
-      mgr.on('reconnect_error', function (e) {
-        consoleOut('*** reconnect_error:' + mm.util.inspect(e));
-      });
-      */
     }
 
     function socket_connect()

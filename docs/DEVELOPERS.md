@@ -19,7 +19,15 @@
 [depstat-url]: https://david-dm.org/jfogarty/mmeddle
 [depstat-image]: https://david-dm.org/jfogarty/mmeddle.svg
 
-[https://github.com/jfogarty/mmeddle](https://github.com/jfogarty/mmeddle)
+[openshift-mm-url]: http://mmeddle-jfogarty.rhcloud.com
+[openshift-mm-bvt-url]: http://mmeddle-jfogarty.rhcloud.com/test/testMocha.html
+[openshift-mm-api-url]: http://mmeddle-jfogarty.rhcloud.com/api/index.html
+
+[mongolab-mmSpace]: https://mongolab.com/databases/mmspace  
+
+[github-mm-url]: https://github.com/jfogarty/mmeddle
+
+[https://github.com/jfogarty/mmeddle][github-mm-url]
 
 ![backgound math art](../images/art/mathart2.png)
 
@@ -36,37 +44,111 @@ an **Express** application using a **MongoDB** database for primary storage.
 The same engine runs in browsers as a minified script as part of the *mMeddler*
 SPA (single page application).
 
-This document provides a developer's overview for building and testing mmeddle bits.
-For code structure documents, you can read the README.md files in each source directory
-and build the `docs/src/index.html` for the generated API as described here.
+It includes all source, images and test cases for building and testing mMeddle.
+**bin\cli.js** is a text mode node.js client that runs standalone or is
+enhanced (significantly) by having access to a mMeddle server. **server.js**
+is the mMeddle server you can run locally. The mMeddle browser client
+application is started using http://localhost:8080 when the server is running.
+
+This document (./mmeddle/docs/DEVELOPERS.md) is a markdown file that provides
+a developer's overview for building and testing mmeddle bits.
+For code structure documents, you can read the README.md files in each source
+directory and build the `docs/src/index.html` for the generated API as
+described here.
 
 ## That Vision Thing
 
 The grand plan (or pipe dream) is for *mMeddle* to become a community service
-which loads the *mMeddler* SPA user interface to client pads and computers.
+which loads the *mMeddler* user interface to client pads and computers.
 *mMeddler* users will write their own math-based documents using standard
 mathematical notations, manipulate equations using drag and drop based symbolic
 algebra, and produce numerical results in the form of values, graphs and tables.
 
 The backend service will maintain a cloud of private and public symbolic math
-documents organized by scientific, engineering, mathematical, and pedegogical topics.
-Math inclined programmers will extend the nature of the maths that we can handle,
-while subject matter experts will publish and edit live documents containing equations, expanations, problems, and solutions. Student, teachers, geeks and the strangely
-curious will have access to a level of math that has mostly been out of reach
-through layers of technical barriers. A golden age will flourish and all world problems
-will be solved as a direct result of your hard work on this bucket of code. 
+documents organized by scientific, engineering, mathematical, and pedegogical 
+topics. Math inclined programmers will extend the nature of the maths that we
+can handle, while subject matter experts will publish and edit live documents
+containing equations, explanations, problems, and solutions. Student, teachers,
+geeks and the strangely curious will have access to a level of math that has
+mostly been out of reach through layers of technical barriers. A golden age
+will flourish and all world problems will be solved as a direct result of your
+hard work on this bucket of code. 
+
+## Your First Checkin
+
+You should read this document from end to end and try to build mMeddle
+and run every test case and chunk of code you can find. As you do so,
+please check back to here to figure out what lies have been told that
+caused you trouble.
+
+All documents - especially ones that detail the dynamics of the development
+process become quickly out of date. When you have solved your local 
+development issues, your first pull request should consist of fixes to
+this document. Your work here will multiply your efforts by other developers
+who won't waste the same time you had to. Pay it forward. 
 
 ## Structure
 
 *mMeddle* is structured as a single main module `mmeddle` which contains 
-bindings between the other modules. Modules within sub-directories usually contain no *requires* statements unless they are to anode_module (preferably
-one which is in some way unique to a single module) or to a sub-directory
-from the one containing the module. `require("..\[a modulename]")` 
-is **not** permitted in this code.
+bindings between the other modules. Modules within sub-directories usually 
+contain no *requires* statements unless they are to node_modules (preferably
+ones which is are unique to a single module) or to a sub-directory from the
+one containing the module. `require("..\[a modulename]")` is **not** permitted
+in this code.
+
+The `index.js` files in each source directory load the `mm` (mMeddle main)
+object with the global bindings produced in that directory.
 
 Isolating the bindings between modules to a single outer level module 
-greatly eases restructuring and module substitution for the various 
-environments in which mmeddle must run.
+eases restructuring and module substitution for the various environments
+in which mmeddle must run. The `mm` object is also the central point for
+inserting mock implementations such as `MockSock` that allows in-process
+testing of client apps within the server.
+
+## Installation
+
+MMeddle is a pretty typical node.js github hosted application. You must start
+by installing `git` and `node` (which includes the `npm` - node 
+package manager).  You should install the full package to a local directory
+using github or a .zip or .tar of the package. Then:
+
+    npm install
+    
+This will take a while (minutes) unless you are on a blazingly fast connection
+or already have all the required packages from `package.json` already
+available on your machine in some way `npm` can get them.  Any errors or
+warnings should be cause for concern. When possible, we use `"latest"` as
+the required version. This gets us into trouble when incompatibilies creep
+into those modules, but the pain is usually worth it, so expect to work
+through such issues from time to time.
+
+### Other tools you will need or want
+
+- **Firefox** and **Firebug**: the primary client browser and dev tool used in testing
+- **Markdown viewer**: extension for Firefox or equivalent for chrome
+- **mongoDB**: get it if you will do more than trivial testing
+- **imagemagick**: required if you rebuild the sprite based icons
+- **gimp**: or an equivalent image editor if you plan to mess with images
+
+**Firefox and Firebug**: Other browsers and their dev interfaces can be used
+as well, but I focus on Firefox first. We must run well in **Chrome** and
+**Safari**, especially on iPads and other fondle-slabs. I don't care much
+about trying to support **Internet Explorer** as it continues to be the bane
+of existence for browser compatibility - at least as of IE 11. 
+Life is too short.
+
+**Markdown viewer**: The docs are either `.md` markdown files, or 
+generated .html created by `jsdoc`. Your life is better if you can
+easily view the .md files in their properly rendered form; I use the 
+Firefox extension, you may have another solution.
+
+**mongoDB**: Persistent data is accessed through a MongoDB instance. You
+will want to create one locally fairly soon after you have finished the
+first phase of playing around.
+
+**imageMagick**: This is used for building the sprite icons, for graying
+them out, and mouseover highlights.  You won't need this unless you need to
+add new icons to the sprite tables.
 
 ## Building
 
@@ -77,89 +159,230 @@ Gulp and a `gulpfile.js` provide the build and test environment:
 This runs the gulpfile.js `default` task which performs verification tests,
 then builds and packages the various forms of the library.
 
-The build steps are currently:
+### Gulp Build Tasks
 
 Task | Description
 ---- | -----------
-**test** | do the node.js Mocha BDD BVTs tests using a mock SAL (service abstraction layer)
+**test** | do the node.js Mocha BDD BVTs tests 
 **lint** | jshint the source using `.jshintrc` rules
 **clean** | delete the `./dist` directory contents
 **bundle** | **WebPack** the client for use in a browser
 **minify** | make a .min version for reasonable load times
 **testb** | run the browser BVTs using a **PhantomJS** headless browser
 
+### Speciality and Utility tasks
+
+Task | Description
+---- | -----------
+**bump** | increment the version number in `package.json` and `bower.json` 
+**showdocs** | open the API docs in a browser
+**showcoverage** | open the code coverage reports in a browser
+**sprites** | regenerate sprites for icons (requires imageMagick)
+**testk** | run Karma tests **not yet running properly**
+
+
 ## Testing
 
-Testing is primariy done with a set of **Mocha** tests using the **BDD** (behavior
-driven development) style. Developers are strongly encouraged to use this style
-for their own tests. All integrations require passing tests. Note the boilerplate
-code in the top of `test.*js` files to allow the same tests to run in your browser,
-the **PhantomJS** headless browser, and **node.js**.
+Testing is primariy done with a set of **Mocha** tests using the **BDD** 
+(behaviordriven development) style. Developers are strongly encouraged to
+use this style for their own tests. All integrations require passing tests.
 
-To run the **BVT**s (base verification tests) use:
+Note the boilerplate code in the top of `test.*js` files to allow the same
+tests to run in your browser, the **PhantomJS** headless browser,
+and **node.js**.
+
+Most tests require a background mMeddle server which you should start a
+local server (**127.0.0.1:8080**) in its own shell using:
+
+    npm start
+or
+
+    node server
+    
+To run the **BVT**s (base verification tests) you run:
 
     gulp test
-    
+
 During development continuous tests on every source change is enabled with:
 
     gulp watch
     
 Note that `gulp watchb` does continuous PhantomJS browser based testing but is
-more annoying since the bundled mmeddle.js must be rebuilt on every source change.
-    
+more annoying since the bundled mmeddle.js must be rebuilt on every source
+change (which is pig-slow). See `MMEDDLE_MIN` environment variable.
+
+
+### Test Case File Naming
 
 Every test **.js** source file starts with a `test.` prefix.  
 
+
+##  CLI - Command Line Testing
+    
+`bin/cli` is a simple command line application that provides you with access
+to the text mode CLI. This is a good place to get started with development
+since it is usually much easier to debug in the node server to node client
+world than it is in the node server to AngularJS brower app.
+
+Run the text mode version of the CLI with:
+
+    node bin/cli
+
+Use http://127.0.0.1:8080/test/webcli.html to start the web based text
+mode cli. 
+
+The CLI does not give you access to everything mMeddle can do, and it is
+really terrible as a way to write math, but it is still the best way to
+test your non-UI code.
+
+The CLI works with `mocksock` testing as well, so this is often an easy
+way to debug client/server issues since both run in the same process.
+Start the server and CLI using mocksock via:
+
+    node server -m -a bin/cli.js
+
+
 ##  Browser Testing
     
-Browser BVT tests are started from `test\testMocha.html`.
-    
-    
-### Code Coverage
+Browser BVT tests are started from [test\testMocha.html][openshift-mm-bvt-url]
+(this link is to the test server).  To do more than rudimentary testing
+you must run a mMeddle server.
 
-If you are using test driven development rather than writing all your tests
-after your code has lumbered into life, its easy to keep your coverage numbers
-up. Check the current coverage using:
 
-    gulp coverage
-    
-This runs the **istanbul** code coverage tool against the Mocha test suite.  You can
-examine the annotated source by browsing to `./coverage/lcov-report/index.html` or run
-
-    gulp showcoverage
-    
-We want our code coverage numbers over **90%**, so don't be shy about addng test cases.
-    
-### Testing With Persistent Data
-
-You'll probably quickly get tired of testing without any persistent data. The next step
-is to enable the local filesystem Storage SAL plugin: `storageFs`. When that gets old, install
-a [MongoDB server](https://www.mongodb.org/downloads) and enable the `storageMongoDB` Storage
-SAL plugin.
-
-## Local Execution
+## Local Server Execution
 
 The mMeddle server (server.js) is started in the traditional way with:
 
     npm start
+or
+    node server
 
-By default the is an `Express` web server which exposes the entire development
+This is an `Express` web server which exposes the entire development
 tree as static content on **localhost:8080**. The `index.html` page has links
 to various things of interest.
 
+Interaction with the client is almost exclusively through `socket.io`
+connections. Socket connections are almost immediately superceeded by
+workspace session connections (persistent connections that maintain
+session MMSIDs in browser localStorage and in server `wsSessions`.
+
+### Testing With the mMeddle Server
+
+Some BVTs will run without a server, but many will not.  Start `server.js`
+in its own shell and make sure your firewalls allow access to localhost:8080.
+
+The server also supports directly running a single node.js client app (such as
+`bin\cli.js`) within the same shell (use: `-a appName.js`) and even within the
+same process through the MockSock socket.io simulator (add the `-m` flag).
+
+### mMeddle Server Environment Variables
+
+Here are some important server environment variables you need to know:
+
+    MMEDDLE_MIN: true to build the ./dist/mmeddle.min.js and map
+    
+    MMEDDLE_PORT: port used by local server [8080]
+    MMEDDLE_IPADDR: IP address used by local server [127.0.0.1]
+    MONGODB_DB_URL: Set the mongo database connection url [mongodb://localhost/mydb]    
+
+    OPENSHIFT_NODEJS_IP: ip address used by the OpenShift test servers
+    OPENSHIFT_NODEJS_PORT: port used by the OpenShift test servers
+    
+    MMEDDLE_NOFS: disables use of the FileStorage storage provider
+    MMEDDLE_NODB: disables use of any Database storage provider
+    MMEDDLE_MOCKSOCK: force use of MockSock socket.io simulator
+    MMEDDLE_LOCALSTORAGE: subdirectory for simulated localStorage [app]
+
+##  Browser Testing
+    
+Browser BVT tests are started from [test\testMocha.html][openshift-mm-bvt-url]
+(this link is to the test server).
+
+### PhantomJS dependence on Q 1.2.0
+
+Q 1.3.0 added a more restrictive test for node.js execution which checks to
+see that `process.toString() === [Object process]` instead of just 
+`(typeof process !== "undefined" && process.nextTick)` which is what 1.2 did.
+This breaks Mocha PhantomJS tests of Webpacked Q since it then tries to use
+`requestTick = setImmediate.bind(window, flush);` with an undefined .bind.
+Until this is resolved, we have to stick with the older Q. PhantomJS 1.9.16
+defines a process [Object object] and a nextTick function. 
+    
+## Code Coverage
+
+If you are using test driven development rather than writing all your tests
+after your code has lumbered into life, its easy to keep your coverage numbers
+up. I almost always end up writing most of my test cases after I've gotten
+a lot of code to work, but you may be more disciplined.
+
+We want to keep coverage well above 90% overall and 100% for critical
+components. Check the current coverage using:
+
+    mocksock=true
+    gulp coverage
+    
+This runs the **istanbul** code coverage tool against the Mocha test suite.
+The `mocksock=true` runs an in-process version of the server during testing.
+Make sure you have shutdown any other server you have running first.
+
+You can examine the annotated source by browsing to `./coverage/lcov-report/index.html`
+or run
+
+    gulp showcoverage
+    
+Don't be shy about addng test cases, but if code such as an error case is
+too difficult to mock properly, then add an `/* istanbul ignore if */` or
+equivalent **after** inspecting the code extremely carefully. If at all
+possible, test the uncovered code using a one-off test program and then
+add a comment next to your `/* istanbul ignore ... */` that notes that
+the testing was done. 
+
+It is alarming how often uncovered code ends up being the source of the
+exception that crashes the server, disables the client, or corrupts the data.
+
+    
+## Persistent Data
+
+mMeddle uses three forms of read/write persistent data:
+
+- LocalStorage : used by browser clients and emulated for Node.js clients
+- MongoDB Database storage : primary storage mechanism
+- Filesystem storage : available for testing and fallback
+
+The first is `localStorage` in the browser to maintain session information.
+Node.js client applications use a simulated form of localStorage which is
+saved to the `./storage/localStorage/app` directory. See `./sal/LocalStorage`.
+The practical limit of localStorage is 2.5 million characters per domain so
+we need to be careful to not extend our local requirements to anything like
+that number.
+
+The second is a MongoDB database.  You should install one locally; see
+[MongoDB server](https://www.mongodb.org/downloads) . The server will look
+for a database using the `./sal/MongoDBProvider'.  You can inspect the
+contents of the MongoDB using its `Mongo` client application, but it is
+a bit painful.
+
+The third is the filesystem itself. If your mongoDB database cannot be
+found then IO will be to the file system. Most, if not all, functions which
+currently use the database can be accomplished using the `./sal/Filerovider'.
+The file system is slower and does not scale well, but has the great advantage
+that it is really easy to look at the JSON files produced and see whats
+going on. I do most early debugging with the database turned off.
+
+
 ## Cloud Build Automation
 
-The [github/mmeddle](https://github.com/jfogarty/mmeddle) repository is linked
-to the [Travis-CI/mmeddle](https://travis-ci.org/jfogarty/mmeddle) service. Every commit
+The [github/mmeddle][github-mm-url] repository is linked
+to the [Travis-CI/mmeddle][travis-url] service. Every commit
 pushed to the **master** branch triggers an npm install and cloud build of the 
 default **npm test** (gulp test task). When this succeeds **gulp coverage** is run,
 and the new code coverage statistics are pushed to
-[coveralls/mmeddle](https://coveralls.io/r/jfogarty/mmeddle). The build and code
+[coveralls/mmeddle][coveralls-url]. The build and code
 coverage push update the little badges in the upper left corner of the README.md in
 the project root. These should of course stay green.
 
 mMeddle is currently hosted at RedHat's OpenShift node.js service at
-[openShift/mmeddle](http://mmeddle-jfogarty.rhcloud.com/). 
+[openShift/mmeddle][openshift-mm-url]. 
 This hosts a MongoDB database for the test service. This database is firewalled
 and can't be accessed from outside, although you can ssh to the server and
 run the mongo cli from the shell.
@@ -171,7 +394,7 @@ it has built-in OpenShift support.
  
 For most testing we use a globally accessible MongoDB
 test database at [MongoLab](https://mongolab.com/) 
-named [`mmSpace`](https://mongolab.com/databases/mmspace).  
+named [`mmSpace`][mongolab-mmSpace].  
 This is accessed using a connection URL or mongo CLI that looks a lot like:
 
     mongodb://<dbuser>:(<dbpassword>)@ds061621.mongolab.com:61621/mmspace
@@ -194,7 +417,9 @@ provides a **short** overview on the structure and use of the source in broad
 terms. This should not restate the jsdoc and should try not be more than a
 page long. 
 
-The generated docs can be accessed via [../api/index.html](../api/index.html).
+The generated docs can be accessed via [../api/index.html](../api/index.html)
+(if you have built them locally and this MD is local), or from the
+[OpenShift mMeddle Server][openshift-mm-api-url].
 
 ## Debugging
 
@@ -240,19 +465,31 @@ editor on Windows that doesn't put them on by default (I use Notepad++).
 I use **gulp** and put some effort into making sure that any scripts are equivalent
 on Windows and *nix versions. The Travis-CI integration service helps with this.
 
+### Windows and file paths longer than 255 characters
+
+Incredibly in the year 2015, Windows still has many problems with paths that
+are longer than 255 characters. Such paths are not uncommon when installing
+node_modules - especially ones for `gulp` or `grunt` tools that rely on
+lots of other modules. Usually this does not cripple you, but will have to
+do stupid things in order to remove such directories since normal windows
+commands fail. Be afraid.
+
 ## Possibly Helpful Notes
 
-### Relax Firefox localhost file access
+### Windows Node 0.12.0
 
-In Firefox go to the fake URL **about:config**.  Promise to be careful.
-Change **security.fileuri.strict_origin_policy** to false.
+On Windows `Node 0.12.0` is not completely stable. You will need to install
+at least the Community edition of Visual Studio 2013 in order to allow
+rebuilds of Buffer and Validate which will be required by installation of
+many modules. 
 
-### Relax Chrome localhost file access
+You can also expect that many modules will complain about `fsevents`
+and an occasionaly outright compilation failures due to C++ core class 
+changes. You can work around these but it is a big pain.
 
-From the command line (in the chrome installation directory):
+You may save some pain by using `Node 0.10.38` instead. This is what I am 
+currently doing, but I use `NVM` to test under 0.12.0 before I do a checkin.  
 
-    chrome --allow-file-access-from-files
-    
 ### Windows Node 0.12.0 and socket.io incompatibility
 
 This annoying problem currently (Apr 2015) does not allow the latest
@@ -263,3 +500,20 @@ windows compilation. Let this finish then:
     npm install ws@latest
     
 This is ugly but works fine and lets Windows development continue.
+
+Also note that currently we are stuck on **Socket.io-0.9.16** until someone
+has the time and smarts to get **CORS** (Cross-Origin Resource Sharing)
+working with localhost in **Socket-1.3.6** or whatever is current when we
+get around to it.
+
+### Relaxing Firefox localhost file access
+
+In Firefox go to the fake URL **about:config**.  Promise to be careful.
+Change **security.fileuri.strict_origin_policy** to false.
+
+### Relaxing Chrome localhost file access
+
+From the command line (in the chrome installation directory):
+
+    chrome --allow-file-access-from-files
+    

@@ -7,10 +7,9 @@ if (typeof exports === 'object' && typeof module === 'object') {
 (function (mm) {
   mm.log('- Set up some test loggers');
 
-  var _ = mm._;
-  var log = mm.log;
-  var _func = _.partial;
-  var SequencedObject = mm.obj.SequencedObject;
+  var _     = mm.check(mm._);
+  var _func = mm.check(_.partial);
+  var SequencedObject = mm.check(mm.obj.SequencedObject);
 
   mm.log.debug('- Create a couple of example SequencedObjects');
   var MySO = function() {
@@ -21,7 +20,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
   MySO.prototype = Object.create(SequencedObject.prototype);
   
   var o1 = new MySO();
-  var o2 = new MySO();
+  //var o2 = new MySO();
 
   mm.log('- Start some SequencedObject testing');
   MySO.prototype.add = function add (text) {
@@ -36,7 +35,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
     
   //---------------------------------------------------------------------------
   describe('SequencedObject', function(){
-    context('basic sequencing', function(){
+    describe('basic sequencing', function(){
       it('should add objects in scheduled order', function(testDone){
         mm.log.status('- Add a, b, c to o1');
         o1.add('a');

@@ -1,0 +1,8 @@
+/* 
+ *
+ *   mMeddle CLI : (Command Line Interface) Configuration file. 
+ *
+ */
+{
+  cli: true
+}

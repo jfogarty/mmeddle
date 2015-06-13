@@ -1,0 +1,11 @@
+/* 
+ *
+ *   mMeddle Global Debugging Configuration file. 
+ *
+ * Entries provided here will be available to all applications and clients
+ * using mmeddle when debug is enabled.
+ *
+ */
+{
+  superDebug: 'Huh?'
+}

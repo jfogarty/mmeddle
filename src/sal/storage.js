@@ -1,66 +1,71 @@
 'use strict';
 /**
- * @fileOverview Storage abstractions
+ * @fileOverview Storage abstractions and utility classes
  * @module sal/storage
  */ 
  module.exports = function(mm) {
-  var qq = mm.Q,
-      debug = mm.log.debug;
-  
-//  var SequencedObject = mm.obj.SequencedObject;
- 
+  var _     = mm.check(mm._);
+
   var storage = {};
-  //var users = mm.users;
+  storage.providers = {};
 
-  storage.space = {};
-/**
- * Write a value into storage.
- *
- * @memberOf storage
- * @param {string} the username for the collection.
- * @param {string} the collection name.
- * @param {string} the item name.
- * @param {string} the value of the item to store.
- * @returns {Promise} resolves when item is being stored.
- * @example
- *
- * var animals = [
- *   { cat: 'edmund' },
- *   { cat: 'rosie' },
- *   { dog: 'silly' }
- *  ];
- *  
- * var promise = storage.store('john', 'allAnimals', 'myAnimals', animals);
- * promise.then(function(r) { console.log('- Stored: ', r )});
- * // => true
- */
-  storage.store = function (userName, collectionName, itemName, value) {
-    debug('- Item:', value);  
-    return qq.fcall(function() {
-      debug('-- Item:', value);
-      return JSON.stringify(value);
-    })
-    .delay(400)
-    .then(function(s) {
-      var location = {
-        user: userName,
-        collection: collectionName,
-        item: itemName
-      };
-
-      debug('- Stored: "{user}/{collection}/{item}" as "{1}"', location, s);
-      debug('- Stored: "{0:inspect}"', location);
-      debug('- Stored: "{0:json}"', location);
-    })
-  }
-
-  storage.remove = function (userName, collectionName, item) {
-    return storage;
-  }
-
-  storage.readFile = function (filename, dataHandler) {
-    return storage;
-  }
+  //--------------------------------------------------------------------------
+  /**
+   * @summary **Location of a stored object**
+   * @description
+   * A StoragePath specifies a location in persistent storage. A path
+   * must be created and initialized to store any objects in persistent
+   * storage.
+   * @constructor
+   * @param {StorageClient} context the context for the path
+   * @param {string} text text form of the path
+   * @returns {StoragePath} the new storage path.
+   */
+  var StoragePath = (function storagePathCtorCreator() {
+    var ctor = function StoragePath(context, text) {
+      var self = this;
+      var FILEPREFIX = 'file:';
+      self.toFile = _.startsWith(text, FILEPREFIX);
+      if ( self.toFile ) {
+        text = text.substr(FILEPREFIX.length);
+      }
+      var parts = text.split('/');
+      if (parts.length < 2) {
+        // The userName will match the owner field in content.
+        self.userName = context.user;
+        self.collectionName = parts[0];
+      }
+      else {
+        self.userName = parts[0];
+        self.collectionName = parts[1];
+      }
+    };
+    
+    return ctor;
+  }());
   
+  //--------------------------------------------------------------------------
+  
+  /**
+   * @summary **Information about a persistenly stored object**
+   * @description
+   * A StorageInfo contains information about an object in persistent
+   * storage such as its path, size, storage state, etc.
+   * @constructor
+   * @param {fs.Stats} stat the fs.Stat object.
+   * @returns {StorageInfo} the new storage info.
+   */  
+  var StorageInfo = (function storageInfoCtorCreator() {
+    var ctor = function StorageInfo(stat) {
+      var self = this;
+      _.defaults(self, stat);
+    };
+
+    return ctor;
+  }());
+
+  storage.StoragePath = StoragePath;
+  storage.StorageInfo = StorageInfo;
+
   return storage;
 }

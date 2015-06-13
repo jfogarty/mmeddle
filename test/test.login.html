@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>mMeddle - Test login interactive</title>
+  <link href="../css/main.css" type="text/css" rel="stylesheet"/>
+  <link rel="shortcut icon" href="../images/icons/mmTTab.ico">
+  
+  <style>
+    #topstatusfixed {
+      position: fixed;
+      top: -1em;
+      right: 5px;
+      color: red;
+    }
+    
+    #botstatusfixed {
+      position: fixed;
+      bottom: -1em;
+      right: 5px;
+      color: red;
+    }
+
+    .scrollabletextbox {
+      height:100px;
+      width:800px;
+      font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
+      font-size: 90%;
+      overflow:scroll;
+    }
+  </style>
+</head>
+<body>
+  <p id="topstatusfixed">Top Current mMeddle Status</p>
+  <p id="botstatusfixed">Bottom mMeddle Status</p>
+  <!-- WebPacked library(s) to test against -->
+  <h2>Testing mMeddle Login</h2>
+
+  <pre>
+    <div id='consolediv'></div>
+  </pre> 
+  
+  <button id='login' 
+      onclick='login()'>Login</button>
+  <br>
+  <button id='save' 
+      onclick='save()'>Save user and workspace</button>
+  <br>
+  
+  <button id='connectLocal' 
+      onclick='connectSio("local")'>Connect Local</button>
+  <button id='connectRemote' 
+      onclick='connectSio("remote")'>Connect OpenShift</button>
+  <button id='connectRemoteSSL' 
+      onclick='connectSio("remote-ssl")'>Connect OpenShift-SSL</button>
+  <br>
+  <button id='fetchEnv' 
+      onclick='getEnv()'>Get Env Vars</button>
+  <button id='consoleClear' 
+      onclick='consoleClear()'>Clear</button>
+  
+  <br />
+  <button onclick='socket_connect()'>*Connect</button>
+  <button onclick='socket_reconnect()'>*Reconnect</button>
+  <button onclick='socket_disconnect()'>*Disconnect</button>
+
+  <br />
+  <p>Debugging log</p>
+  <textarea class="scrollabletextbox" id="browserlog" name="logs"></textarea>
+
+  <script src="../dist/mmeddle.js"></script>
+  <script>
+    var mm = mmeddle;
+    var _         = mm.check(mm._);
+    var qq        = mm.check(mm.Q);
+    var MMeddleClient = mm.check(mm.core.MMeddleClient);  
+    var ls  = new mm.storage.LocalStorage();    
+    
+    mm.loggers.debugLogger.addDestination(browserLogHandler);
+    mm.loggers.errorLogger.addDestination(browserLogHandler);
+    var openShiftHost = 'mmeddle-jfogarty.rhcloud.com';
+    var localHost = '127.0.0.1';
+    
+    consoleOut('- mMeddle env: ' + mm.envText);    
+
+    var host = mm.config.localUrl;
+    var mmc = new MMeddleClient(host, 'TestPage:');
+    
+    mmc.loadLocalWorkspace();
+    mmc.loadLocalUser();
+    if (mmc.user.lastName) {
+      mm.log('- Hello {0} {1}.', mmc.user.firstName, mmc.user.lastName);    
+    }
+    
+    mm.log('- Loaded Local Workspace: {0} variables', mmc.ws.varsCount);
+
+    mmc.connectWorkspace('local')
+    .then(function() {
+      log('- Connected to server {0}', host);
+      mmc.emitLogMessage('Test Page connected!');
+    })
+        
+    var connected = false;
+    var consoleCleared = true;
+    enableButtons();
+
+    function login() {
+      var userName = 'john';
+      var ptpwd = 'mauto123';
+      mmc.userLogin(userName, ptpwd)
+      .then(function (u) {
+        mm.log('- Logged in [{0}].', u.name);
+      });
+    }
+    
+    function save() {
+      mmc.saveLocalUser();
+      mm.log('- Saved User [{0}] (local)', mmc.user.name);
+      mmc.saveLocalWorkspace();
+      mm.log('- Saved Workspace (local): {0} variables', mmc.ws.varsCount);
+      if (mmc.connected) {
+        mm.log('- Saving Workspace to {0}',  host);
+        mmc.saveWorkspace()
+        .then(function (rs) {
+          mm.log('- Saved in {0} ms.', rs.elapsed);
+        });
+      }
+    }
+
+    function enableButtons() {
+      document.getElementById('connectLocal').disabled = connected;
+      document.getElementById('connectRemote').disabled = connected;
+      document.getElementById('fetchEnv').disabled = (!connected);
+      document.getElementById('consoleClear').disabled = consoleCleared;
+    }
+
+    function setFocus() {
+      document.getElementById('browserlog').focus();
+    }
+
+    function consoleOut(txt) {
+      if (consoleCleared) {
+        consoleCleared = false;
+        enableButtons();
+      }
+
+      //console.log(txt);
+      mm.log(txt);
+      var element = document.getElementById('consolediv');
+      var newContent = document.createTextNode(txt + '\n');
+      element.appendChild(newContent);
+    }
+
+    function consoleClear(txt) {
+      consoleCleared = true;
+      document.getElementById('consolediv').innerHTML = "";
+      enableButtons();
+      setFocus();
+    }
+
+    function browserLogHandler(message, logger, priority) {
+      var ptext = '';
+      var ptext = priority > 1 ? '(!)' : ptext;
+      var prefix = logger.origin() + ptext + ':';
+      var text = prefix + message;
+      debugOut(text);
+    }
+
+    function debugOut(txt) {
+      var element = document.getElementById('browserlog');
+      if (element) {
+        var newContent = document.createTextNode(txt + '\n');
+        element.appendChild(newContent);
+      }
+    }
+  </script>
+</body>
+</html>

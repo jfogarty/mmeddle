@@ -6,7 +6,7 @@
 module.exports = function registerSequencedObject(mm) {
   var qq = mm.Q,
       debug = mm.log.debug;
-   var CoreObject = mm.obj.CoreObject;
+  var CoreObject = mm.obj.CoreObject;
 
   /**
    * @class

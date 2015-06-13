@@ -6,11 +6,14 @@ if (typeof exports === 'object' && typeof module === 'object') {
 
 (function (mm) {
   mm.log('- Set up some test loggers');
+  var HIGH   = mm.check(mm.Logger.Priority.HIGH);
+  var NORMAL = mm.check(mm.Logger.Priority.NORMAL);
+  var LOW    = mm.check(mm.Logger.Priority.LOW);
 
   var Logger = mm.Logger;
-  var rootLogger = new Logger('log');
-  var aLogger    = new Logger('aLog', rootLogger);
-  var bLogger    = new Logger('bLog', aLogger);
+  var rootLogger = mm.check(new Logger('log'));
+  var aLogger    = mm.check(new Logger('aLog', rootLogger));
+  var bLogger    = mm.check(new Logger('bLog', aLogger));
   var loggerFailed = false;
 
   var log = Logger.bindLog(rootLogger);
@@ -39,7 +42,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
   }
  
   function arrayLogHandler(array, message, logger, priority) {
-    var ptext = priority > 1 ? '(!)' : '';
+    var ptext = priority.level > 1 ? '(!)' : '';
     var prefix = logger.origin() + ptext + ':';
     var text = prefix + message;
     array.push(text);    
@@ -124,7 +127,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
         var savedFunc = Logger.failureHandler;
         Logger.failureHandler = failureHandlerOfGrace;
         aLogger.addDestination(logHandlerOfDoom);
-        aLogger.high().log('Die, die, die.');
+        aLogger.log('Die, die, die.', HIGH);
         loggerFailed.should.equal(true, 
             'Detected logger failure without the end of the world');
         loggerFailed = false;
@@ -162,20 +165,20 @@ if (typeof exports === 'object' && typeof module === 'object') {
     
     describe('#high, #low, #allowPriority handling', function(){
       it('should filter based on priorities', function(){
-        bLogger.low().log('Nothing to see here, more along');
+        bLogger.log('Nothing to see here, more along', LOW);
         r.should.have.length(0,
             'Low priority messages should not be logged by default');
-        bLogger.high().log('hi');
+        bLogger.log('hi', HIGH);
         r[0].should.equal('[bLog](!):hi',
             'High priority messages can be logged with a different format');
-        bLogger.norm().log('norm');
+        bLogger.log('norm', NORMAL);
         r[1].should.equal('[bLog]:norm',
             'Log normal priority messages');
       })
       
       it('should allow priorities to be changed', function(){      
-        bLogger.allowPriority(Logger.PRIORITY.LOW);
-        bLogger.low().log('low');
+        bLogger.allowPriority(LOW);
+        bLogger.log('low', LOW);
         b[0].should.equal('[bLog]:low',
             'Log low priority messages');
         r.should.have.length(0,
@@ -185,12 +188,12 @@ if (typeof exports === 'object' && typeof module === 'object') {
     
     describe('#enable and #disable logging', function(){
       it('should handle output based on what logs are enabled', function(){
-        bLogger.disable().high().log('Nothing to see here, more along');
+        bLogger.disable().log('Nothing to see here, more along', HIGH);
         log.b.disable.log('Nothing to see here, more along');
         bLogger.logArray('Testing', 1, 2, 3, '...')
         bLogger.logString('more trash')
-        log.b.high.log('Nothing can get through here.');
-        log.b.low.log('Nothing can get through here.');
+        log.b('Nothing can get through here.', HIGH);
+        log.b('Nothing can get through here.', LOW);
         b.should.have.length(0,
             'Diabled messages should not go to log');
         r.should.have.length(0,
@@ -201,7 +204,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
         r.should.have.length(1);
         a.should.have.length(1);
         b.should.have.length(0);
-        bLogger.enable().high().log('Turn it back on');
+        bLogger.enable().log('Turn it back on', HIGH);
         b.should.have.length(1);
         r.should.have.length(2);
         log.disable.log('Now the root logger is off');

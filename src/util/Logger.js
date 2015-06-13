@@ -4,23 +4,28 @@
  */ 
 'use strict';
 module.exports = function registerLoggers(mm) {
-  var _ = mm._;
-  var format = mm.format;
+  var _      = mm.check(mm._);
+  var format = mm.check(mm.format);
   
   /**
-   * @namespace PRIORITY
-   * @property {object}  PRIORITY - Logger.PRIORITY enum for logged messages.
-   * @property {number}  PRIORITY.LOW    - The lowest priority (these messages
-   *   are not output unless `{@link acceptPriority}(PRIORITY.LOW)` lowers 
-   *   the threshold)
-   * @property {number}  PRIORITY.NORMAL - The default priority   
-   * @property {number}  PRIORITY.HIGH   - High priority
+   * @summary **Create a Priority**
+   * @description
+   * The last argument in any call to a Logger can specify a LogPriority.
+   * Messages to a logger can be filtered based on Priority levels.
+   * @constructor
+   * @param {number} level the log level of this priority
+   * @param {string} name a nice name for display
+   * @returns {Priority} the new logger
    */    
-  var PRIORITY = {
-    LOW: 0,
-    NORMAL: 1,
-    HIGH: 2
-  };
+  function Priority(level, name) {
+    var self = this;
+    self.level = level;
+    self.name = name;
+  }
+
+  Priority.LOW    = new Priority(0, 'LOW');   
+  Priority.NORMAL = new Priority(1, 'NORMAL');   
+  Priority.HIGH   = new Priority(2, 'HIGH');   
 
   /**
    * @summary **Create a Logger**
@@ -49,23 +54,14 @@ module.exports = function registerLoggers(mm) {
       self.parent = parent ? parent : null;
 
       /**
-       * The `PRIORITY` of the next message logged. 
-       * This is automatically reset to `PRIORITY.NORMAL` after any log.
-       * @name messagePriority
-       * @type {number}
-       * @memberOf module:util/Logger~Logger#
-       */       
-      self.messagePriority = PRIORITY.NORMAL;
-
-      /**
-       * The minimum `PRIORITY` of messages that will be
+       * The minimum `Priority` of messages that will be
        * output to the destinations of this logger. This is set by
        * the `allowPriority` method.
        * @name minimumPriority
        * @type {number}
        * @memberOf module:util/Logger~Logger#
        */       
-      self.minimumPriority = PRIORITY.NORMAL;
+      self.minimumPriority = Priority.NORMAL;
 
       /** @member {Array} destinations 
        *  @memberOf! module:utisl/log
@@ -81,28 +77,25 @@ module.exports = function registerLoggers(mm) {
    * @enum {number}
    * @default
    */  
-  Logger.PRIORITY = PRIORITY;
+  Logger.Priority = Priority;
 
   /**
    * @summary **Bind log and a few functions as properties to a new member**
    * @description This is a convenient way to get a shortcut to the `log` method of a
    * logger so it can be used as a standalone function. This also binds
-   * the convenience properties: `high`, `low`, `norm`, `enable`, and
-   * `disable`.  These must be used immediately before the call to `log`.
+   * the convenience properties: `enable`, and `disable`.  These must be
+   * used immediately before a call to `log`.
    * @static
    * @param {Logger} bindLog the logger to fetch the `log` method from
    * @returns {function} the rebound `log` method wrapper
    * @example
    *    var status = Logger.bindLog(allMyLoggers.statusLogger);
    *    ...
-   *    status.high.log("Whoop whoop! Everyone to get off from street.");
+   *    status.enable.log("Whoop whoop! Everyone to get off from street.");
    */
   Logger.bindLog = function bindLog (rootLogger) {
     var log = _.bind(rootLogger.log, rootLogger);
     // Bind convenience functions to the wrapper function.
-    _bindFuncAsProp(log, 'low', rootLogger.low, rootLogger);
-    _bindFuncAsProp(log, 'high', rootLogger.high, rootLogger);
-    _bindFuncAsProp(log, 'norm', rootLogger.norm, rootLogger);
     _bindFuncAsProp(log, 'enable', rootLogger.enable, rootLogger);
     _bindFuncAsProp(log, 'disable', rootLogger.disable, rootLogger);
     return log;
@@ -169,10 +162,9 @@ module.exports = function registerLoggers(mm) {
   /**
    * @summary **Logger string format array of arguments**
    * @description Exposes the format routine used by the logger.
-   * The first entry
-   * is a `sf` compatible format, any remaning parameters are substitued
-   * into the the format. The logger failure handler is used for bad
-   * formats.
+   * The first entry is a `sf` compatible format, any remaning parameters
+   * are substitued into the the format. The logger failure handler is
+   * used for bad formats.
    * @static
    * @param {Array} args the format string and its arguments
    * @returns {string} the formatted string
@@ -181,7 +173,7 @@ module.exports = function registerLoggers(mm) {
     // If the output contains only one argument or the
     // first argument is not a format, then produce `toString()` or
     // `util.inspect` formatted arguments separated by spaces.
-    if (args && args.length > 1 && args[0] && args[0].indexOf('{') > -1) {
+    if (args && args.length > 1 && _.isString(args[0]) && args[0].indexOf('{') > -1) {
       try {
         return format.apply(null, args);
       }
@@ -200,11 +192,6 @@ module.exports = function registerLoggers(mm) {
       })
       return outText;
     }
-  }
-
-  function _resetPriority(self) {
-    self.messagePriority = PRIORITY.NORMAL;
-    return self;
   }
 
   /**
@@ -238,7 +225,7 @@ module.exports = function registerLoggers(mm) {
     if (_.indexOf(self.destinations, handler) < 0) {
       self.destinations.push(handler);
     }
-    return _resetPriority(self);
+    return self;
   }
 
   /**
@@ -258,7 +245,7 @@ module.exports = function registerLoggers(mm) {
     else if (_.indexOf(self.destinations, handler) >= 0) {
       self.destinations = _.without(self.destinations, handler);
     }
-    return _resetPriority(self);
+    return self;
   }
   
   /**
@@ -268,7 +255,8 @@ module.exports = function registerLoggers(mm) {
    * text string, or a list of objects.  The message will be converted
    * into a text string and output to all of the destinations of this
    * logger and its parents, unless the message is rejected by a
-   * filter, or the logger is disabled.
+   * filter, or the logger is disabled.  The last argument can be a 
+   * Logger.Priority which controls log filtering.
    * @param {...*} arguments zero or more objects, often with a leading format string.
    * @returns {Logger} the logger for chaining
    */
@@ -276,9 +264,16 @@ module.exports = function registerLoggers(mm) {
     var self = this;
     if (self.enabled) {
       var args = Array.prototype.slice.call(arguments);
+      var n = args.length;
+      if (n > 0) {
+        if (args[n - 1] instanceof Priority) {
+          var priority = args.pop();
+          return self.logArray(args, priority);
+        }
+      }
       return self.logArray(args);
     }
-    return _resetPriority(self);
+    return self;
   }
 
   /**
@@ -288,55 +283,12 @@ module.exports = function registerLoggers(mm) {
    * @param {number} v The minimum priority to log
    * @returns {Logger} the logger for chaining
    * @example
-   *    logger.allowPriority(Logger.PRIORITY.LOW);
+   *    logger.allowPriority(Logger.Priority.LOW);
    */
   Logger.prototype.allowPriority = function allowPriority(v) {
     var self = this;
     self.minimumPriority = v;
     return self;
-  }
-
-  /**
-   * @summary **Select priority for the next message sent**
-   * @description
-   * Once the message has been dispatched, the next message will
-   * be at PRIORITY.NORMAL (1).
-   * @param {number} v The priority to use
-   * @returns {Logger} the logger for chaining
-   * @example
-   *    logger.prioriy(5).log("And now a message from our sponsors");
-   */
-  Logger.prototype.priority = function priority(v) {
-    var self = this;
-    self.messagePriority = self.enabled ? v : PRIORITY.NORMAL;
-    return self;
-  }
-
-  /**
-   * @summary **Select HIGH priority for the next message sent**
-   * @returns {Logger} the logger for chaining
-   */
-  Logger.prototype.high = function high () {
-    return this.priority(PRIORITY.HIGH);
-  }
-
-  /**
-   * @summary **Select LOW priority for the next message sent**
-   * @returns {Logger} the logger for chaining
-   */
-  Logger.prototype.low = function low () {
-    return this.priority(PRIORITY.LOW);
-  }
-
-  /**
-   * @summary **Select NORMAL priority for the next message sent**
-   * @description
-   * This is usually a no-op, but is sometimes useful as a placeholder
-   * for substitution with high or low in the source.
-   * @returns {Logger} the logger for chaining
-   */
-  Logger.prototype.norm = function norm () {
-    return this.priority(PRIORITY.NORMAL);
   }
 
   /**
@@ -372,27 +324,29 @@ module.exports = function registerLoggers(mm) {
    * @summary **Log an array of objects as a message**
    * @description
    * The first object can be a format.
-   * @param {Array} args zero or more objects in an array.S
+   * @param {Array} args zero or more objects in an array.
+   * @param {Priority} priority an optional message priority.
    * @returns {Logger} the logger for chaining
    */
-  Logger.prototype.logArray = function logArray(args) {
+  Logger.prototype.logArray = function logArray(args, priority) {
     var self = this;
     var outText = '';    
     if (self.enabled) {
       outText = Logger.formatArray(args);
     }
-    return self.logString(outText);
+    return self.logString(outText, priority);
   }
 
   /**
    * @summary **Log a single string message to the logger's destinations**
    * @param {string} text the message to log.
+   * @param {Priority} priority an optional message priority.   
    * @returns {Logger} the logger for chaining
    */
-  Logger.prototype.logString = function logString(text) {
+  Logger.prototype.logString = function logString(text, priority) {
     var self = this;
     if (self.enabled) {    
-      var messagePriority = self.messagePriority;
+      var messagePriority = priority ? priority : Priority.NORMAL;
       var logger = self;
       var originLogger = self;
       while (logger) {
@@ -405,11 +359,11 @@ module.exports = function registerLoggers(mm) {
         }
       }
     }
-    return _resetPriority(self);
+    return self;
   }
 
   function _logString(text, originLogger, logger, messagePriority) {
-    if (messagePriority >= logger.minimumPriority) {
+    if (messagePriority.level >= logger.minimumPriority.level) {
       logger.destinations.forEach(function (handler) {
         _logStringToDestination(handler, text, originLogger, messagePriority);
       })

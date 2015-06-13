@@ -1,0 +1,9 @@
+/* 
+ *
+ *   mMeddle MochaTests : Client Tests Configuration file. 
+ *
+ */
+{
+  // mocksock: true,   // You can set MOCKSOCK=true from the shell.
+  mochaTesting: true
+}
