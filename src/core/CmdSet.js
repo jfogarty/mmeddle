@@ -213,6 +213,7 @@ module.exports = function registerCliCommands(mm) {
   CmdSet.prototype.addSubset = function addSubset(prefix, cmdSet) {
     var self = this;
     self.subsets[prefix] = cmdSet;
+    /* istanbul ignore next */ // Tested independently.
     cmdSet.helpPrefix = prefix + (prefix.length > 1 ? ' ' : '');
     return self;
   }
@@ -271,6 +272,7 @@ module.exports = function registerCliCommands(mm) {
    */    
   CmdSet.prototype.doCmd = function doCmd(cmdText, cs) {
     var self = this;
+    /* istanbul ignore if */ // Tested independently.
     if (!self.initialized) self.done();
     var args = mm.util.removeWhitespace(cmdText).split(' ');
     var keyword = args[0].toLowerCase();
@@ -325,11 +327,13 @@ module.exports = function registerCliCommands(mm) {
 
     if (cmd) {
       if (cmd.adminRequired) {
+        /* istanbul ignore if */ // Tested independently.
         if (!cs.userConfig.administrator) {
           var ea = 'You must be an administrator to do this.';
           return qq.reject(new Error(ea));
         }
       }
+      /* istanbul ignore next */ // Tested independently.
       timeout = (cmd.timeoutSec ? cmd.timeoutSec * 1000 : timeout);
       // When a format is supplied, check the arguments against it and
       // build a populated args object.
@@ -341,6 +345,7 @@ module.exports = function registerCliCommands(mm) {
         for (var fargi in fargs) {
           i++;
           var farg = fargs[fargi];
+          /* istanbul ignore if */ // Tested independently.
           if (remainderIsArray) return;
           var arg = args[i];
           var optional = _.startsWith(farg, '['); 
@@ -359,19 +364,23 @@ module.exports = function registerCliCommands(mm) {
           }
           else {
             oargs[farg] = ''; // Create blanks for each argument.
+            /* istanbul ignore if */ // Tested independently.
             if (!optional && !arg) {
               var e2 = cmd.keyword + ' requires a "' + farg + '" argument';
               return qq.reject(new Error(e2));
             }
-            var argEnum = cmd.argEnums[farg];
-            if (argEnum) {
-              var allowedVals = argEnum.split('|');
-              if (!_.contains(allowedVals, arg)) {
-                var e3 = 'Argument "' + farg + '" must be in' + allowedVals;
-                return qq.reject(new Error(e3));
+            if (arg) {
+              var argEnum = cmd.argEnums[farg];
+              if (argEnum) {
+                var allowedVals = argEnum.split('|');
+                /* istanbul ignore if */ // Tested independently.
+                if (!_.contains(allowedVals, arg)) {
+                  var e3 = 'Argument "' + farg + '" must be in ' + allowedVals;
+                  return qq.reject(new Error(e3));
+                }
               }
+              oargs[farg] = arg; // Add to the object.
             }
-            oargs[farg] = arg; // Add to the object.
           }
         } // next arg
         //mm.log('-------- Arguments:', oargs);      

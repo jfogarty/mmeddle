@@ -25,6 +25,7 @@
       var defaultIpAddr = mm.util.mmEnvOption('IPADDR', '127.0.0.1'); 
       self.ipaddress = mm.util.envOption('OPENSHIFT_NODEJS_IP', defaultIpAddr);
       self.port      = mm.util.envOption('OPENSHIFT_NODEJS_PORT', defaultPort);
+      /* istanbul ignore if */ // Tested in real world.
       if (mm.config.openShift) {
         mm.log('- Running on OPENSHIFT_NODEJS');
       }
@@ -37,6 +38,7 @@
        * Terminate server on receipt of the specified signal.
        * @param {string} sig  Signal to terminate on.       
        */  
+      /* istanbul ignore next */ // Tested in real world.
       self.terminator = function (sig) {
         if (typeof sig === 'string') {
           mm.log.debug('{0}: Received {1} - terminating mMeddle server ...',
@@ -51,6 +53,7 @@
        * @description
        * Handle wrap up on ctrl-c exit from the process.
        */  
+      /* istanbul ignore next */ // Tested in real world.
       self.setupTerminationHandlers = function () {
         //  Process on exit and signals.
         process.on('exit', function () {
@@ -81,6 +84,7 @@
         self.routes = {};
 
         // Serve the starting index page.
+        /* istanbul ignore next */ // Tested in real world.
         self.routes['/'] = function (req, res) {
           res.setHeader('Content-Type', 'text/html');
           res.send(mm.fs.readFileSync('./index.html'));
@@ -115,6 +119,7 @@
               serveStatic(self.dirName + '/' + dir,  cacheControl));
         });
 
+        /* istanbul ignore next */ // Tested in real world.
         function setCustomCacheControl(res, path) {
           mm.log.debug('- static fetch: [' + path + ']');
           if (serveStatic.mime.lookup(path) === 'text/html') {

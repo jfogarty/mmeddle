@@ -12,7 +12,10 @@
    * @summary **Client for access to persistent storage**
    * @description
    * A StorageClient provides access to the storage services to save and
-   * load objects to the persistent store.
+   * load objects to the persistent store. The `user` field in the client
+   * constructor options specifies the owner for every object that can be
+   * written by this client. Other objects can be read by specifying their
+   * owners in the path parameter of operations.
    * @constructor
    * @param {Object} options the options for the client type.
    * @returns {StorageClient} the new storage client.
@@ -21,6 +24,7 @@
     var ctor = function StorageClient(options) {
       var self = this;
       _.defaults(self, options);
+      /* istanbul ignore if */
       if (typeof self.engine === 'undefined') {
         self.engine = mm.check(storage.storageEngine);
       }
@@ -38,8 +42,7 @@
    * @returns {bool} true if the Error object indicates NOT FOUND.
    */
   StorageClient.prototype.notFound = function notFound(err) {
-    var errString = err.toString();
-    return (errString.indexOf('ENOENT, ') >= 0)
+    return mm.util.ENOENT(err);
   }
 
   /**
@@ -57,6 +60,7 @@
    */
   StorageClient.prototype.store = function clientStore(path, obj) {
     var self = this;
+    /* istanbul ignore else */
     if (!(path instanceof StoragePath)) {
       path = new StoragePath(self, path);
     }
@@ -77,6 +81,7 @@
    */
   StorageClient.prototype.load = function clientLoad(path, name) {
     var self = this;
+    /* istanbul ignore else */
     if (!(path instanceof StoragePath)) {
       path = new StoragePath(self, path);
     }
@@ -105,6 +110,7 @@
   function clientLoadMultiple(path, namePattern) 
   {
     var self = this;
+    /* istanbul ignore else */
     if (!(path instanceof StoragePath)) {
       path = new StoragePath(self, path);
     }
@@ -126,6 +132,7 @@
    */
   StorageClient.prototype.remove = function clientRemove(path, name) {
     var self = this;
+    /* istanbul ignore else */
     if (!(path instanceof StoragePath)) {
       path = new StoragePath(self, path);
     }

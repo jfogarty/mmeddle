@@ -22,6 +22,7 @@
     var savedSessionId = self.ws.sessionId;
     self.ws = mm.check(new mm.core.Workspace(self));
     self.ws.sessionId = savedSessionId;
+    /* istanbul ignore if */ // tested independently.
     if (!self.ws.sessionId) {
       self.ws.sessionId = self.newSessionId();
     }
@@ -42,9 +43,11 @@
   function loadLocalWorkspace() {
     var self = this;  
     var wsObj = localStorage.load('ws');
+    /* istanbul  ignore else */ // tested independently.
     if (wsObj) {
       self.ws.init(wsObj);
     }
+    /* istanbul ignore if */ // tested independently.
     if (!self.ws.sessionId) {
       self.ws.sessionId = self.newSessionId();
     }

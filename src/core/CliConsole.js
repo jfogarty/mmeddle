@@ -8,11 +8,11 @@ module.exports = function registerCliConsole(mm) {
   var _          = check(mm._);
   var qq         = check(mm.Q);
   var EggTimer   = check(mm.obj.EggTimer);
-  var ansi = require('ansi');
 
   var BS    = String.fromCharCode(0x08);                   // jshint ignore:line 
-  var CR    = String.fromCharCode(0x0D); 
+  var CR    = String.fromCharCode(0x0D);                   // jshint ignore:line 
   var LF    = String.fromCharCode(0x0A);                   // jshint ignore:line 
+  var NL    = String.fromCharCode(0x0A);                   // jshint ignore:line 
   var CRLF  = String.fromCharCode(0x0D, 0x0A);             // jshint ignore:line 
   var HOME  = String.fromCharCode(0x1b, 0x5b, 0x31, 0x7e); // jshint ignore:line 
   var UP    = String.fromCharCode(0x1b, 0x5b, 0x41);       // jshint ignore:line 
@@ -77,15 +77,74 @@ module.exports = function registerCliConsole(mm) {
    * Handles  console input and output so interruptions from asynchronous
    * events don't muck up the command as its being entered. Also provides
    * the usual command stack, line edit and tab completion operations.
-   * Note that as soon as the CliConsole is created process.stdin is 
+   *
+   * On Node.js the CliConsole uses process.stdin and out. On a browser,
+   * the constructor takes the ids for the text input and the div that
+   * will be expanded as output.
+   *
+   * On Node as soon as the CliConsole is created process.stdin is 
    * switched to raw character mode.  All output to the console must use
    * CliConsole or it will be confused about what is on the display.
    *
    * @constructor
+   * @param {string} cliInText the id of the text input 
+   * @param {string} cliPrompt the id of the text input label
+   * @param {string} outDiv the id of the text ouput div
    * @returns {CliConsole} the cli client.
    */  
-  var CliConsole = function cliConsoleCtor() {
+  var CliConsole = 
+  function cliConsoleCtor(cliInText, cliPrompt, outDiv) {
     var self = this;
+    var inNode = mm.config.inNode;
+    var inBrowser = inNode ? false : true;
+    var activity = false;
+
+    // Defined on Node clients.
+    var outStream;
+    var inStream;
+    var cursor;
+
+    // Defined on Browser clients.
+    var consoleOutput;
+    var consolePrompt;
+    var consoleInput;
+
+    self.idleTimer = null; // User supplied idle timer.
+    self.eventHandlers = [];
+    /* istanbul ignore else */ 
+    if (inNode) {
+      // On node clients initialize stdin and out.
+      outStream = process.stdout;
+      cursor = require('ansi')(outStream);
+      inStream = process.stdin;
+      
+      // Make sure the console is in raw character mode.
+      inStream.setEncoding('utf8');
+      // Raw mode reads from the console without echoing characters and
+      // doesn't buffer up the keys.  
+      inStream.setRawMode(true);
+
+      self.displayRows = outStream.rows;
+      self.displayCols = outStream.columns;
+
+      var h = [];
+      h.push({ obj: outStream, name:'resize',   func: resizeHandler  });
+      h.push({ obj: inStream,  name:'end',      func: inCloseHandler });
+      h.push({ obj: inStream,  name:'close',    func: inCloseHandler });
+      h.push({ obj: inStream,  name:'readable', func: inReadableHandler });
+      h.push({ obj: inStream,  name:'error',    func: inErrorHandler });
+      self.eventHandlers = h;
+    }
+    else {
+      // On browser clients obtain the relevent DOM elements.
+      consoleOutput = mm.document.getElementById(outDiv);
+      consolePrompt = mm.document.getElementById(cliPrompt);
+      consoleInput  = mm.document.getElementById(cliInText);
+      
+      // TODO - Define browser event handlers.
+    }
+
+    self.mute = mm.config.mochaConsoleMute; // Hacky way to mute console.
     self.lastLine = '';
     self.error = null;
     self.saveOnlyUnique = false;
@@ -103,19 +162,13 @@ module.exports = function registerCliConsole(mm) {
     var handlers = []; // The stack of input handlers;
     self.handler = {
       func: null,     // caller must supply one.
-      prompt: '-->',
+      prompt: (inNode ? '-->' : 'Cmd:'),
       pwdMode: false  // show * during input.
     };
-
-    var outStream = process.stdout;
-    var cursor = ansi(outStream);
-    var inStream = process.stdin;
-    
-    // Make sure the console is in raw character mode.
-    inStream.setEncoding('utf8');
-    // Raw mode reads from the console without echoing characters and
-    // doesn't buffer up the keys.  
-    inStream.setRawMode(true);
+    /* istanbul ignore if */ 
+    if (inBrowser) {
+      consolePrompt.innerHTML = self.handler.prompt;
+    }
     
     var pendingInputs = [];
     var keyQueue = [];   // unhandled keystrokes/keycodes.
@@ -124,14 +177,12 @@ module.exports = function registerCliConsole(mm) {
     var inputOffset = 0; //offset from beginning of currentInput.
     var insertMode = true;
     var promptVisible = false;
-    var partialOutputLine = true; // Require a CR before prompt.
+    var partialOutputLine = true; // Require a NL before prompt.
 
     var currentSavedInputIndex = 0;
     var savedInitialLine = '';
     var scrollingPrevious = true;
 
-    self.displayRows = outStream.rows;
-    self.displayCols = outStream.columns;
     //console.log('- screen size is: ', 
     //    self.displayRows + 'x' + self.displayCols);
     
@@ -141,6 +192,17 @@ module.exports = function registerCliConsole(mm) {
     // reset until there is a chance to deal with the inputs.
     var timer = new EggTimer(100).start();
 
+    // Start running.
+    var running = true;
+    installEventHandlers();
+/*    
+self.annoyTimer = new EggTimer(10000).start();
+var nn = 0;
+self.annoyTimer.onDing(function () {
+  mm.log.status('Are you annoyed yet?', nn++);
+  self.annoyTimer.reset();
+});
+*/
     // Examines a keysequence to see of it is a control char,
     // alt code, or control code.
     function getKeyCode(unicodes) {
@@ -207,7 +269,7 @@ module.exports = function registerCliConsole(mm) {
       return (d.length < 2) ? '0' + d : d;
     }
 
-    // Replaces a character at a specific position in the string.
+    // Replaces or inserts a character at a specific position in the string.
     function setChar(str, offset, ch, insert) {
       var n = str.length;
       // Pad the string with spaces.
@@ -273,52 +335,84 @@ module.exports = function registerCliConsole(mm) {
     }
 
     function out(chars) {
-      cursor.write(chars);
+      if (self.idleTimer) self.idleTimer.reset();
+      if (self.pauseTimer) self.pauseTimer.reset();
+      
+      /* istanbul ignore next */ 
+      if (self.mute) return self;
+      /* istanbul ignore if */ 
+      if (inBrowser) {
+        consoleOutput.appendChild(mm.document.createTextNode(chars));
+      }
+      else {
+        cursor.write(chars);
+      }
       return self;
     }
 
     // Zero based horizontal line cursor positioning.
     function setLineOffset(n) {
-      cursor.horizontalAbsolute(n + 1);
+      /* istanbul ignore next */ 
+      if (self.mute) return;
+      /* istanbul ignore else */ 
+      if (inNode) {
+        cursor.horizontalAbsolute(n + 1);
+      }
     }
 
     // Displays the prompt, current input, and positions  the cursor.
     function showPrompt(reprompt) {
-      if (!promptVisible || reprompt) {
-        promptVisible = true;
-        if (partialOutputLine) {
-          out(CR); // Always goes to the next line.
-          partialOutputLine = false;
+      /* istanbul ignore else */ 
+      if (inNode) {
+        if (!promptVisible || reprompt) {
+          promptVisible = true;
+          if (partialOutputLine) {
+            out(NL); // Always goes to the next line.
+            partialOutputLine = false;
+          }
+          setLineOffset(0);
+          if (!self.mute) {
+            cursor.eraseLine();
+            //cursor.red();
+            out(self.handler.prompt);
+            cursor.show();
+          }
         }
-        setLineOffset(0);
-        cursor.eraseLine();
-        //cursor.red();
-        out(self.handler.prompt);
-        cursor.show();
-        return self;
       }
+      return self;
     }
     
     // Displays the prompt, current input, and positions  the cursor.
     function showCurrentLine(reprompt) {
       showPrompt(reprompt);
-      setLineOffset(self.handler.prompt.length);
-      //cursor.green();
-      var text = currentInput.textLine;
-      if (self.handler.pwdMode) {
-        text = _.repeat('*', text.length);
+      /* istanbul ignore else */ 
+      if (inNode) {
+        setLineOffset(self.handler.prompt.length);
+        //cursor.green();
+        var text = currentInput.textLine;
+        if (self.handler.pwdMode) {
+          text = _.repeat('*', text.length);
+        }
+        out(text);
+        if (!self.mute) cursor.eraseLine();
+        var lineOffset = self.handler.prompt.length + inputOffset;
+        setLineOffset(lineOffset);
+        
+        // TODO - allow the entry to be longer than the visible line.
+        // use:  self.displayCols and when the text is wider than available
+        // switch to :
+        //     'prompt>...line of text is too long.'
+        //  or 'prompt>This line of text is too ...'
       }
-      out(text);
-      cursor.eraseLine();
-      var lineOffset = self.handler.prompt.length + inputOffset;
-      setLineOffset(lineOffset);
-      
-      // TODO - allow the entry to be longer than the visible line.
-      // use:  self.displayCols and when the text is wider than available
-      // switch to :
-      //     'prompt>...line of text is too long.'
-      //  or 'prompt>This line of text is too ...'
       return self;
+    }
+  
+    // Displays the prompt, current input, and positions  the cursor.
+    function updateCurrentLine() {      
+      /* istanbul ignore else */
+      if (inNode) {
+        if (!promptVisible) showCurrentLine();
+      }
     }
 
     function rightArrow() {
@@ -361,15 +455,15 @@ module.exports = function registerCliConsole(mm) {
       return showCurrentLine();
     }
 
+    function toggleInsertMode() {
+      insertMode = !insertMode;
+      return self;
+    }
+
     function clearLine() {
       inputOffset = 0;
       currentInput.textLine = '';
       return showCurrentLine();
-    }
-
-    function toggleInsertMode() {
-      insertMode = !insertMode;
-      return self();
     }
 
     function previousSavedLine() {
@@ -426,45 +520,68 @@ module.exports = function registerCliConsole(mm) {
       }
     }
 
+    // Provide the input to a client.
+    function handlePendingInput() {
+      if (pendingInputs.length > 0) {
+        // If there's a consumer for the input, handle it.
+        if (self.handler.func) {
+          fetchPendingInput();
+        }
+        while (self.handler.func) {
+          var response = self.handler.func(self.lastLine);
+          // This handler no longer wants to do the job.
+          if (response === false) {
+            self.handler = handlers.pop();
+            if (inBrowser) {
+              consolePrompt.innerHTML = self.handler.prompt;
+              consoleInput.type = self.handler.pwdMode ? 'password' : 'text';
+            }
+            return self; // All done.
+          }
+          else if (response === true) {
+            return self; // All is well, all done.
+          }
+          else if (_.isString(response)) {
+            // Allow the handler to act as a translator for the input.
+            self.handler = handlers.pop();
+            self.lastLine = response;
+          }
+          else {
+            throw new Error('Invalid line handler response');
+          }
+        }
+      }
+      return self;
+    }
+    
     // Handles Enter for single line entries.
     function enter() {
-      if (self.handler.pwdMode) {
-        showPrompt(true);
-        out(_.repeat('*', self.maxPasswordLength));
+      activity = true;
+      if (inNode) {
+        if (self.handler.pwdMode) {
+          showPrompt(true);
+          out(_.repeat('*', self.maxPasswordLength));
+        }
+        else {
+          showCurrentLine();
+        }
+        out(NL);
       }
       else {
-        showCurrentLine();
+        // Enters the current line even if it has not changed.
+        currentInput = makeLine(consoleInput.value);
+        consoleInput.value = '';
+        var textLine = currentInput.textLine;
+        if (self.handler.pwdMode) {
+          textLine = _.repeat('*', self.maxPasswordLength);
+        }
+        out('--> ' + self.handler.prompt + textLine + '\n');
       }
-      out(CR);
       pendingInputs.push(currentInput);
       currentInput = makeLine('');
       inputOffset = 0;
       promptVisible = false;
-
-      // If there's a consumer for the input, handle it.
-      if (self.handler.func) {
-        fetchPendingInput();
-      }
-      while (self.handler.func) {
-        var response = self.handler.func(self.lastLine);
-        // This handler no longer wants to do the job.
-        if (response === false) {
-          self.handler = handlers.pop();
-          return self; // All done.
-        }
-        else if (response === true) {
-          return self; // All is well, all done.
-        }
-        else if (_.isString(response)) {
-          // Allow the handler to act as a translator for the input.
-          self.handler = handlers.pop();
-          self.lastLine = response;
-        }
-        else {
-          throw new Error('Invalid line handler response');
-        }
-      }
-      return self;
+      return handlePendingInput();
     }
 
     function handleKeyEvent(kc) {
@@ -499,62 +616,95 @@ module.exports = function registerCliConsole(mm) {
     /**
      * @summary **Define a close handler**
      */    
-    self.onClose = function onClose(func) {
+    CliConsole.prototype.onClose = function onClose(func) {
       self.closeHandler = func;
     }
     
     /**
      * @summary **Close the input stream**
      */    
-    self.close = function close() {
-      if (self.closeHandler) self.closeHandler();
+    CliConsole.prototype.close = function close() {
+      if (running) {
+        running = false;
+        removeEventHandlers();
+        timer.stop();
+        if (self.closeHandler) self.closeHandler();
+      }
     }
     
     /**
      * @summary **Clear the screen**
      */    
-    self.clearScreen = function clearScreen() {
-      var windowSize = process.stdout.getWindowSize();
-      var linesPerScreen = windowSize[1];
-      var lineFeeds = _.repeat('\n', linesPerScreen);
-      cursor.write(lineFeeds);
-      cursor.eraseData(2);
-      cursor.goto(1, 1);
-    }
+    CliConsole.prototype.clearScreen = inNode ? 
+      function clearScreen() {
+        if (self.mute) return;
+        activity = true;
+        var windowSize = process.stdout.getWindowSize();
+        var linesPerScreen = windowSize[1];
+        var lineFeeds = _.repeat('\n', linesPerScreen);
+        cursor.write(lineFeeds);
+        cursor.eraseData(2);
+        cursor.goto(1, 1);
+      }
+    : /* istanbul ignore next */
+      function clearScreen() {
+        if (self.mute) return;
+        activity = true;
+        consoleOutput.innerHTML = '';
+      };
 
     /**
      * @summary **Output some text info to the consolee**
      * @description
-     * Outputs normal text to the console. The pending input line is
-     * erased and restored later when input continues.
+     * Outputs normal text to the console. On node clients the pending
+     * input line is erased and restored later when input continues.
+     * On a browser this just adds text to the output.
+     * @param {string} the line to output to the console.
      */    
-    self.write = function write(text) {
-      if (promptVisible) {
-        setLineOffset(0);
-        cursor.eraseLine();
-        cursor.hide();
+    CliConsole.prototype.write = inNode ? 
+      function write(text) {
+        if (promptVisible) {
+          setLineOffset(0);
+          /* istanbul ignore else */ 
+          if (!self.mute) {
+            cursor.eraseLine();
+            cursor.hide();
+          }
+        }
+        out(text);
+        partialOutputLine = false;
+        if (text.length > 0) {
+          var ch = text[text.length - 1];
+          partialOutputLine = (ch !== '\r' && ch !== '\n');
+        }
+        promptVisible = false;
+        return self;
       }
-      out(text);
-      partialOutputLine = false;
-      if (text.length > 0) {
-        var ch = text[text.length - 1];
-        partialOutputLine = (ch !== '\r' && ch !== '\n');
-      }
-      promptVisible = false;
-      return self;
-    }
+    : /* istanbul ignore next */
+      function write(text) {
+        out(text);
+      };
     
     /**
      * @summary **Output a text line to the consolee**
      * @description
      * Outputs a normal text line to the console.
+     * @param {string} the line to output to the console.
      */    
-    self.writeLine = function writeLine(textLine) {
-      self.write(textLine);
-      out(CR);
-      partialOutputLine = false;
-      return self
-    }
+    CliConsole.prototype.writeLine = inNode ? 
+      function writeLine(textLine) {
+        activity = true;
+        self.write(textLine);
+        out(NL);
+        partialOutputLine = false;
+        return self
+      }
+    : /* istanbul ignore next */
+      function writeLine(textLine) {
+        activity = true;
+        self.write(textLine + '\n');
+        return self
+      };
 
     /**
      * @summary **Establish the line handler**
@@ -569,8 +719,9 @@ module.exports = function registerCliConsole(mm) {
      * @param {string} prompt a new prompt to use (optional).
      * @param {bool} password true for password entry mode (optional)
      */    
-    self.setLineHandler =
+    CliConsole.prototype.setLineHandler =
     function setLineHandler(handler, prompt, passwordMode) {
+      activity = true;
       // Use the previous prompt if one is not supplied.
       if (!prompt) prompt = self.handler.prompt;
       handlers.push(self.handler);
@@ -579,7 +730,14 @@ module.exports = function registerCliConsole(mm) {
         prompt: prompt,
         pwdMode: passwordMode
       };
-      showCurrentLine(true);
+      /* istanbul ignore else */
+      if (inNode) {
+        showCurrentLine(true);
+      }
+      else {
+        consolePrompt.innerHTML = self.handler.prompt;
+        consoleInput.type = self.handler.pwdMode ? 'password' : 'text';
+      }
     }
     
     /**
@@ -588,10 +746,10 @@ module.exports = function registerCliConsole(mm) {
      * When present the line completer provide info for tab completion.
      * @param {function} completer the tab completion function
      */    
-    self.setCompleter = function setCompleter(completer) {
+    CliConsole.prototype.setCompleter = function setCompleter(completer) {
       self.completer = completer;
     }
-
+    
     /**
      * @summary Ask a question from the console
      * @description
@@ -607,7 +765,7 @@ module.exports = function registerCliConsole(mm) {
      * @param {bool} isPwd true if password blanking is to be used.
      * @returns {Q} returns Promise(Object|string), the `obj` or the answer string
      */
-    self.ask = function ask (query, obj, field, isPwd) {
+    CliConsole.prototype.ask = function ask (query, obj, field, isPwd) {
       if (obj && obj.field) {
         return qq(obj);
       }
@@ -629,16 +787,100 @@ module.exports = function registerCliConsole(mm) {
       }, query, isPwd === true ? true : false);
       return qD.promise;
     }
+
+    /**
+     * @summary **Spoof a line into input**
+     * @description
+     * The line of text is pushed to the console just as if it was entered
+     * by a human being. This is usually used by test routines but can
+     * be used by apps for sneaky purposes.
+     * @param {string} text the line to spoof.
+     */    
+    CliConsole.prototype.spoofInput = function spoofInput(text) {
+      var line = makeLine(text);
+      pendingInputs.push(line);
+      out('--- Spoofed>' + text + NL);
+    }
+
+    /**
+     * @summary **Spoof text chars into input**
+     * @description
+     * If a string is supplied, it is treated as a line and is spoofed as
+     * the chars in the string followed by ENTER. A number is treated as
+     * a single Unicode character value, and an array must be an array
+     * of keycode values that represents a single action (such as a VT100
+     * escape sequence).
+     * @param {string|array|number} text the text to spoof.
+     */    
+    CliConsole.prototype.spoofInputChars = function spoofInputChars(text) {
+      var chars = [];
+      if (_.isString(text)) {
+        var inputLine = text + CR;
+        for (var i = 0; i < inputLine.length; i++) {
+          var cc = inputLine.charCodeAt(i);
+          pushRawKey(String.fromCharCode(cc));
+        }
+        return;
+      }
+      else if (_.isArray(text)) {
+        chars = text;
+      }
+      else {
+        chars.push(text);
+      }
+      var rc = '';
+      chars.forEach(function (cc) { rc += String.fromCharCode(cc); });
+      pushRawKey(rc);
+    }
     
+    /**
+     * @summary **Call a function when a pause has occurred**
+     * @description
+     * Test routines that need to answer questions like password entry
+     * must wait for the question to be asked.  This lets the test
+     * pause until the output is idle for a few ms.
+     * @param {number} ms optional pause time in ms (default 100).
+     * @param {function} handler the handler to call after the pause.
+     */    
+    CliConsole.prototype.onPause = function onPause(ms, func) {
+      var t = 100;
+      var f = func;
+      if (_.isNumber(ms)) {
+        t = ms;
+        f = func;
+      }
+      else {
+        f = ms;
+      }
+      self.pauseTimer = new EggTimer(t).onDing(function() {
+        self.pauseTimer = null;
+        f();
+      });
+    }
+
+    /**
+     * @summary **Set up an output idle timer**
+     * @description
+     * Test routines can supply an EggTimer that will be reset on every
+     * keystroke or output, but will ding when nothing happens for a
+     * while.
+     * @param {EggTimer} idleTimer the timer
+     */    
+    CliConsole.prototype.setIdleTimer = function setIdleTimer(idleTimer) {
+      self.idleTimer = idleTimer;
+    }
+
     //------------------------------------------------------------------------
     //                            Event Handlers
     //------------------------------------------------------------------------
-    
+
     // This eggTimer is the core handler for interaction with the user.
     // Whenever output stops for a while, this timer handles any keys
     // that the user has managed to type in the meantime.
     timer.onDing(function processPendingInputs() {
 try {
+      // In a browser client, the inputs are pushed directly into the
+      // pendingInputs list so no keys ever end up in the keyQueue.
       var n = keyQueue.length;
       var keys = keyQueue;
       keyQueue = [];
@@ -650,12 +892,14 @@ try {
           else if (key.visibleChar) {
             handleVisibleInputChar(key.visibleChar);
           }
+          /* istanbul ignore next */
           else if (key.ctrlCode) {
 console.log('********** Unhandled key code', key);                        
             var e = 'Unhandled key code:' + hexString(key.ctrlCode);
             self.error = new Error(e);
             keyQueue = [];
           }
+          /* istanbul ignore next */
           else {
 console.log('********** Unrecognized key event', key);            
             var ee = 'Unrecognized key event' + JSON.stringify(key);
@@ -666,22 +910,29 @@ console.log('********** Unrecognized key event', key);
       }
       else {
         // Prompt the user for more input.
-        showPrompt();
+        handlePendingInput();
+        updateCurrentLine();
       }
 
       // The keyboard is more peppy when there are pending keystrokes.
-      timer.reset(n > 0 ? 10 : 50);
+      timer.reset();
+      /* istanbul ignore if */
+      if (inBrowser & activity) {
+        var alignToTop = false;
+        consoleInput.scrollIntoView(alignToTop);
+        activity = false;
+      }
 }
 catch (e) {
+  /* istanbul ignore next */
   console.log('********** timer.onDing', e.stack);
 }      
     });
-    
+
     // Character input just saves the characters for later.
     // Control C is the only exception - by default, it will kill the
     // process graveyard dead.
-    inStream.on('readable', function() {
-      var cch = inStream.read();
+    function pushRawKey(cch) {
       if (cch !== null) {
         var k = getKeyCode(cch);
         if (k) {
@@ -708,37 +959,101 @@ catch (e) {
           }
         }
       }
-    });
+
+      timer.forceDing();
+    }
+
+    function inReadableHandler() {
+      var cch = inStream.read();
+      pushRawKey(cch);
+    }
     
-    inStream.on('end', function() {
+    function inCloseHandler() {
       self.close();
       console.log('---- END ----');
       self.error = new Error('The console is now endeed');
-    });  
+    }  
 
-    inStream.on('close', function() {
-      self.close();
-      console.log('---- CLOSED ----');
-      self.error = new Error('The console is now closed');
-    });  
-
-    inStream.on('error', function(e) {
+    function inErrorHandler(e) {
       self.close();
       console.log('---- ERROR:', e.stack);
       self.error = e;
-    });
+    }
 
     //------------------------------------------------------------------------
     // Note that on Windows, resizing the window by dragging the size
     // handle around never changes the column count (since it can scroll)
     // but strangely does change the row count to match the number of
     // visible rows.
-    outStream.on('resize', function() {
+    /* istanbul ignore next */
+    function resizeHandler () {
       console.log('- screen size has changed to ',
          outStream.columns + ' columns by ' + outStream.rows + ' rows.');
       self.displayRows = outStream.rows;
       self.displayCols = outStream.columns;
-    });    
+    }
+
+    //------------------------------------------------------------------------
+    // Install or remove the list of event handlers.
+    function installEventHandlers(remove) {
+      self.eventHandlers.forEach(function (handler) {
+        if (remove) {
+          handler.obj.removeListener(handler.name, handler.func);
+        }
+        else {
+          handler.obj.on(handler.name, handler.func);
+        }
+      });
+    }
+    
+    function removeEventHandlers() {
+      installEventHandlers(true);
+      self.eventHandlers = [];
+    }
+    
+    //------------------- Browser client event handlers -------------------
+    // TODO: Add a removeEventListener to get rid of these on close.
+    
+    /* istanbul ignore if */
+    if (inBrowser) {
+      // TODO: Switch to using addEventListener.
+      consoleInput.onchange = function () {
+        enter();
+        timer.forceDing();
+      };
+
+      // TODO: Switch this to use event.key instead of 'which'.
+      // TODO: Switch to using addEventListener.
+      consoleInput.onkeydown = function (event) {
+        var handled = false;
+        var keynum = event.which;
+        if (keynum === 13) { // Enter
+          enter();
+          timer.forceDing();
+          handled = true;
+        }
+        else if (keynum === 27) { // Escape
+          consoleInput.value = '';
+          handled = true;
+        }
+        else if (keynum === 38) { // Arrow Up
+          previousSavedLine();
+          consoleInput.value = currentInput.textLine;
+          handled = true;
+        }
+        else if (keynum === 40) { // Arrow Down
+          nextSavedLine();
+          consoleInput.value = currentInput.textLine;
+          handled = true;
+        }
+
+        if (handled) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      };
+
+    } // end Browser specific event handlers.      
   }
 
   CliConsole.KeyCodes = KeyCodes;

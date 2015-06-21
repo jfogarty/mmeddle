@@ -15,10 +15,38 @@
 
   <!-- Mocha BDD test case sets -->
   <script src="test.mmeddle.js"></script>
-  <script src="util/test.Logger.js"></script>
-  <script src="util/test.SequencedObject.js"></script>
-  <script src="sal/test.users.js"></script>
-  <script src="sal/test.user.js"></script>
+  
+  <!-- NEW [under development) test case sets -->
+  
+  <!-- Utility test case sets -->
+  <script src="util/test.base.util.string.js"></script>
+  <script src="util/test.base.qq.js"></script>
+  <script src="util/test.base.util.dateTime.js"></script>
+  <script src="util/test.base.Logger.js"></script>
+  <script src="util/test.base.EggTimer.js"></script>
+  
+  <!-- (SAL) Services Abtraction Layer test case sets -->
+  <script src="sal/test.base.ClientUser.js"></script>  
+  <script src="sal/test.base.localStorage.js"></script>
+<!--    
+  <script src="sal/test.base.storage.js">!!!NODE ONLY</script> 
+-->
+  
+  <!-- Core test case sets -->
+<!--    
+  SERVER INTERACTION REQUIRED
+
+  <script src="sal/test.base.localUser.js"></script>
+  <script src="sal/test.base.localWorkspace.js">
+    // These clear the local Storage for the domain.
+    // So it is annoying when messing with the test CLI.
+  </script>
+-->  
+<!--
+  <script src="sal/test.client.user.js"></script>  
+  <script src="sal/test.client.ws.js"></script>
+  <script src="sal/test.cli.js"></script>  
+-->
 
   <!-- Add additional browser compatible test case sets here -->
 

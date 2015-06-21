@@ -32,6 +32,7 @@
     .then(function(r) {
       mm.log('- Workspace session saved', self.sessionId);
       // Save the named workspace.
+      /* istanbul ignore if */ // Tested independently.
       if (ws.name) {
         sc.store('ws', ws)
         .then(function(r) {
@@ -48,6 +49,7 @@
         self.respond(rq);
       }
     },
+    /* istanbul ignore next */
     function(e) { 
       mm.log.error('Workspace session save failed: ', e)
       self.respond(rq, '', e);

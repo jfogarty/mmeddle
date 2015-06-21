@@ -33,11 +33,37 @@ var paths = {
   ALLJS_glob:   ['test/**/*.js', '!test/libs/*.js', 'index.js', 'src/**/*.js'],
   LINTSRC_glob: ['test/**/*.js', '!test/libs/*.js', 'index.js', 'src/**/*.js',
                  'testm/**/*.js', 'scratch/**/*.js'],
-  TESTS_glob:   ['test/**/*.js']
+  TESTS_min:    ['test/test.mmeddle.js'],
+  TESTS_all:    ['test/**/test.*.js'],
+  TESTS_basic:  ['test/test.mmeddle*js', 'test/**/test.base**js']
 };
 
 var pkg = require('./package.json');
-var disableMinify = process.env.MMEDDLE_MIN ? false : true;
+
+var enableMinify = true;
+if (typeof process.env.MMEDDLE_MIN !== 'undefined') {
+  enableMinify = process.env.MMEDDLE_MIN === 'true' ? true : false;
+}  
+
+var enableDocs = true;
+if (typeof process.env.MMEDDLE_DOCS !== 'undefined') {
+  enableDocs = process.env.MMEDDLE_DOCS === 'true' ? true : false;
+}  
+
+var testsLint = true;
+if (typeof process.env.MMEDDLE_LINT !== 'undefined') {
+  testsLint = process.env.MMEDDLE_LINT === 'true' ? true : false;
+}  
+
+var testsGlob = 'TESTS_basic';
+if (typeof process.env.MMEDDLE_TESTS !== 'undefined') {
+  testsGlob = 'TESTS_' + process.env.MMEDDLE_TESTS;
+}
+
+var testsReporter = 'spec';
+if (typeof process.env.MMEDDLE_TESTREPORTER !== 'undefined') {
+  testsReporter = process.env.MMEDDLE_TESTREPORTER;
+}
 
 paths.MMEDDLE_JS     = path.join(paths.DIST, paths.FILE);
 paths.MMEDDLE_MIN_JS = path.join(paths.DIST, paths.FILE_MIN);
@@ -252,25 +278,36 @@ function convertSprites(done) {
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Testing, code quality and coverage
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-function doLint(cb) {
-  gulp.src(paths.LINTSRC_glob)
-      .pipe(g_jshint('.jshintrc'))
-      .pipe(g_jshint.reporter('jshint-stylish'));
-  g_util.log(g_util.colors.green(' JSHINT  *completed*'));
-  cb();
+function doLint() {
+  if (!testsLint) {
+    g_util.log(g_util.colors.red(' JSHINT tests skipped.'));
+  }
+  else {
+    return gulp.src(paths.LINTSRC_glob)
+        .pipe(g_jshint('.jshintrc'))
+        .pipe(g_jshint.reporter('jshint-stylish'));
+    g_util.log(g_util.colors.green(' JSHINT  *completed*'));
+  }
+  //cb();
 }
 
 function mochaTests() {
-  return gulp.src(paths.TESTS_glob, {read: false})
-      .pipe(g_mocha({
-        ui: 'bdd',
-        //reporter: 'nyan'
-        //reporter: 'progress'
-        //reporter: 'dot'
-        //reporter: 'min' 
-        //reporter: 'spec'
-        reporter: 'list'
-      }));
+  if (testsGlob === 'TESTS_none' || testsGlob === 'TESTS_false') {
+    g_util.log(g_util.colors.red(' Mocha tests skipped.'));
+    return;
+  }
+  var glob = paths[testsGlob];
+  if (!glob) {
+    g_util.log(g_util.colors.red(' MMEDDLE_TESTS is invalid. Tests skipped.'));
+    return;
+  }
+  var rpt = testsReporter;
+  var fileSet = glob.join(' ');
+  var cmd = nodeBin('mocha -u bdd -r should --recursive -R ' +
+      rpt + ' ' + fileSet);
+  g_util.log(g_util.colors.green(cmd));
+  return gulp.src('./', {read: false})
+    .pipe(g_shell([cmd]))
 }
 
 // ***** Note - as of 1-may-2015 Karma tests are not yet running although
@@ -306,13 +343,6 @@ gulp.task('convertSprites', function(done) {
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Testing, code quality and coverage
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// test various items for consistency
-gulp.task('validate', function (cb) {
-  g_util.log('validate:' + paths.MMEDDLE_JS);
-  // A no-op for now.
-  g_util.log('validated:' + paths.MMEDDLE_JS);
-  cb();
-});
 
 // Wrapper to run Lint by itself.
 gulp.task('lint', [], doLint);
@@ -338,13 +368,15 @@ gulp.task('test', ['lint'], function () {
 
 // Run Karma browser tests
 gulp.task('testk', function (done) {
-  karmaTests(done);
+  return karmaTests(done);
 });
 
-// Run the Istanbul code coverage reporter based on the mocha tests.
-gulp.task('coverage', g_shell.task([
-  nodeBin(pkg.scripts.coverage)
-]));
+// Open generated web pages 
+gulp.task('showcoverage', g_shell.task([
+  path.join('.', 'coverage', 'lcov-report', 'index.html')
+], { ignoreErrors: true }));
+
+// NOTE!  Run code coverage with 'npm run coverage'
 
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Browser Packaging and Distribution
@@ -353,27 +385,42 @@ gulp.task('clean', function (cb) {
   return cleanDistDirectory(cb);
 });
 
-gulp.task('bundle', ['validate', 'test'], function () {
+gulp.task('copyClient', function () {
+  return gulp.src(['./src/client/*'])
+    .pipe(gulp.dest('./dist'));
+});
+
+gulp.task('bundle', ['copyClient', 'test'], function () {
   return bundle();
 });
 
 gulp.task('minify', ['bundle'], function () {
-  if (!disableMinify) {
+  if (enableMinify) {
     return minify();
+  }
+  else {
+    g_util.log(g_util.colors.red(' Minify skipped.'));
   }
 });
 
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Documentation
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-gulp.task('docs', g_shell.task([
-  nodeBin(pkg.scripts.docs)
-]));
+function generateDocs() {
+  if (!enableDocs) {
+    g_util.log(g_util.colors.red(' API docs generation skipped.'));
+  }
+  else {
+    var cmd = nodeBin(pkg.scripts.docs);
+    g_util.log(g_util.colors.green(cmd));
+    return gulp.src('./', {read: false})
+      .pipe(g_shell([cmd]))
+  }
+}
 
-// Open generated web pages 
-gulp.task('showcoverage', g_shell.task([
-  path.join('.', 'coverage', 'lcov-report', 'index.html')
-], { ignoreErrors: true }));
+gulp.task('docs', function() {
+  return generateDocs()
+});
 
 gulp.task('showdocs', g_shell.task([
   path.join('.', 'docs', 'src', 'index.html')
@@ -432,8 +479,7 @@ gulp.task('watchb', ['testm', 'bundle'], function () {
 });
 
 // The default task (called when you run `gulp`)
-gulp.task('default', ['testm', 'bundle', 'minify'], g_shell.task([
-  'echo ---------- Generating javadocs ----------',
-  nodeBin(pkg.scripts.docs)
-]));
+gulp.task('default', ['testm', 'bundle', 'minify', 'docs']);
+
+
  

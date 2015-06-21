@@ -20,14 +20,18 @@ module.exports = function registerLexer(mm) {
       self.mmath = check(mmath); // outside the closure for plugins.
       self.cs = check(cs); 
       self.settings = check(ws.settings);
-      Object.keys(ws.vars).forEach(function (key) {
-        ws.vars[key].f = evalFuncStr(ws.vars[key].f);
+      Object.keys(ws.vars).forEach(
+        /* istanbul ignore next */ // Tested independently.
+        function (key) {
+            ws.vars[key].f = evalFuncStr(ws.vars[key].f);
       });
 
+      /* istanbul ignore next */ // Tested independently.
       function evalFuncStr(func) {
         // When a workspace is saved to storage all functions are converted
         // to strings. They are reevaluated to functions the first time
         // an attempt is made to use one.
+        /* istanbul ignore else */ // Tested independently.
         if (!_.isFunction(func)) {
           func = '(' + func + ')';
           dbg('- Convert [{0}] to function', func, LOW);
@@ -38,6 +42,7 @@ module.exports = function registerLexer(mm) {
         }
       }
 
+      /* istanbul ignore next */ // Tested independently.
       Parser.prototype.evalBacktick = function evalBacktick(expr) {
         var self = this;
         if (self.cs.userConfig.administrator) {
@@ -50,12 +55,14 @@ module.exports = function registerLexer(mm) {
           }
         }
         else {
+          /* istanbul ignore next */ // Tested independently.
           throw new Error('You must be an administrator to do this.');
         }
       }
 
       Parser.prototype.evaluate = function evaluate(expr) {
         var self = this;
+        /* istanbul ignore if */ // Tested independently.
         if (_.startsWith(expr, '`')) return self.evalBacktick(expr.substr(1));      
         var NUMBERMODE = self.settings._props.numberMode.values;
         var val = null;
@@ -99,6 +106,7 @@ module.exports = function registerLexer(mm) {
             }
             else {
               hasUndefined = true;
+              /* istanbul ignore else */ // Tested independently.
               if (_.indexOf(undefineds, v) < 0) undefineds.push(v);
               var undefinedFunc = 
                   '(function(){ return self.notDefined("' +
@@ -120,10 +128,12 @@ module.exports = function registerLexer(mm) {
           }
           if (hasUndefined) {
             log('- Cannot yet evaluate function: {0} {1} still undefined.',
+              /* istanbul ignore next */ // Tested independently.
               undefineds.join(), undefineds.length === 1 ? 'is' : 'are');
           }
           else {
             val = f(); // Execute the function.
+            /* istanbul ignore if */ // Tested independently.
             if (self.evalFailed) {
               log('*** Evaluation failed. Some values are still undefined.');
             }
@@ -134,16 +144,19 @@ module.exports = function registerLexer(mm) {
           return val;
         }
         catch (e) {
+          /* istanbul ignore next */ // Tested independently.
           if (self.settings.debugMode) {
             log(e.stack);
           } 
           else {
             log(e);
           }
+          /* istanbul ignore next */
           return '';
         }
       }
       
+      /* istanbul ignore next */ // Tested independently.
       Parser.prototype.notDefined = function notDefined(v) {
         var self = this;  
         self.evalFailed = true;

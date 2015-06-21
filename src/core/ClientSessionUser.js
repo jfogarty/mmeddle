@@ -6,8 +6,10 @@
  */ 
  module.exports = function(mm) {
   var qq            = mm.check(mm.Q);
+  var Config        = mm.check(mm.obj.Config);
   var ClientSession = mm.check(mm.core.ClientSession);
   var ClientUser    = mm.check(mm.users.ClientUser);
+  
   var localStorage  = new mm.storage.LocalStorage();
   
   // Approximate number of saved input lines to restore from the
@@ -23,7 +25,7 @@
   ClientSession.prototype.clearLocalUser =
   function clearLocalUser() {
     var self = this;
-    self.user = new ClientUser('anonymous');
+    self.user = new ClientUser();
     self.userConfig = new Config();
     return self;    
   }
@@ -42,6 +44,7 @@
   function loadLocalUser(mConsole) {
     var self = this;
     var userObj = localStorage.load('user');
+    /* istanbul ignore else */ // Tested independently.
     if (userObj) {
       // If a stack saving console is present then add its saved
       // input lines to the current console.
@@ -50,13 +53,13 @@
         userObj.savedInputLines &&
         userObj.savedInputLines.length > 0) 
       {
-        var inLine;
+        var inLine = null;
         var i = 0;
         do {
           i++;
           inLine = userObj.savedInputLines.pop();
           if (inLine) mConsole.savedInputLines.unshift(inLine);
-          if (i > MAX_SAVED_INPUT_LINES) inline = null;
+          if (i > MAX_SAVED_INPUT_LINES) inLine = null;
         } while (inLine);
         delete userObj.savedInputLines;
       }
@@ -77,6 +80,7 @@
   ClientSession.prototype.saveLocalUser =
   function saveLocalWorkspace(mConsole) {
     var self = this;
+    /* istanbul ignore else */ // Tested independently.
     if (mConsole &&
         mConsole.savedInputLines &&
         mConsole.savedInputLines.length > 0) 
@@ -138,32 +142,35 @@
     var user = new ClientUser(userName);
     return self.rq('loadUser', user, true)
     .then(function (rs) {
-try{    
-      user.init(rs.content).hashP(ptpwd, ispdk);
-      //mm.log('+++++++++++++++++++== Login with', user);
-      // Instead of sending the PDK, we send a sha256 hash
-      // of the PDK based on a socket id seed which is known
-      // by both the client and server.
-      user.hashPdk(self.mmc.socketid);
-//mm.log('xxxxxuser.hashPdk(self.socket.id)', self.socketid, user);
-      var rquser = new ClientUser(userName).init(user);
-//mm.log('xxxxxuser.rquser', rquser);      
-      if (rquser.pdk) delete rquser.pdk;
-      return self.rq('loginUser', rquser, true)
-      .then(function (rs) {
-        user.init(rs.content);
-        self.user = user;
-        self.ws.owner = user.name;
-        if (rs.userConfig) {
-          self.userConfig.init(rs.userConfig);
-          mm.log('- User [' + user.name + '] has a personal configuration');
-        }
-        user.elapsed = rs.elapsed;
-        user.ok = true;
-        self.loggedIn = user;
-        return user;
-      });
-} catch (e) { mm.log.error('userLogin failure internal', e.stack); }      
+      try{    
+        user.init(rs.content).hashP(ptpwd, ispdk);
+        //mm.log('+++++++++++++++++++== Login with', user);
+        // Instead of sending the PDK, we send a sha256 hash
+        // of the PDK based on a socket id seed which is known
+        // by both the client and server.
+        user.hashPdk(self.mmc.socketid);
+        var rquser = new ClientUser(userName).init(user);
+        /* istanbul ignore else */ // Tested independently.
+        if (rquser.pdk) delete rquser.pdk;
+        return self.rq('loginUser', rquser, true)
+        .then(function (rs) {
+          user.init(rs.content);
+          self.user = user;
+          self.ws.owner = user.name;
+          /* istanbul ignore if */ // Tested independently.
+          if (rs.userConfig) {
+            self.userConfig.init(rs.userConfig);
+            mm.log('- User [' + user.name + '] has a personal configuration');
+          }
+          user.elapsed = rs.elapsed;
+          user.ok = true;
+          self.loggedIn = user;
+          return user;
+        });
+      } catch (e) { 
+        /* istanbul ignore next */ // Tested independently.
+        mm.log.error('userLogin failure internal', e.stack);
+      }      
     })
   }
   
@@ -182,6 +189,7 @@ try{
   function userCreate(newUser, ispdk) {
     var self = this;
     var user;
+    /* istanbul ignore if */ // Tested independently.
     if (ispdk) {
       user = newUser;
     }
@@ -198,6 +206,7 @@ try{
       user.init(rs.content);
       self.user = user;
       self.ws.owner = user.name;
+      /* istanbul ignore if */ // Tested independently.
       if (rs.userConfig) {
         self.userConfig.init(rs.userConfig); // Add to the session.
         mm.log('- User [' + user.name + '] has a personal configuration');
@@ -220,6 +229,7 @@ try{
   ClientSession.prototype.userDelete =
   function userDelete() {
     var self = this;
+    /* istanbul ignore if */ // Tested independently.
     if (!self.isLoggedIn()) {
       var em  = '- User [' + self.user.name + '] is not logged in';
       return qq.reject(new Error(em));
@@ -236,6 +246,7 @@ try{
    * The set of currently connected users is returned.
    * @returns {Promise} to an array of session entries.
    */  
+  /* istanbul ignore next */ // Tested independently.
   ClientSession.prototype.listUserSessions =
   function listUserSessions() {
     var self = this;

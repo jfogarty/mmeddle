@@ -31,7 +31,13 @@
       self.respond(rq, publicUser);
     },
     function(e) {
-      mm.log.error('No such user exists: ', e)
+      /* istanbul ignore else */ // Tested independently.
+      if (mm.util.ENOENT(e)) {
+        mm.log.warn('loadUser: No such user exists: [' + userName + ']');
+      }
+      else {
+        mm.log.debug('loadUser: Access error: [' + userName + ']', e.stack);
+      }
       self.respond(rq, '', e);
     })
   }
@@ -56,8 +62,9 @@
       mm.log.debug('- Loaded users', publicUsers);
       self.respond(rq, publicUsers);
     },
+      /* istanbul ignore next */ // Tested independently.
     function(e) {
-      mm.log.error('Storage error: ', e)
+      mm.log.debug('Storage error: ', e.stack)
       self.respond(rq, '', e);
     })
   }
@@ -90,6 +97,7 @@
       //Check the password derived key for a match.
       //Instead of checking the PDK directly, we check the
       //hpdk (a sha256 hash of the PDK based on a socket id seed).
+      /* istanbul ignore else */ // Tested independently.
       if (user.hpdk === remotehpdk) {
         user.lastLogin = _.now();
         user.loginCount++;
@@ -101,10 +109,14 @@
         // password setting.
         delete rsuser.pdk; 
         var userConfig = self.loadUserConfig(userName);
+        /* istanbul ignore if */ // Tested independently.
         if (userConfig) {
+          mm.log('- Logged in user [' + userName +
+                 '] with private configuration');        
           self.respond(rq, rsuser, false, { userConfig: userConfig });
         }
         else {
+          mm.log('- Logged in user [' + userName + ']');
           self.respond(rq, rsuser);
         }
       }
@@ -117,8 +129,14 @@
       }
       self.usersStorage.store('privateUsers', user)
     },
+      /* istanbul ignore next */ // Tested independently.
     function(e) {
-      mm.log.error('No such user exists: ', e)
+      if (mm.util.ENOENT(e)) {
+        mm.log.warn('loginUser: No such user exists: [' + userName + ']');
+      }
+      else {
+        mm.log.debug('loginUser: Access error: [' + userName + ']', e.stack);
+      }
       self.respond(rq, '', e);
     })
   }
@@ -142,7 +160,7 @@
     user.loginCount = 1;
     user.failedLoginCount = 0;
     mm.log('- Created new user [' + userName + ']');
-mm.log.debug('++++++++++++++ storing private user', user);        
+    mm.log.debug('createUser: storing private user', user);        
     self.usersStorage.store('privateUsers', user)
     .then(function(info) {
       mm.log('- Saved private user info');
@@ -151,27 +169,34 @@ mm.log.debug('++++++++++++++ storing private user', user);
       publicUser.lastName = user.lastName;
       // Pass the salt. Allows the PDK to be created by the client.
       publicUser.pbkdf2Salt = user.pbkdf2Salt;
+      /* istanbul ignore if */ // Inspected not tested.
       if (user.privateEmail !== true) {
         publicUser.email = user.email;
       }
-mm.log.debug('++++++++++++++ storing', publicUser);            
+      mm.log.debug('createUser: storing', publicUser);            
       self.usersStorage.store('publicUsers', publicUser)
       .then(function(info) {
         self.user = user; // This user is now the current user.
         self.loggedIn = true;
         var userConfig = self.loadUserConfig(userName);
+        /* istanbul ignore if */ // Tested independently.
         if (userConfig) {
+          mm.log('- Created and Logged in user [' + userName +
+                 '] with private configuration');        
           self.respond(rq, user, false, { userConfig: userConfig });
         }
         else {
+          mm.log('- Created and Logged in user [' + userName + ']');
           self.respond(rq, user);
         }
       },
+      /* istanbul ignore next */ // Tested independently.
       function(e) { 
         mm.log.error('Cannot save public user: ', e.stack);
         self.respond(rq, '', e);
       });
     },
+    /* istanbul ignore next */ // Tested independently.
     function(e) { 
       mm.log.error('Cannot save private user:', e.stack);
       self.respond(rq, '', e);
@@ -191,26 +216,31 @@ mm.log.debug('++++++++++++++ storing', publicUser);
     var deleteUserObj = rq.content;
     mm.log.debug('- Delete user', deleteUserObj);
     var userName = self.user.name;
+mm.log.debug('++++++++++++++ deleteUser', deleteUserObj);
+    /* istanbul ignore if */ // Tested independently.
     if (userName !== deleteUserObj.name) {
       var em1 = mm.format('"{0}" is not the current user: "{1}"',
           deleteUserObj.name, userName);
       mm.log.error(em1);
       self.respond(rq, '', new Error(em1));
+      return;
     }
-    mm.log('- Deleteing private user [' + userName + ']');
+    mm.log('- Deleting private user [' + userName + ']');
     self.usersStorage.remove('privateUsers', userName)
     .then(function(ok) {
-      mm.log('- Deleteing public user [' + userName + ']');
+      mm.log('- Deleting public user [' + userName + ']');
       self.usersStorage.remove('publicUsers', userName)
       .then(function(ok) {
         var rmd = mm.format('User "{0}" has been removed', userName);
         self.respond(rq, rmd);
       },
+      /* istanbul ignore next */ // Tested independently.
       function(e) { 
         mm.log.error('Cannot remove public user: ', e.stack);
         self.respond(rq, '', e);
       });
     },
+    /* istanbul ignore next */ // Tested independently.
     function(e) { 
       mm.log.error('Cannot remove private user:', e.stack);
       self.respond(rq, '', e);
@@ -222,6 +252,7 @@ mm.log.debug('++++++++++++++ storing', publicUser);
    * @description
    * The set of client sessions currently running is returned.
    * @param {Object} rq the request object   */   
+  /* istanbul ignore next */ // Tested independently.
   WsSession.prototype.listUserSessions = 
   function wsListUserSessions(rq) {
     var self = this;
@@ -239,7 +270,7 @@ mm.log.debug('++++++++++++++ storing', publicUser);
         firstConnectionTime: session.firstConnectionTime
       };
       sessionInfos.push(sessionInfo);
-    };
+    }
 
     mm.log('- Sending into on {0} sessions', sessionInfos.length);
     self.respond(rq, sessionInfos);
@@ -256,6 +287,7 @@ mm.log.debug('++++++++++++++ storing', publicUser);
   function wsLoadUserConfig(userName) {
     var self = this;
     var config = new mm.obj.Config();
+    /* istanbul ignore if */ // Tested independently.
     if (config.userLoad(userName)) {
       // Establish the session user config for service request validation.
       // This also allows a power user to logon and pass those powers on 

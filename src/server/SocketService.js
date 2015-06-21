@@ -43,6 +43,7 @@
     var socketio9 = socketio.version.indexOf('0.9.') === 0;
     self.socketio9 = socketio9;
     mm.log.debug('- socket.io: version = ' + socketio.version);
+    /* istanbul ignore else */ // Tested in real world.
     if (socketio9) {
       var io = socketio.listen(self.server); // old form 0.9.16
       self.io = io;
@@ -50,7 +51,8 @@
         mm.log.debug('- socket.io: set default config');
         mm.log.debug('- socket.io: origins = "*.*"');
         //0 - error, 1 - warn, 2 - info, 3 - debug  
-        io.set('log level', 2);
+        io.set('log level', mm.config.socketIoLogLevel);
+        mm.log.debug('- socket.io: log level:', mm.config.socketIoLogLevel);
         io.set('origins', '*:*');
         mm.log.debug('- socket.io: transports = ["websocket"]');
         io.set('transports', ['websocket']);
@@ -70,6 +72,7 @@
   SocketService.prototype.acceptConnections = 
   function acceptConnections() {
     var self = this;  
+    /* istanbul ignore else */ // Tested independently
     if (self.io) {
       self.io.on('connection', self.newConnection.bind(self));
     }
@@ -100,6 +103,7 @@
       slog('- Connecting Workspace Session as', sessionId);
       mm.log.debug('----- mmConnectRs:', rs);
       var session;
+      /* istanbul ignore if */ // Tested independently
       if (self.sessions[sessionId]) {
         session = self.sessions[sessionId];
       }
@@ -124,6 +128,7 @@
     socket.on('mmWsRq', function (rs) {
       var sessionId = rs.sessionId;
       mm.log.debug('- Workspace Session Request', id, rs);
+      /* istanbul ignore else */ // Tested independently
       if (self.sessions[sessionId]) {
         var session = self.sessions[sessionId];
         session.handleRq(rs, socket);

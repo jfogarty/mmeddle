@@ -1,7 +1,7 @@
 'use srict';
 /**
  * @fileOverview Loads config.json files 
- * @module util/config
+ * @module util/Config
  */ 
 module.exports = function registerConfig(mm) {
   var path = mm.check(mm.path);
@@ -78,11 +78,13 @@ module.exports = function registerConfig(mm) {
    */
   Config.prototype.load = function load(prefix, context) {
     var self = this;
+    /* istanbul ignore if */ // Tested in WebCLI
     if (mm.config.inBrowser) return self;
     var dir1 = mm.config.baseDir;
     var dir2 = path.join(dir1, 'config');
     var fileName = prefix + '.config.json';
     var dirs = [dir1, dir2];
+    /* istanbul ignore next */
     var ctx = _.isString(context) ? context : '';
     function loadInternal() {
       for (var i in dirs) {
@@ -95,7 +97,8 @@ module.exports = function registerConfig(mm) {
           self.configFilesLoaded++;
         }
         catch (e) {
-          if (e.code !== 'ENOENT') {
+          /* istanbul ignore if */ // Tested independently.
+          if (!mm.util.ENOENT(e)) {
             mm.log.error(ctx +'Config read failed [' +
                 cfgPath + ']', e.stack);
           }
@@ -104,6 +107,7 @@ module.exports = function registerConfig(mm) {
     }
 
     loadInternal();
+    /* istanbul ignore if */ // Tested independently.
     if (self.debug) {
       fileName = prefix + '.debug.config.json';
       loadInternal();

@@ -21,31 +21,22 @@
    * which in turn connects to a MMeddleServer/WsSession over a socket.io
    * connection. Once a server connection is completed, the session can
    * handle requests such as login, saveWorkspace, etc.
+   * 
    * @constructor
-   * @param {string} logPrefix the text to put on the front of log messages
+   * @param {string} clientApp optional name to use for the client application
    * @returns {ClientSession} the new client session
    */  
   var ClientSession = (function clientSessionCtorCreator() {
-    var ctor = function clientSession(logPrefix) {
+    var ctor = function clientSession(clientApp) {
       var self = this;
       self.ws = mm.check(new mm.core.Workspace(self));
-      self.user = new ClientUser('anonymous');
+      self.user = new ClientUser();
       self.userConfig = new Config();
       self.loggedIn = null; // Not currently logged in.
       self.mmc = false; // No MMeddleClient has been added,
-      
-      self.log = function log() {
-        var args = Array.prototype.slice.call(arguments);
-        args[0] =  logPrefix + args[0];
-        mm.log.apply(null, args);
-      };
+      self.clientApp = clientApp ? clientApp : 'client';
 
-      self.log.error = function logError() {
-        var args = Array.prototype.slice.call(arguments);
-        args[0] =  logPrefix + args[0];
-        mm.log.error.apply(null, args);
-      };
-
+      /* istanbul ignore next */ // tested independently
       self.newSessionId = function newSessionId() {
         return 'MMSID_' + _.now().toString() + '_' + _.random(10000).toString();
       }
@@ -85,6 +76,7 @@
     if (self.mmc && self.mmc.connected) {
       return self.mmc.rq(op, content, rsRequired, timeout);
     }
+    /* istanbul ignore next */ // tested independently
     if (self.mmc) {
       if (rsRequired) return qq.reject(new Error('Not connected to server')); 
     }

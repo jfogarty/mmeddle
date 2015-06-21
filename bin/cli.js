@@ -50,9 +50,6 @@
   var mm = require('../index');
   var check         = mm.check;
   var _             = check(mm._);
-  var qq            = check(mm.Q);
-  var Logger        = check(mm.Logger);
-  var Lexer         = check(mm.core.Lexer);
   var Parser        = check(mm.core.Parser);
   var MMath         = check(mm.core.MMath);
   var CliConsole    = check(mm.core.CliConsole);
@@ -61,7 +58,6 @@
   var CliCommands   = check(mm.core.CliCommands);
   
   var mmath  = check(new MMath());
-  var ls  = new mm.storage.LocalStorage();
 
   /**
    * Handle the mMeddle CLI on a CliConsole.
@@ -73,16 +69,12 @@
     var mConsole = new CliConsole();
     mm.log.setCliConsole(mConsole);
     mConsole.clearScreen();
-    mm.log('----- mMeddle CLI v0.1.3 -----');
+    mm.log('----- mMeddle CLI v0.1.5 -----');
 
-    if (!program.nolog) {
-      mm.log.setupAppDebugLog(__filename, program.debugon);
-    }
-    mm.config = mm.config.appLoad(__filename);
     mm.log.debug('----- CLI Configuration -----\n', mm.config);
 
     var host = mm.config.localUrl;
-    var cs = new ClientSession('CLI:');
+    var cs = new ClientSession('CLI');
     var mmc = new MMeddleClient(host, cs);
     
     var cliCmds = new CliCommands(mConsole, cs);

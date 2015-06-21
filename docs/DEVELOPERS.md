@@ -22,6 +22,8 @@
 [openshift-mm-url]: http://mmeddle-jfogarty.rhcloud.com
 [openshift-mm-bvt-url]: http://mmeddle-jfogarty.rhcloud.com/test/testMocha.html
 [openshift-mm-api-url]: http://mmeddle-jfogarty.rhcloud.com/api/index.html
+[openshift-mm-cli-url]: http://mmeddle-jfogarty.rhcloud.com/test/webcli.html
+[openshift-mm-climin-url]: http://mmeddle-jfogarty.rhcloud.com/test/webcli-min.html
 
 [mongolab-mmSpace]: https://mongolab.com/databases/mmspace  
 
@@ -49,6 +51,8 @@ It includes all source, images and test cases for building and testing mMeddle.
 enhanced (significantly) by having access to a mMeddle server. **server.js**
 is the mMeddle server you can run locally. The mMeddle browser client
 application is started using http://localhost:8080 when the server is running.
+This provides access to the browser test cases, the **webCli** (a browser based
+version of the **cli.js**) and its **mmeddle.min.js** minimized twin.
 
 This document (./mmeddle/docs/DEVELOPERS.md) is a markdown file that provides
 a developer's overview for building and testing mmeddle bits.
@@ -128,7 +132,7 @@ through such issues from time to time.
 - **Markdown viewer**: extension for Firefox or equivalent for chrome
 - **mongoDB**: get it if you will do more than trivial testing
 - **imagemagick**: required if you rebuild the sprite based icons
-- **gimp**: or an equivalent image editor if you plan to mess with images
+- **gimp**: or an equivalent if you plan to mess with icon or toolbar images
 
 **Firefox and Firebug**: Other browsers and their dev interfaces can be used
 as well, but I focus on Firefox first. We must run well in **Chrome** and
@@ -144,7 +148,12 @@ Firefox extension, you may have another solution.
 
 **mongoDB**: Persistent data is accessed through a MongoDB instance. You
 will want to create one locally fairly soon after you have finished the
-first phase of playing around.
+first phase of playing around. I do most of my testing without the DB
+(using the `fileProvider` interface) since I like to see and edit the
+files directly. This is useful for testing but does not scale well, so
+all production work uses the database. So far we've been able to resist
+using the attractive DB specific facilities that will eventually make 
+file based storage impractical.
 
 **imageMagick**: This is used for building the sprite icons, for graying
 them out, and mouseover highlights.  You won't need this unless you need to
@@ -178,7 +187,7 @@ Task | Description
 **showdocs** | open the API docs in a browser
 **showcoverage** | open the code coverage reports in a browser
 **sprites** | regenerate sprites for icons (requires imageMagick)
-**testk** | run Karma tests **not yet running properly**
+**testk** | run Karma tests (**not yet running properly**)
 
 
 ## Testing
@@ -191,8 +200,44 @@ Note the boilerplate code in the top of `test.*js` files to allow the same
 tests to run in your browser, the **PhantomJS** headless browser,
 and **node.js**.
 
-Most tests require a background mMeddle server which you should start a
-local server (**127.0.0.1:8080**) in its own shell using:
+### mMeddle Gulp Test Setup Environment Variables
+
+If no environment variables are defined, then the default gulp settings
+are equivalent to setting:
+
+    MMEDDLE_TESTS=basic
+    MMEDDLE_TESTREPORTER=list
+    MMEDDLE_MIN=true
+    MMEDDLE_LINT=true
+    
+The 'basic' tests do not require a server a background mMeddle server so
+they are more easily run, but don't test all that much. You can also set:
+
+    MMEDDLE_TESTS=none
+    MMEDDLE_TESTS=min
+    MMEDDLE_TESTS=all
+    
+Min selects an absolute minimum test set, and really just checks to be
+sure that testing is working at all. Use this rarely. All selects the full
+test suite and you will need to have a server running.   
+
+`MMEDDLE_MIN` generates the minified version of mMeddle for browser clients.
+This is the most time consuming build step and is rarely needed for testing.
+You can disable it, but you must test the minified WebCLI before any checkin.
+mMeddle uses lots of things than can make the uglifier unhappy so do not
+miss this step.
+
+The test reporters can be selected from :
+
+    MMEDDLE_TESTREPORTER=nyan
+    MMEDDLE_TESTREPORTER=progress
+    MMEDDLE_TESTREPORTER=dot
+    MMEDDLE_TESTREPORTER=min 
+    MMEDDLE_TESTREPORTER=spec
+    MMEDDLE_TESTREPORTER=list
+
+As noted above, 'all' tests require a background mMeddle server. You
+should start alocal server (**127.0.0.1:8080**) in its own shell using:
 
     npm start
 or
@@ -203,6 +248,13 @@ To run the **BVT**s (base verification tests) you run:
 
     gulp test
 
+Note if you see an error that looks something like the following then you are
+probably trying to run the server tests and failing to get a connection to
+a mMeddle server.
+
+  1)  "before each" hook: **mochaTestConnect:**
+     Error: timeout of 2000ms exceeded. ...
+    
 During development continuous tests on every source change is enabled with:
 
     gulp watch
@@ -214,8 +266,14 @@ change (which is pig-slow). See `MMEDDLE_MIN` environment variable.
 
 ### Test Case File Naming
 
-Every test **.js** source file starts with a `test.` prefix.  
+Every test **.js** source file starts with a `test.` prefix. With the exception
+of test.mmeddle (which is a base test), all other base test files start with
+`test.base.`.  These are the tests that run with MMEDDLE_TESTS=basic and
+must run without server access. All other tests can require access to the
+server, but will only be run with MMEDDLE_TESTS=all or when run
+specifically from the mocha command line.
 
+    mocha -u bdd -r should --recursive -R list test/[test.specfic-test-case.js]
 
 ##  CLI - Command Line Testing
     
@@ -228,8 +286,8 @@ Run the text mode version of the CLI with:
 
     node bin/cli
 
-Use http://127.0.0.1:8080/test/webcli.html to start the web based text
-mode cli. 
+The **cli** uses an emulated version of browser localStorage,
+which places 'local' files in the **./storage/localStorage/app** directory.
 
 The CLI does not give you access to everything mMeddle can do, and it is
 really terrible as a way to write math, but it is still the best way to
@@ -239,26 +297,33 @@ The CLI works with `mocksock` testing as well, so this is often an easy
 way to debug client/server issues since both run in the same process.
 Start the server and CLI using mocksock via:
 
-    node server -m -a bin/cli.js
+    node server --mock --app bin/cli.js
 
+Note that in this mode, both the app (CLI) and the Server log messages are sent
+to the same **./logs/server-[yymmdd].log** file.
 
 ##  Browser Testing
     
-Browser BVT tests are started from [test\testMocha.html][openshift-mm-bvt-url]
+Browser BVT tests are started from [test/testMocha.html][openshift-mm-bvt-url]
 (this link is to the test server).  To do more than rudimentary testing
 you must run a mMeddle server.
 
+Use http://127.0.0.1:8080/test/webcli.html to start the web based text
+mode cli. You can reach the online version at [test/webcli.html][openshift-mm-cli-url] or [test/webcli.min.html][openshift-mm-climin-url].
+Note that the CLI uses browser localStorage to hold the current workspace and
+user login information. The localStorage domains will be different depending
+on how you start the app, so this may cause you some confusion at first.
 
 ## Local Server Execution
 
 The mMeddle server (server.js) is started in the traditional way with:
 
     npm start
-or
+        or
     node server
 
 This is an `Express` web server which exposes the entire development
-tree as static content on **localhost:8080**. The `index.html` page has links
+tree as static content on **//localhost:8080**. The `index.html` page has links
 to various things of interest.
 
 Interaction with the client is almost exclusively through `socket.io`
@@ -279,8 +344,6 @@ same process through the MockSock socket.io simulator (add the `-m` flag).
 
 Here are some important server environment variables you need to know:
 
-    MMEDDLE_MIN: true to build the ./dist/mmeddle.min.js and map
-    
     MMEDDLE_PORT: port used by local server [8080]
     MMEDDLE_IPADDR: IP address used by local server [127.0.0.1]
     MONGODB_DB_URL: Set the mongo database connection url [mongodb://localhost/mydb]    
@@ -293,10 +356,6 @@ Here are some important server environment variables you need to know:
     MMEDDLE_MOCKSOCK: force use of MockSock socket.io simulator
     MMEDDLE_LOCALSTORAGE: subdirectory for simulated localStorage [app]
 
-##  Browser Testing
-    
-Browser BVT tests are started from [test\testMocha.html][openshift-mm-bvt-url]
-(this link is to the test server).
 
 ### PhantomJS dependence on Q 1.2.0
 
@@ -319,11 +378,22 @@ We want to keep coverage well above 90% overall and 100% for critical
 components. Check the current coverage using:
 
     mocksock=true
-    gulp coverage
+    npm run coverage
     
 This runs the **istanbul** code coverage tool against the Mocha test suite.
 The `mocksock=true` runs an in-process version of the server during testing.
-Make sure you have shutdown any other server you have running first.
+You should look at the `.\logs\_mocha-yymmdd.log` file to see the interaction
+between the mock server and the test client. 
+
+To get the fullest code coverage you should:
+
+- Make sure you have shutdown any other server you have running first or it
+will fail. 
+- Make sure that `mochaConsoleMute` is false or omitted in 
+`./config/_mocha.config` (or other config files), otherwise the console
+output routines will be suppressed which limits test coverage.
+- Make sure that your **MongoDB** service is up and running or you will get
+only `FileProvider` coverage.
 
 You can examine the annotated source by browsing to `./coverage/lcov-report/index.html`
 or run
@@ -351,7 +421,7 @@ mMeddle uses three forms of read/write persistent data:
 
 The first is `localStorage` in the browser to maintain session information.
 Node.js client applications use a simulated form of localStorage which is
-saved to the `./storage/localStorage/app` directory. See `./sal/LocalStorage`.
+saved to the `./storage/localStorage/[app]` directory. See `./sal/LocalStorage`.
 The practical limit of localStorage is 2.5 million characters per domain so
 we need to be careful to not extend our local requirements to anything like
 that number.
@@ -364,7 +434,7 @@ a bit painful.
 
 The third is the filesystem itself. If your mongoDB database cannot be
 found then IO will be to the file system. Most, if not all, functions which
-currently use the database can be accomplished using the `./sal/Filerovider'.
+currently use the database can be accomplished using the `./sal/FileProvider`.
 The file system is slower and does not scale well, but has the great advantage
 that it is really easy to look at the JSON files produced and see whats
 going on. I do most early debugging with the database turned off.
@@ -375,11 +445,12 @@ going on. I do most early debugging with the database turned off.
 The [github/mmeddle][github-mm-url] repository is linked
 to the [Travis-CI/mmeddle][travis-url] service. Every commit
 pushed to the **master** branch triggers an npm install and cloud build of the 
-default **npm test** (gulp test task). When this succeeds **gulp coverage** is run,
+default **npm test** (gulp test task). When this succeeds **npm run coverage** is run,
 and the new code coverage statistics are pushed to
-[coveralls/mmeddle][coveralls-url]. The build and code
-coverage push update the little badges in the upper left corner of the README.md in
-the project root. These should of course stay green.
+[coveralls/mmeddle][coveralls-url]. See the `./.travis.yml` file for this.
+
+The build and code coverage push update the little badges in the upper left 
+corner of the README.md in the project root. These should of course stay green.
 
 mMeddle is currently hosted at RedHat's OpenShift node.js service at
 [openShift/mmeddle][openshift-mm-url]. 
@@ -407,7 +478,7 @@ kind of stabiliy to its structure or contents for some time to come.
     
 ## Documentation
 
-Documentation is mostly generated from the source using jsdoc tags throughout
+API Documentation is mostly generated from the source using jsdoc tags throughout
 the code. The task to build the docs is:
 
     gulp docs
@@ -421,9 +492,32 @@ The generated docs can be accessed via [../api/index.html](../api/index.html)
 (if you have built them locally and this MD is local), or from the
 [OpenShift mMeddle Server][openshift-mm-api-url].
 
+Set the environment variable: **MMEDDLE_DOCS** to false to skip API document
+generation.
+
 ## Debugging
 
 Sometimes you've got no choice.
+
+I rely on five mechanisms for debugging beyond stack trace failures.
+ These are:
+ 
+- Add more detailed unit tests until the problem is obvious. This has the
+advantage of leaving around a useful retest in case the problem shows up
+again. I also write special one of a kind micro apps when the unit test
+framework is too annoying.
+Use node-inspector for debugging the server (and other node applications).
+- Examine the `./logs`. The server, cli, mochatests and mockServer produce
+logs for each mm.log.debug output. This is the best way to add 'write
+statements' to your code. Each day these apps start a new log file.
+- Use the CLI backtick operator to view javascript objects on the console.
+You can also use **\`mm.log.debug [obj]** to output objects directly to the
+cli log file. You need a **administrator: true,** line in your 
+**./config/user-[alias].config** to enable use of this command.
+- Use the Firefox Firebug test environment for browser debugging. This
+is quite good with the webcli, and not bad with AngularJS apps.
+- Use node-inspector for debugging the server (and other node applications).
+
 
 ### Debugging Unit Tests
 
@@ -517,3 +611,7 @@ From the command line (in the chrome installation directory):
 
     chrome --allow-file-access-from-files
     
+## The End
+If you're here, perhaps you've already found errors in this document or
+in mMeddle. Don't be shy - you can fix this.
+    Thanks, **JF**

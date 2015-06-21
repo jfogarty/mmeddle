@@ -9,7 +9,6 @@ module.exports = function registerCliCommands(mm) {
   var qq         = check(mm.Q);
   var CmdSet     = check(mm.core.CmdSet);
   var MMath      = check(mm.core.MMath);
-  var ClientUser = check(mm.users.ClientUser);
     
   var mmath = check(new MMath());
   
@@ -43,6 +42,7 @@ module.exports = function registerCliCommands(mm) {
             user.firstName, user.lastName);
         return user;
       },
+      /* istanbul ignore next */ // Tested in cli
       function (e) {
         mm.log('User creation failed: ', e)
         return e;
@@ -59,6 +59,7 @@ module.exports = function registerCliCommands(mm) {
         return  mConsole.ask('Reenter the password: ', u, 'ptpwd', true)
       },
       function(u) {
+        /* istanbul ignore else */ // Tested in cli
         if (u.ptpwd === ptpwd) return u;
         ptpwd = '';
         throw new Error('Passwords do not match. Sorry, start over.');
@@ -118,6 +119,7 @@ module.exports = function registerCliCommands(mm) {
     /**
      * @summary **exitCmdHandler**
      */    
+    /* istanbul ignore next */ // Tested independently.     
     self.exitCmdHandler = function exitCmdHandler(context, args) {
       var wsName = cs.ws.name;
       var displayName = wsName ? ' [' + wsName + ']' : '';
@@ -150,15 +152,18 @@ module.exports = function registerCliCommands(mm) {
      * @summary **saveCmdHandler**
      */    
     self.saveCmdHandler = function saveCmdHandler(context, args) {
+      /* istanbul ignore if */ // Tested independently.
       if (!cs.loggedIn && !cs.user.isAnonymous()) {
         var e = new Error('Sorry, Please login before saving.');
         return e
       }
       var oldName = cs.ws.name;
       var wsName = args.name ? args.name : oldName;
+      /* istanbul ignore next */ // Tested independently.
       var displayName = wsName ? ' [' + wsName + ']' : '';
       cs.saveLocalUser(mConsole);
       mm.log('- Saved User [{0}] (local)', cs.user.name);
+      /* istanbul ignore if */ // Tested independently.
       if (oldName && oldName !== wsName) {
         mm.log('- Renamed workspace from [{0}] to{1}', oldName, displayName);
       }
@@ -166,6 +171,7 @@ module.exports = function registerCliCommands(mm) {
       cs.saveLocalWorkspace();
       mm.log('- Saved Workspace{0} (local): {1} variables',
           displayName, cs.ws.varsCount);
+      /* istanbul ignore else */ // Tested independently.
       if (cs.mmc.connected) {
         mm.log('- Saving Workspace{0} for {1} to {2}', 
             displayName, cs.user.name, cs.mmc.host);
@@ -185,6 +191,7 @@ module.exports = function registerCliCommands(mm) {
       if (args.userName) {
         var ptpwd;
         userName = args.userName;
+        /* istanbul ignore else */ // Tested in cli
         if (args.password) {
           ptpwd = args.password;
           return self.loginUser(userName, ptpwd);
@@ -204,7 +211,6 @@ module.exports = function registerCliCommands(mm) {
             });
           }
         }
-        ptpwd = '';
       }
       // If a locally saved user is available, login with that.
       else {
@@ -232,6 +238,7 @@ module.exports = function registerCliCommands(mm) {
      * @param {string} text the input line
      * @return {array} completions [[matches], keyword]
      */
+    /* istanbul ignore next */ // TODO: Complete this function.
     self.completer = function completer (text) {
       var keyword;
       var matches = [];

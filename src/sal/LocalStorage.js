@@ -24,7 +24,7 @@
       var self = this;
       /* istanbul ignore else */
       if (mm.config.inNode) {
-        var domain = mm.util.mmEnvOption('LOCALSTORAGE', 'app');
+        var domain = mm.util.mmEnvOption('LOCALSTORAGE', mm.config.appName);
         var dir = mm.path.join(mm.config.baseDir, 
             'storage', 'localStorage', domain);
         self.baseDir = dir;
@@ -114,8 +114,9 @@
     var self = this;
     /* istanbul ignore else */
     if (mm.config.inNode) {
-      if (mm.fs.exists(self.filePath(name))) {
-        mm.fs.unlinkSync(self.filePath(name));
+      var fp = self.filePath(name);
+      if (mm.fs.existsSync(fp)) {
+        mm.fs.unlinkSync(fp);
       }
     }
     else {

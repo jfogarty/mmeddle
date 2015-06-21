@@ -67,6 +67,7 @@ module.exports = function registerLoggers(mm) {
    * @alias module:utils/log.consoleLogHandler
    */
   function rawConsoleLogHandler(message, logger, priority) {
+    /* istanbul ignore next */ // Tested independently.
     var text = (priority.level > 1 ? '(!)' : '') + message;
     /* istanbul ignore next */
     if (log.writeLine) {
@@ -87,6 +88,7 @@ module.exports = function registerLoggers(mm) {
    * @param {number} priority the `Logger.Priority` of the message
    * @alias module:utils/log.consoleLogHandler
    */
+  /* istanbul ignore next */ // Test logging takes over.
   function consoleLogHandler(message, logger, priority) {
     defaultLogHandler(console.log, message, logger, priority);
   }
@@ -170,6 +172,7 @@ module.exports = function registerLoggers(mm) {
       console.log(text);
     }
     else {
+      /* istanbul ignore else */ // Tested independently.
       if (log.writeLine) {
         log.writeLine(text);
       }
@@ -201,9 +204,10 @@ module.exports = function registerLoggers(mm) {
   /**
    * @summary **Replace all console outputs with a CliConsole**
    * @description
-   * When the application is using an interactive command handler (i.e. it is
+   * When an application is using an interactive command handler (i.e. it is
    * a CLI or REPL) then don't use built-in node console logs, instead
-   * use the supplied CliConsole. Th
+   * use the supplied CliConsole. This is also used by the mocha test
+   * clients to prefix or mute console outputs as needed.
    * @param {CliConsole} cliConsole the Cli Console instance.
    * @alias module:utils/log.setCliConsole
    */
@@ -229,6 +233,7 @@ module.exports = function registerLoggers(mm) {
     
     // The logHandler is synchronous, but it triggers an async writer.
     function fileLogHandler(message, logger, priority) {
+      /* istanbul ignore next */ // Tested independently.
       if (logFailed) return;
       var entry = {
         timestamp: mm._.now(),
@@ -243,8 +248,13 @@ module.exports = function registerLoggers(mm) {
     }
     
     function startRunning() {
+      /* istanbul ignore if */ // Tested independently.
       if (logFailed) return;
+      /* istanbul ignore if */ // Tested independently.
       if (running > recursionLimit) {
+        // TODO: Note that since this is not really recursion (it is callbacks
+        // the limit here seems somewhat arbitrary. Perhaps this check
+        // should be dropped as serving no good purpose.
         logFailed = true;
         mm.log.error('Writing to log [' + filePath +
             '] was getting too far too far behind. Sorry, I give up.');
@@ -254,6 +264,7 @@ module.exports = function registerLoggers(mm) {
       try {
         var text = formatTextLines();
         mm.mkdirp(fileDir, function (err, made) {
+          /* istanbul ignore if */ // Tested independently.
           if (err) {
             logFailed = true;
             mm.log.error('Creating log dir [' + fileDir + '] has failed', err);      
@@ -261,6 +272,7 @@ module.exports = function registerLoggers(mm) {
           }
           mm.fs.appendFile(filePath, text, function (err) {
             // A log file error kills logging dead.
+            /* istanbul ignore if */ // Tested independently.
             if (err) {
               logFailed = true;
               mm.log.error('Writing to log [' + filePath + '] has failed', err);
@@ -273,8 +285,8 @@ module.exports = function registerLoggers(mm) {
           });
         });
       }
-      catch (err) {
-        logFailed = true;
+      catch (err) {       /* istanbul ignore next */
+        logFailed = true; /* istanbul ignore next */
         mm.log.error('Formatting log [' + filePath + '] has failed', err.stack);
       }
     }
@@ -291,8 +303,8 @@ module.exports = function registerLoggers(mm) {
     function formatTextLine(entry) {
       var ts = mm.util.timestamp(entry.timestamp);
       var text = ts + ' ' +
-        mm._.pad(entry.origin, 8) +
-        (entry.priority.level > 1 ? '!!!' : '') +
+        /* istanbul ignore next */ // Tested independently.
+        mm._.pad(entry.origin, 8) + (entry.priority.level > 1 ? '!!!' : '') +
          entry.message +
          '\n';
       return text;
@@ -313,6 +325,7 @@ module.exports = function registerLoggers(mm) {
    * @alias module:utils/log.setupAppDebugLog
    */
    log.setupAppDebugLog = function setupAppDebugLog(appName, debugToConsole) {
+    /* istanbul ignore if */ // Tested independently (in WebCLI).
     if (mm.config.inBrowser) return;
     var logDir = path.join(mm.config.baseDir, 'logs');
     var appId = path.basename(appName, '.js');
@@ -324,6 +337,7 @@ module.exports = function registerLoggers(mm) {
     // will log to both log files.  Most entertaining.
     mm.loggers.rootLogger.addDestination(log.getFileLogHandler(logPath));
     
+    /* istanbul ignore if */ // Tested independently (in CLI).
     if (debugToConsole) {
       // Log debug messages only to the log file.
       mm.log('- Debug logging to console enabled.');    

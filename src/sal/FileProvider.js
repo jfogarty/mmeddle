@@ -6,9 +6,10 @@
  module.exports = function(mm) {
   var qq    = mm.check(mm.Q);
   var path  = mm.check(mm.path);  
-  
+
   var storage     = mm.check(mm.storage);
   var StorageInfo = mm.check(storage.StorageInfo);
+  var wildMatch   = mm.check(mm.util.wildMatch);
 
   //--------------------------------------------------------------------------
   /**
@@ -45,6 +46,7 @@
   FileProvider.prototype.initialize =
   function initialize(op) {
     var self = this;
+    /* istanbul ignore else */
     if (!self.initialized) {
       self.initialized = qq(true);
     }
@@ -59,6 +61,7 @@
   function perform(op) {
     var self = this;
     var opFunction = self[op.op];
+    /* istanbul ignore if */ // Tested independently and often.
     if (!opFunction) {
       var s = 'Unrecognized storage operation: ' + op.op;
       op.deferred.reject(new Error(s));
@@ -74,7 +77,8 @@
       opFunction(self.fs, op, fileName, filePath, fileDir);
     }
     catch (e) {
-      mm.log.error('-FILEOP FAILED', e.stack);
+      /* istanbul ignore if */ 
+      mm.log.error('-FILEOP FAILED', e.stack); /* istanbul ignore if */
       op.deferred.reject(e);
     }
   }
@@ -99,6 +103,7 @@
       info.fileName = fileName;
       info.fileDir = fileDir;
       fs.readFile(filePath, 'utf8', function (err, text) {
+        /* istanbul ignore if */ 
         if (err) {
           op.deferred.reject(err);
           return;
@@ -110,52 +115,13 @@
       });
     });
   }
-  
-  function wildMatch(str, pattern) {
-    var si = pattern.indexOf('*');
-    var qi = pattern.indexOf('?');
-    var n = pattern.length;
-    var m = str.length;
-    var ch;
-    var pc;
-    // If there must ne an exact match then return it.
-    if (si < 0 && qi < 0) {
-      match = pattern === str;
-      return match;
-    }
-    // For ? only matches do it now.
-    var match = true;
-    if (si < 0) {
-      // No need to check, the lengths have to match.
-      if (m !== n) return false;
-      for (var j = 0; j < n; j++) {
-        pc = pattern[j];
-        if (pc !== '?' && pc !== str[j]) match = false;
-      }
-      return match;
-    }
-    var leftPattern = pattern.substr(0, si);
-    var leftStr = str.substr(0, si);
-    // Match the ? parts.
-    if (!wildMatch(leftStr, leftPattern)) return false;
-    // Eat up to the * and one character from the source str.
-    var rightPattern = pattern.substr(si + 1);
-    // An end of pattern * always matches everything else.
-    if (rightPattern.length === 0) return true;
-    n = rightPattern.length;
-    var rightStr = str.substr(str.length - n);
-    match = wildMatch(rightStr, rightPattern);
-    return match;
-  }
 
   /**
    * @summary **load one or more object files**
    * @description
-   * Loads multiple named objects from a files of the same name. Each
-   * object is in well formed JSON with a `name` field.  The fileName
-   * used here is actually a file wildcard pattern.  This is called
-   * internally by `perform` and exposed to test cases.
-   * Not for public use.
+   * Loads multiple named objects from files with names that match a
+   * wildcard pattern. This is called internally by `perform` and exposed
+   * to test cases.  Not for public use.
    */  
   FileProvider.prototype.loadMultiple =
   function loadMultiple(fs, op, fileName, filePath, fileDir) {
@@ -163,6 +129,7 @@
     // directory excluding '.' and '..'. 
     mm.log.debug('- loadMultiple Dir:{0}  Pattern;"{1}"', fileDir, fileName);
     fs.readdir(fileDir, function(err, files) {
+      /* istanbul ignore if */ // Tested independently.
       if (err) {
         op.deferred.reject(err);
         return;
@@ -184,12 +151,14 @@
       });
       var n = fileSet.length;
       var erred = false;
+      /* istanbul ignore if */ // Tested independently.
       if (n === 0) {
         op.deferred.resolve(info);
         return;
       }
       fileSet.forEach(function (aFilePath) {
         fs.readFile(aFilePath, 'utf8', function (err, text) {
+          /* istanbul ignore if */
           if (err || erred) {
             // It doesn't matter that we reject the promise a zillion
             // times after an error.
@@ -230,21 +199,25 @@
       flag: 'w'
     };
     mkdirp(fileDir, function (err, made) {
+      /* istanbul ignore if */
       if (err) {
         op.deferred.reject(err);
         return;
       }
+      /* istanbul ignore if */
       if (made) {
         // First Directory made if anybody cares.
       }
       op.content.owner = op.path.userName;
       var text = mm.util.JSONify(op.content, 2);
       fs.writeFile(filePath, text, options, function (err) {
+        /* istanbul ignore if */
         if (err) {
           op.deferred.reject(err);
           return;
         }
         fs.stat(filePath, function (err, stat) {
+          /* istanbul ignore if */
           if (err) {
             op.deferred.reject(err);
             return;
@@ -272,6 +245,7 @@
   FileProvider.prototype.remove =
   function remove(fs, op, fileName, filePath, fileDir) {
     fs.unlink(filePath, function(err) {
+      /* istanbul ignore if */  // Tested.
       if (err) {
         op.deferred.resolve(false);
         return;

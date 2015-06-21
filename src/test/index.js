@@ -11,5 +11,6 @@ module.exports = function(mm) {
   mm.test.client = {};
   mm.test.server = {};
 
+  mm.mockSock = require('./MockSock')(mm);
   require('./testClientSupport')(mm);
 };

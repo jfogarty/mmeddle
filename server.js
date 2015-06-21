@@ -21,8 +21,6 @@ module.exports = (function runServer () {
 
   var path = mm.check(mm.path);
  
-  mm.log.setupAppDebugLog(__filename);
-  mm.config = mm.config.appLoad(__filename);
   mm.log.debug('----- Server Configuration -----\n', mm.config);
 
   function increaseVerbosity(v, total) {

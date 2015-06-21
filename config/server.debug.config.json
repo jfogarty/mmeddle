@@ -1,0 +1,9 @@
+/* 
+ *
+ *   mMeddle server debugging configuration file. 
+ *
+ */
+{
+  // 0 - error, 1 - warn, 2 - info, 3 - debug  
+  socketIoLogLevel: 3
+}

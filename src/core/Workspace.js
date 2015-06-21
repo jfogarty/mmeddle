@@ -42,7 +42,7 @@ module.exports = function registerWorkspace(mm) {
       ws.name = '';
       ws.vars = {};
       ws.settings = settings;
-if (!cs) mm.log.error('?????????????????', new Error('xxx').stack);
+      
       /**
        * @summary Initialize a ws from a saved JSON object.
        * @description
@@ -74,6 +74,7 @@ if (!cs) mm.log.error('?????????????????', new Error('xxx').stack);
           }
           if (matched) {
             if (detailed) {
+              /* istanbul ignore else */  // Tested independently
               if (_.isFunction(ws.vars[key].f)) {
                 log('   ' + key + ' = ' + ws.vars[key].f);
               }
@@ -95,6 +96,7 @@ if (!cs) mm.log.error('?????????????????', new Error('xxx').stack);
 
       Workspace.prototype.clear = function clear(variables) {
         var ws = this;
+        /* istanbul ignore if */  // Tested independently
         if (!variables || variables.length === 0) {
           log('Use "all" to clear all variables, otherwise name the variable.');
           return true;
@@ -143,10 +145,12 @@ if (!cs) mm.log.error('?????????????????', new Error('xxx').stack);
         cset.cmd('debug [state] [level]',
             'Set debugging output modes',
             '\'Debug on low\' selects low level debugging (verbose output)')
-            .argEnum('level', 'high|low|norm')
             .argEnum('state', 'on|off|true|false')
+            .argEnum('level', 'high|low|normal')
             .setHandler(function setDebugMode(context, args) {
-            if (args.state || args.level) {
+            /* istanbul ignore else */  // Tested independently
+            if (args.state || args.level) { 
+              /* istanbul ignore else */  // Tested independently
               if (args.state && _.includes(['on', 'true'], args.state)) {
                 mm.loggers.debugLogger.enable();
                 ws.settings.debugMode = true;
@@ -172,6 +176,7 @@ if (!cs) mm.log.error('?????????????????', new Error('xxx').stack);
             }
             return true;
           });
+        /* istanbul ignore next */  // Tested independently
         cset.cmd('list [obj] [spec]',
             'List a server object type',
             '\'List user\' shows information about the logged in user\n',
@@ -228,6 +233,7 @@ if (!cs) mm.log.error('?????????????????', new Error('xxx').stack);
               }
               return true;
             });
+        /* istanbul ignore next */  // Tested independently            
         cset.cmd('deleteUser',
             'Delete the current user')
             .setHandler(function delUser() {
@@ -241,6 +247,7 @@ if (!cs) mm.log.error('?????????????????', new Error('xxx').stack);
                 return true;
               });
             });
+        /* istanbul ignore next */  // Tested independently
         cset.cmd('syncDbToFs [collection]',
             'Synchronize the database to the file system')
             .setAdmin()
@@ -248,6 +255,7 @@ if (!cs) mm.log.error('?????????????????', new Error('xxx').stack);
                mm.log('. syncDbToFs * NOT IMPLEMENTED *');
                return true;
             });
+        /* istanbul ignore next */  // Tested independently
         cset.cmd('syncFsToDb [collection]',
             'Synchronize the file sysem storage area to the mongo database')
             .setAdmin()
@@ -255,6 +263,7 @@ if (!cs) mm.log.error('?????????????????', new Error('xxx').stack);
                mm.log('. syncFsToDb * NOT IMPLEMENTED *');
                return true;
             });
+        /* istanbul ignore next */  // Tested independently
         cset.cmd('reconnect',
             'Reconnect to the server')
             .setHandler(function reconnect() {

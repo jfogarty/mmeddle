@@ -29,7 +29,7 @@
     var ctor = function WsSession(sessionId, socket, socketService) {
       var self = this;
       self.config = new Config();
-      self.user = new ClientUser('anonymous');
+      self.user = new ClientUser();
       self.userConfig = new Config();
       self.sessionId = sessionId;
       self.socketService = socketService;

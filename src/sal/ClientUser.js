@@ -56,6 +56,8 @@ module.exports = function registerClientUser(mm) {
   var CoreObject = mm.check(mm.obj.CoreObject);
   var sha256     = mm.check(require('fast-sha256'));
   
+  var ANONYMOUS = 'anonymous';
+  
   /**
    * @summary **Create a ClientUser**
    * @description
@@ -69,7 +71,7 @@ module.exports = function registerClientUser(mm) {
   var ClientUser = (function clientUserCtorCreator() {
     var ctor = function ClientUser(userName) {
       var self = this;
-      self.name = userName;
+      self.name = userName ? userName : ANONYMOUS;
       self.firstName = null;
       self.lastName = null;
       self.email = null;
@@ -103,7 +105,7 @@ module.exports = function registerClientUser(mm) {
    */
   ClientUser.prototype.init = function init(userObj, sanitize) {
     var self = this;  
-    _.assign(self, userObj);
+    if (userObj) _.assign(self, userObj);
     if (sanitize) {
       delete self.pbkdf2Salt;
       delete self.pdk;
@@ -121,7 +123,7 @@ module.exports = function registerClientUser(mm) {
     var self = this;  
     return (!self.name) ||
            (!self.lastName) ||
-           _.startsWith(self.name, 'anonymous');
+           _.startsWith(self.name, ANONYMOUS);
   }
 
   /**
@@ -158,12 +160,12 @@ module.exports = function registerClientUser(mm) {
    * @param {string} a seed for the hash.
    * @returns self for chaining.
    */
-  ClientUser.prototype.hashPdk = function hashP(seed) {
+  ClientUser.prototype.hashPdk = function hashPdk(seed) {
     var self = this;  
     var seedypdk = 'HASHPDK:' + seed + '_' + self.pdk;
     var uIntArrayPDK = sha256(text2ua(seedypdk));
     self.hpdk = ua2hex(uIntArrayPDK);
-//mm.log(seedypdk, '--->', self.hpdk);
+    //mm.log(seedypdk, '--->', self.hpdk);
     return self;
   }
 

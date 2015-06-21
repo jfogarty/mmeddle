@@ -5,7 +5,7 @@
  * mmeddle.js is a symbolic math workspace for JavaScript and Node.js.
  *
  * @version 0.1.3
- * @date    2015-06-11
+ * @date    2015-06-21
  *
  * @license
  * Copyright (C) 2015 John Fogarty <johnhenryfogarty@gmail.com> (https://github.com/jfogarty)
@@ -96,8 +96,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @summary **The mmeddle.js factory function**
 	 * @description
 	 * This is called automatically when loading mmeddle via the index.js root.
-	 * This populates `module.exports` with an object containing access to all
-	 * the other required components.
+	 * This populates and returns `mmeddle` (usually referred to as `mm`) with
+	 * the core 'globals' that tie together mMeddle applications.
 	 */ 
 	module.exports = (function mMeddleCreate() {
 	  var mm = {};
@@ -108,15 +108,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	   throw new Error('ES5 not supported by this JavaScript engine. ' +
 	        'Please load the es5-shim and es5-sham library for compatibility.');
 	  }
-	  
+
 	  // Globally register the execution environment for testing by the sub-modules.
 	  var inNode = !!(typeof window === 'undefined' &&
 	               typeof process !== 'undefined' &&
 	               process.nextTick);
 	  var inBrowser = !inNode;
 	  var inPhantom = false;
-
+	  
 	  mm.check = function(v) {
+	    /* istanbul ignore if */ // Tested independently and repeatedly.
 	    if (typeof v === 'undefined' || !v) {
 	      console.log( '*** Uninitialized mMeddle linkage. Abandon all hope.');
 	      throw new Error('Uninitialized mMeddle linkage. Abandon all hope.');
@@ -133,13 +134,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	  mm.socketServer = {};
 
 	  mm.config = {};  
+	  mm.config.appName   = '(none)';
 	  mm.config.inBrowser = inBrowser;
 	  mm.config.inNode    = inNode;
+	  mm.config.socketIoLogLevel = 2; // 0 - error, 1 - warn, 2 - info, 3 - debug
 
 	  /* istanbul ignore next */
 	  mm.envText = inNode ? 'Node.js' : 'Browser';
 
 	  mm.path = __webpack_require__(8);  
+
 	  mm.config.baseDir = __dirname;
 
 	  mm.config.openShiftHost = 'mmeddle-jfogarty.rhcloud.com';
@@ -147,6 +151,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  mm.config.localUrl  = 'http://' + mm.config.localHost + ':8080';
 	  mm.config.remoteUrl = 'ws://mmeddle-jfogarty.rhcloud.com:8000/';
 	  
+	  /* istanbul ignore else */ // Tested in browser.
 	  if (inNode) {
 	    mm.config.baseDir = mm.path.join(__dirname, '..');
 	    mm.fs     = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
@@ -156,7 +161,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	  else {
 	    // There is not even a mock window when running in node.
-	    mm.window = window;  // jshint ignore:line
+	    mm.window = window;     // jshint ignore:line
+	    mm.document = document; // jshint ignore:line
 	  }
 
 	  /* istanbul ignore if */
@@ -170,7 +176,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    mm.envText += '(' + userAgent + ')';
 	  }
 	  else {
-	     mm.envText += '(' + global.process.version + ')';
+	    mm.config.mainFilename = process.mainModule.filename;
+	    mm.config.appName = mm.path.basename(mm.config.mainFilename, '.js');
+	    mm.envText += '(' + global.process.version + ')';
 	  }
 	  
 	  /* istanbul ignore next */
@@ -180,7 +188,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  __webpack_require__(3)(mm);
 	  mm.config.openShift = mm.util.ifEnvOption('OPENSHIFT_NODEJS_IP');
 	  
-	  // Turn config into an actual Config object.
+	  // Turn config pojo into an actual Config object.
 	  mm.config = new mm.obj.Config().init(mm.config);
 	  
 	  __webpack_require__(4)(mm)
@@ -189,12 +197,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	  /* istanbul ignore else */
 	  if (inNode) {
 	    __webpack_require__(6)(mm)
-	    // mm.FS = require('q-io/fs');
-	    // mmeddle.FS = require('q-io/fs-mock');
+	    mm.log.setupAppDebugLog(mm.config.appName);
+	    mm.config = mm.config.appLoad(mm.config.appName);
 	  }
 	  
 	  __webpack_require__(7)(mm)
-	  mm.log('- mMeddle on ' + mm.envText + ' initialized.');
+	  mm.log('- mMeddle ' + mm.config.appName + ' ' + mm.envText + ' initialized.');
 	  return mm;
 	}())
 
@@ -627,7 +635,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 
 	  if (format == 'inspect') {
-	    return __webpack_require__(53).inspect(obj);
+	    return __webpack_require__(52).inspect(obj);
 	  }
 
 	  if (format == 'json') {
@@ -1036,7 +1044,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	return sf;
 	}();
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
 /* 3 */
@@ -1050,26 +1058,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	// the style. As always, I reserve the right to change my mind later.
 	//
 	module.exports = function(mm) {
-	  mm.util = __webpack_require__(53); // Node.js utilities.
-	  __webpack_require__(16)(mm.util);
-	  __webpack_require__(17)(mm.util, mm);
+	  mm.util = __webpack_require__(52); // Node.js utilities, extended.
+	  __webpack_require__(16)(mm.util, mm);
+	  __webpack_require__(17)(mm.util);
+	  __webpack_require__(18)(mm.util, mm);
+	  __webpack_require__(19)(mm.util, mm);
+	  __webpack_require__(20)(mm.util, mm);
 	  
 	  mm.obj = {};
-	  mm.obj.Config = __webpack_require__(18)(mm);
-	  mm.obj.Settings = __webpack_require__(19)(mm);  
-	  mm.obj.EggTimer = __webpack_require__(20)(mm);  
-	  mm.obj.Enum = __webpack_require__(21)();
+	  mm.obj.Config = __webpack_require__(21)(mm);
+	  //mm.obj.Settings = require('./Settings')(mm);  
+	  mm.obj.EggTimer = __webpack_require__(22)(mm);  
+	  mm.obj.Enum = __webpack_require__(23)();
 	  
-	  mm.Logger = __webpack_require__(22)(mm);
-	  mm.log = __webpack_require__(23)(mm);
+	  mm.Logger = __webpack_require__(24)(mm);
+	  mm.log = __webpack_require__(25)(mm);
 	  
 	  mm.format = mm.Logger.format;
 
+	  /* istanbul ignore next */ // Tested independently
 	  mm.obj.CoreObject = function CoreObject() {
 	    // core object prototype functions here.
 	  };
 
-	  mm.obj.SequencedObject = __webpack_require__(24)(mm);  
 	};
 
 
@@ -1079,21 +1090,21 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	// Insert the Services Abstraction Layer dependencies.
 	module.exports = function(mm) {
-	  mm.storage = __webpack_require__(25)(mm);
-	  
-	  mm.storage.providers.MongoDBProvider = __webpack_require__(26)(mm);
-	  mm.storage.providers.FileProvider = __webpack_require__(27)(mm);
-	  mm.storage.StorageEngine = __webpack_require__(28)(mm);
-	  mm.storage.LocalStorage = __webpack_require__(29)(mm);
+	  //mm.storage = require('./storage')(mm);
 
+	  mm.storage = {};
+	  mm.storage.providers = {};
+	  mm.storage.LocalStorage  = __webpack_require__(26)(mm);
+	  mm.storage.StoragePath   = __webpack_require__(27)(mm);
+	  mm.storage.StorageInfo   = __webpack_require__(28)(mm);
+	  mm.storage.StorageEngine = __webpack_require__(29)(mm);
 	  mm.storage.StorageClient = __webpack_require__(30)(mm);
-
-	  mm.users = __webpack_require__(31)(mm);
-	  mm.userStorage = __webpack_require__(32)(mm);
-
-	  mm.users.ClientUser = __webpack_require__(33)(mm);
 	  
-	  mm.mockSock = __webpack_require__(34)(mm);  
+	  mm.storage.providers.MongoDBProvider = __webpack_require__(31)(mm);
+	  mm.storage.providers.FileProvider = __webpack_require__(32)(mm);
+	 
+	  mm.users = {};
+	  mm.users.ClientUser = __webpack_require__(33)(mm);
 	};
 
 
@@ -1103,18 +1114,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = function(mm) {
 	  mm.core = {};
-	  mm.core.CliConsole    = __webpack_require__(35)(mm);
-	  mm.core.Cmd           = __webpack_require__(36)(mm);
-	  mm.core.CmdSet        = __webpack_require__(37)(mm);    
-	  mm.core.Lexer         = __webpack_require__(38)(mm);
-	  mm.core.MMath         = __webpack_require__(39)(mm);
-	  mm.core.Workspace     = __webpack_require__(40)(mm);
-	  mm.core.Parser        = __webpack_require__(41)(mm);
-	  mm.core.ClientSession = __webpack_require__(42)(mm);
-	                          __webpack_require__(43)(mm);
-	                          __webpack_require__(44)(mm);
-	  mm.core.MMeddleClient = __webpack_require__(45)(mm);
-	  mm.core.CliCommands   = __webpack_require__(46)(mm);
+	  mm.core.CliConsole    = __webpack_require__(34)(mm);
+	  mm.core.Cmd           = __webpack_require__(35)(mm);
+	  mm.core.CmdSet        = __webpack_require__(36)(mm);    
+	  mm.core.MMath         = __webpack_require__(37)(mm);
+	  mm.core.Workspace     = __webpack_require__(38)(mm);
+	  mm.core.Parser        = __webpack_require__(39)(mm);
+	  mm.core.ClientSession = __webpack_require__(40)(mm);
+	                          __webpack_require__(41)(mm);
+	                          __webpack_require__(42)(mm);
+	  mm.core.MMeddleClient = __webpack_require__(43)(mm);
+	  mm.core.CliCommands   = __webpack_require__(44)(mm);
 	};
 
 
@@ -1126,12 +1136,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = function(mm) {
 	  mm.server = {};
 	  mm.server.WsSession = 
-	      __webpack_require__(47)(mm);  
-	      __webpack_require__(48)(mm);      
-	      __webpack_require__(49)(mm);
+	      __webpack_require__(45)(mm);  
+	      __webpack_require__(46)(mm);      
+	      __webpack_require__(47)(mm);
 
-	  mm.server.SocketService = __webpack_require__(50)(mm);  
-	  mm.server.MMeddleServer = __webpack_require__(51)(mm);
+	  mm.server.SocketService = __webpack_require__(48)(mm);  
+	  mm.server.MMeddleServer = __webpack_require__(49)(mm);
 	};
 
 
@@ -1152,7 +1162,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	  mm.test.client = {};
 	  mm.test.server = {};
 
-	  __webpack_require__(52)(mm);
+	  mm.mockSock = __webpack_require__(50)(mm);
+	  __webpack_require__(51)(mm);
 	};
 
 
@@ -13259,7 +13270,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}.call(this));
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(56)(module), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(55)(module), (function() { return this; }())))
 
 /***/ },
 /* 11 */
@@ -13267,12 +13278,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	var path = __webpack_require__(8);
-	var globby = __webpack_require__(57);
-	var eachAsync = __webpack_require__(58);
-	var isPathCwd = __webpack_require__(59);
-	var isPathInCwd = __webpack_require__(60);
-	var rimraf = __webpack_require__(63);
-	var objectAssign = __webpack_require__(61);
+	var globby = __webpack_require__(56);
+	var eachAsync = __webpack_require__(57);
+	var isPathCwd = __webpack_require__(58);
+	var isPathInCwd = __webpack_require__(59);
+	var rimraf = __webpack_require__(62);
+	var objectAssign = __webpack_require__(60);
 
 	function safeCheck(file) {
 		if (isPathCwd(file)) {
@@ -13460,7 +13471,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * MIT Licensed
 	 */
 
-	module.exports = __webpack_require__(55);
+	module.exports = __webpack_require__(54);
 
 
 /***/ },
@@ -15454,7 +15465,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	});
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(62).setImmediate))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(61).setImmediate))
 
 /***/ },
 /* 15 */
@@ -19333,7 +19344,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function () { return io; }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	}
 	})();
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(56)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(55)(module)))
 
 /***/ },
 /* 16 */
@@ -19341,16 +19352,157 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	/**
-	 * @file Utility functions for UIntArrays.
-	 * @module util/uIntArray
+	 * @file General utility string functions
+	 * @module util/utility
 	 */
-	module.exports = function registerUIntArrayUtils(util) {
+	module.exports = function registerStringUtilities(util, mm) {
+	  
+	  /**
+	   * @summary **Remove a prefix from a string if it is present**
+	   * @param {string} str the string to return in trimmed form
+	   * @param {string} prefix a prefix to check for.
+	   * @returns {string} the original string or a prefixed version.
+	   * @alias module:utils/utility.trimPrefix
+	   */
+	  mm.util.trimPrefix = function trimPrefix(str, prefix) {
+	    var n = prefix.length;
+	    return mm._.startsWith(str, prefix) ? str.substr(n) : str;
+	  }
+
+	  /**
+	   * @summary **Remove all multiples of whitespace from a string**
+	   * @param {string} str the string to return in trimmed form
+	   * @returns {string} the string or a prefixed version.
+	   * @alias module:utils/utility.trimPrefix
+	   */
+	  mm.util.removeWhitespace = function removeWhitespace(str) {
+	    var r = str.replace(/\s+/g, ' ')
+	    return r;
+	  }
+
+	  /**
+	   * @summary **Get a number with leading zeros**
+	   * @description
+	   * If not an integer the value is truncated to an integer.
+	   * @param {number} v the number to zero fill
+	   * @param {number} n the number of digits in the number
+	   * @returns {string} the number of length n with leading zeros
+	   * @alias module:utils/utility.trimPrefix
+	   */
+	  mm.util.zeroFilled = function(v, n) {
+	    var sign = '';
+	    if (v < 0) {
+	      v = -v;
+	      sign = '-';
+	    }
+	    var val = v.toString();
+	    var i = val.indexOf('.');
+	    if (i >= 0) val = val.substring(0, i); // trim after decimal.
+	    var res = mm._.repeat('0', n) + val;
+	    res = res.substr(res.length - n);
+	    if (res[0] === '0' && sign) res = sign + res.substring(1);
+	    return res;
+	  }
+
+	  /**
+	   * @summary **Match a wildcard pattern**
+	   * @description
+	   * Matches a string that contains ? and * for matching.
+	   * Note that strange characters in the pattern may be interpreted as
+	   * part of a regular expression with correspondingly strange results.
+	   * $, ^, [,  and ] are escaped properly but beware of other characters.
+	   * @param {string} str the string to match to the pattern
+	   * @param {string} pattern the pattern to match
+	   * @returns {bool} true if the string matches the pattern
+	   * @alias module:utils/utility.wildMatch
+	   */
+	  mm.util.wildMatch = function wildMatch(str, pattern) {
+	    var wr = pattern.replace( /\./g, '\.');   // Escape '.'
+	    wr = wr.replace( /\$/g, '\$');   // Escape '$'
+	    wr = wr.replace( /\^/g, '\^');   // Escape '^'
+	    wr = wr.replace( /\[/g, '\[');   // Escape '['
+	    wr = wr.replace( /\]/g, '\]');   // Escape ']'
+	    wr = wr.replace( /\*/g, '.*');   // Handle *
+	    wr = wr.replace( /\?/g, '.' );   // Handle ?
+	    wr = '^' + wr + '$';
+	    var re = new RegExp(wr, 'i') 
+	    return re.test(str);
+	/*
+	    var si = pattern.indexOf('*');
+	    var qi = pattern.indexOf('?');
+	    var n = pattern.length;
+	    var m = str.length;
+	    var pc;
+	    // If there must ne an exact match then return it.
+	    if (si < 0 && qi < 0) {
+	      match = pattern === str;
+	      return match;
+	    }
+	    // For ? only matches do it now.
+	    var match = true;
+	    if (si < 0) {
+	      // No need to check, the lengths have to match.
+	      if (m !== n) return false;
+	      for (var j = 0; j < n; j++) {
+	        pc = pattern[j];
+	        if (pc !== '?' && pc !== str[j]) match = false;
+	      }
+	      return match;
+	    }
+	    var leftPattern = pattern.substr(0, si);
+	    var leftStr = str.substr(0, si);
+	    // Match the ? parts.
+	    if (!wildMatch(leftStr, leftPattern)) return false;
+	    // Eat up to the * and one character from the source str.
+	    var rightPattern = pattern.substr(si + 1);
+	    // An end of pattern * always matches everything else.
+	    if (rightPattern.length === 0) return true;
+	    n = rightPattern.length;
+	    var rightStr = str.substr(str.length - n);
+	    match = wildMatch(rightStr, rightPattern);
+	    return match;
+	*/
+	  }
+	  
+	  /**
+	   * @summary **True on an ENOENT string or error**
+	   * @description
+	   * Examines an Error or string to see if it contains an ENOENT code.
+	   * @param {string|Error} e the error or string to examine
+	   * @returns {bool} true if this is an ENOENT error
+	   * @alias module:utils/utility.ENOENT
+	   */
+	  mm.util.ENOENT = function ENOENT(e) {
+	    var errString = '';
+	    if (e instanceof Error) {
+	      if (e.code === 'ENOENT') return true;
+	      errString = e.toString();
+	    }
+	    else if (mm._.isString(e)) {
+	      errString = e;
+	    }
+	    return errString.indexOf('ENOENT, ') >= 0;
+	  }
+	  
+	}
+
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @file General Utility functions for UIntArrays.
+	 * @module util/utility
+	 */
+	module.exports = function registerUIntArrayUtils(util, mm) {
 
 	  /**
 	   * Convert a `UInt8Array` into a string of hex digits.
 	   * @param {UInt8Array} ua the array to convert to text
 	   * @returns {string} the string of hex characters
-	   * @alias module:utils/uIntArray.ua2hex
+	   * @alias module:utils/utility.ua2hex
 	   */
 	  util.ua2hex = function ua2hex(ua) {
 	      var h = '';
@@ -19365,7 +19517,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * Convert a UInt8Array into a string of hex digits.
 	   * @param {string} s the string to encode as `UInt8Array`
 	   * @returns {UInt8Array} the encoded array
-	   * @alias module:utils/uIntArray.text2ua
+	   * @alias module:utils/utility.text2ua
 	   */
 	  util.text2ua = function text2ua(s) {
 	      var ua = new Uint8Array(s.length);
@@ -19378,15 +19530,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
 	/**
-	 * @file General utility functions
+	 * @file General utility functions for Environment variable handling
 	 * @module util/utility
 	 */
-	module.exports = function registerUtilities(util, mm) {
+	module.exports = function registerEnvUtilities(util, mm) {
 
 	  /**
 	   * @summary **Get a default value or override with an environment variable**
@@ -19431,52 +19583,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return mm.util.envOption('MMEDDLE_' + envName, defaultValue);
 	  }
 	  
-	  /**
-	   * @summary **Remove a prefix from a string if it is present**
-	   * @param {string} str the string to return in trimmed form
-	   * @param {string} prefix a prefix to check for.
-	   * @returns {string} the original string or a prefixed version.
-	   * @alias module:utils/utility.trimPrefix
-	   */
-	  mm.util.trimPrefix = function trimPrefix(str, prefix) {
-	    var n = prefix.length;
-	    return mm._.startsWith(str, prefix) ? str.substr(n) : str;
-	  }
+	}
 
-	  /**
-	   * @summary **Remove all multiples of whitespace from a string**
-	   * @param {string} str the string to return in trimmed form
-	   * @returns {string} the string or a prefixed version.
-	   * @alias module:utils/utility.trimPrefix
-	   */
-	  mm.util.removeWhitespace = function removeWhitespace(str) {
-	    var r = str.replace(/\s+/g, ' ')
-	    return r;
-	  }
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
-	  /**
-	   * @summary **Get a number with leading zeros**
-	   * @description
-	   * If not an integer the value is truncated to an integer.
-	   * @param {number} v the number to zero fill
-	   * @param {number} n the number of digits in the number
-	   * @returns {string} the number of length n with leading zeros
-	   * @alias module:utils/utility.trimPrefix
-	   */
-	  mm.util.zeroFilled = function(v, n) {
-	    var sign = '';
-	    if (v < 0) {
-	      v = -v;
-	      sign = '-';
-	    }
-	    if (v < 0) v = -v;
-	    var val = v.toString();
-	    var i = val.indexOf('.');
-	    if (i >= 0) val = val.subString(0, i); // trim after decimal.
-	    var res = sign + mm._.repeat('0', n) + val;
-	    var m = res.length;
-	    return (res.substring(m - n, m));
-	  }
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @file General utility functions for Date and Time
+	 * @module util/utility
+	 */
+	module.exports = function registerDateTimeUtilities(util, mm) {
 	  
 	  /**
 	   * @summary **Get yyyymmdd format date**
@@ -19488,7 +19608,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (arguments.length === 0 || typeof date === 'undefined') {
 	      date = new Date()
 	    }
-	    if (mm._.isNumber(date)) date = new Date(date);
+	    if (mm._.isNumber(date) || mm._.isString(date)) date = new Date(date);
 	    // Determine and display the month, day, and year. The getMonth method
 	    // uses a zero offset for the month number.
 	    var month = date.getMonth() + 1;
@@ -19507,7 +19627,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (arguments.length === 0 || typeof date === 'undefined') {
 	      date = new Date()
 	    }
-	    if (mm._.isNumber(date)) date = new Date(date);
+	    if (mm._.isNumber(date) || mm._.isString(date)) date = new Date(date);    
 	    var month = date.getMonth() + 1;
 	    var day   = date.getDate();
 	    var year  = date.getFullYear();
@@ -19526,7 +19646,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (arguments.length === 0 || typeof date === 'undefined') {
 	      date = new Date()
 	    }
-	    if (mm._.isNumber(date)) date = new Date(date);
+	    if (mm._.isNumber(date) || mm._.isString(date)) date = new Date(date);    
 	    // Determine and display the month, day, and year. The getMonth method
 	    // uses a zero offset for the month number.
 	    var hours   = date.getHours();
@@ -19540,13 +19660,93 @@ return /******/ (function(modules) { // webpackBootstrap
 	  /**
 	   * @summary **Get yymmdd|hh:mm:ss format timestamp**
 	   * @param {Date|number} date Optional Date, otherwise new Date() is used.
-	   * @returns {string} yymmdd_hhmmdd formated date time stamp.
+	   * @returns {string} yymmdd|hh:mm:dd formated date time stamp.
 	   * @alias module:utils/utility.timestamp
 	   */
 	  mm.util.timestamp = function(date) {
 	    return mm.util.yymmdd(date) + '|' + mm.util.hhmmss(date)
 	  }
 	  
+	  /**
+	   * @summary **Get a month as a text name**
+	   * @description
+	   * If no month name list is supplied, the english full month names are used.
+	   * @param {Date} date a date or valid date constructor argument.
+	   * @param {array} monthList an optional array of month names.
+	   * @returns {string} the month found in the date as a name.
+	   * @alias module:utils/utility.monthName
+	   */
+	  mm.util.monthName = function monthName(date, monthList) {
+	    var monthNames = monthList ? monthList : 
+	        ['January',   'February', 'March',    'April',
+	         'May',       'June',     'July',     'August', 
+	         'September', 'October',  'November', 'December'];
+	    var thisDate = new Date(date);
+	    return monthNames[thisDate.getMonth()];
+	  }
+
+	  /**
+	   * @summary **Get a month as a 3 character text name**
+	   * @param {Date} date a date or valid date constructor argument.
+	   * @returns {string} the month found in the date (i.e. 'Feb').
+	   * @alias module:utils/utility.monthName3
+	   */
+	  mm.util.monthName3 = function monthName3(date, monthList) {
+	    var monthNames = monthList ? monthList : 
+	        ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+	         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+	    return mm.util.monthName(date, monthNames);
+	  }
+
+	  /**
+	   * @summary **Get a weekday as a text name**
+	   * @description
+	   * The optional day of month will be replaced in the date, to determine
+	   * the actual day of the week. If no day name list is supplied, the 
+	   * english full weekday names are used.
+	   * @param {Date} date a date or valid date constructor argument.
+	   * @param {number} dayOfMonth an optional day of month.
+	   * @param {array} dayList an optional array of day names.
+	   * @returns {string} the weekday of the date (i.e. 'Tue').
+	   * @alias module:utils/utility.weekday
+	   */
+	  mm.util.weekday = function weekday(date, dayOfMonth, dayList) {
+	    var dayNames = dayList ? dayList : ['Sunday', 'Monday', 'Tuesday',
+	        'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+	    var thisDate = new Date(date);
+	    if (dayOfMonth) thisDate.setDate(dayOfMonth);
+	    return dayNames[thisDate.getDay()];
+	  }
+
+	  /**
+	   * @summary **Get a weekday as a 3 character text name**
+	   * @description
+	   * The optional day of month will be replaced in the date, to determine
+	   * the actual day of the week.
+	   * @param {Date} date a date or valid date constructor argument.
+	   * @param {number} dayOfMonth an optional day of month (overrides in date).
+	   * @returns {string} the weekday of the date (i.e. 'Tue').
+	   * @alias module:utils/utility.weekday3
+	   */
+	  mm.util.weekday3 = function weekday3(date, dayOfMonth) {
+	    var weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+	    return mm.util.weekday(date, dayOfMonth, weekDays);
+	  }
+	  
+	}
+
+
+/***/ },
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @file General utility functions for JSON manipulation
+	 * @module util/utility
+	 */
+	module.exports = function registerJSONUtilities(util, mm) {
+
 	  /**
 	   * @summary **JSON.stringuify an object with function conversions**
 	   * @description
@@ -19600,13 +19800,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    //This is useful for "stripping" JSONP objects to become JSON
 	    //For example: /* some comment */ function_12321321 ( [{"a":"b"}] ); => [{"a":"b"}]
 	    var match = jsString.match(/^\s*(\/\*(.|[\r\n])*?\*\/)?\s*[\da-zA-Z_$]+\s*\(([\s\S]*)\)\s*;?\s*$/);
+	    /* istanbul ignore if */
 	    if (match) {
 	      jsString = match[3];
 	    }
 
 	    // helper functions to get the current/prev/next character
 	    function curr () { return jsString.charAt(i);     }
-	    function next()  { return jsString.charAt(i + 1); }
+	    function next()  { return jsString.charAt(i + 1); } /* istanbul ignore next */
 	    function prev()  { return jsString.charAt(i - 1); }
 
 	    // test whether the last non-whitespace character was a brace-open '{'
@@ -19629,6 +19830,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          return false;
 	        }
 	      }
+	      /* istanbul ignore next */
 	      return false;
 	    }
 
@@ -19658,17 +19860,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	      i++;
 	      var c = curr();
 	      while (i < jsString.length && c !== quote) {
+	        /* istanbul ignore if */
 	        if (c === '"' && prev() !== '\\') {
 	          // unescaped double quote, escape it
 	          chars.push('\\');
 	        }
 
 	        // handle escape character
+	        /* istanbul ignore if */
 	        if (c === '\\') {
 	          i++;
 	          c = curr();
 
 	          // remove the escape character when followed by a single quote ', not needed
+	          /* istanbul ignore else */
 	          if (c !== '\'') {
 	            chars.push('\\');
 	          }
@@ -19678,6 +19883,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        i++;
 	        c = curr();
 	      }
+	      /* istanbul ignore if */
 	      if (c === quote) {
 	        chars.push('"');
 	        i++;
@@ -19697,6 +19903,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        c = curr();
 	      }
 
+	      /* istanbul ignore else */
 	      if (specialValues.indexOf(key) === -1) {
 	        chars.push('"' + key + '"');
 	      }
@@ -19742,21 +19949,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	   */
 	  mm.util.JSONparse = function JSONparse(str, sanitize) {
 	    var s = str;
+	    /* istanbul ignore else */
 	    if (sanitize) s = mm.util.JSONitize(s);
 	    return JSON.parse(s);
 	  }
+	  
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 18 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use srict';
 	/**
 	 * @fileOverview Loads config.json files 
-	 * @module util/config
+	 * @module util/Config
 	 */ 
 	module.exports = function registerConfig(mm) {
 	  var path = mm.check(mm.path);
@@ -19833,11 +20041,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	   */
 	  Config.prototype.load = function load(prefix, context) {
 	    var self = this;
+	    /* istanbul ignore if */ // Tested in WebCLI
 	    if (mm.config.inBrowser) return self;
 	    var dir1 = mm.config.baseDir;
 	    var dir2 = path.join(dir1, 'config');
 	    var fileName = prefix + '.config.json';
 	    var dirs = [dir1, dir2];
+	    /* istanbul ignore next */
 	    var ctx = _.isString(context) ? context : '';
 	    function loadInternal() {
 	      for (var i in dirs) {
@@ -19850,7 +20060,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	          self.configFilesLoaded++;
 	        }
 	        catch (e) {
-	          if (e.code !== 'ENOENT') {
+	          /* istanbul ignore if */ // Tested independently.
+	          if (!mm.util.ENOENT(e)) {
 	            mm.log.error(ctx +'Config read failed [' +
 	                cfgPath + ']', e.stack);
 	          }
@@ -19859,6 +20070,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    loadInternal();
+	    /* istanbul ignore if */ // Tested independently.
 	    if (self.debug) {
 	      fileName = prefix + '.debug.config.json';
 	      loadInternal();
@@ -19905,65 +20117,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 19 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * @fileOverview Hierarchical Settings
-	 * @module util/Settings
-	 */
-	'use strict';
-	module.exports = function registerSettings(mm) {
-	  //var _ = mm._;
-	  //var format = mm.format;
-
-	  /**
-	   * @class
-	   * @summary **Create a Settings**
-	   * @description
-	   * A Settings is a list of key value pairs - almost like a POJO.
-	   * The key differences are that settings exist in a context hierarchy
-	   * to allow inherited keys, and settings can have attributes that control
-	   * visibility, access, and modification.
-	   *
-	   * Settings are created from within a container of some sort (a workspace,
-	   * user, document, etc.) The container for a settings is expected to
-	   * in turn contain a _context member, and this Settings object will be
-	   * added to it as its _settings member.
-	   * @constructor
-	   * @param {Object} container The object to which these settings apply
-	   * @param {Object} attributes Attributes for available settings
-	   * @returns {Settings} the new set of Settings
-	   */
-	  var Settings = (function settingsCtorCreator() {
-	    return function Settings(container, attributes) {
-	      var self = this;
-	      self._container = container;
-	      self._attributes = {};
-	    }
-	  }());
-	  
-	  /**
-	   * @summary **Allow a setting with the specified attributes**
-	   * @description
-	   * The `_attributes` section of the settings contains the list
-	   * of named entries that are allowed in this Settings.
-	   * @param {Object} attributes rity)} handler 
-	   *    the destination function
-	   * @returns {Logger} the logger for chaining
-	   */
-	  Settings.prototype.allow = function allow(attributes)
-	  { 
-	    var self = this;
-	    return self;
-	  }  
-
-	  return Settings;
-	}
-
-
-/***/ },
-/* 20 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -19981,12 +20135,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @description
 	   * A timer that will fire after two minutes (or any other time you set.
 	   * @constructor
-	   * @param (number) timeMs the number of ms to wait (optional)    
+	   * @param {number} timeMs the number of ms to wait (optional)
+	   * @param {string} timeMs the number of ms to wait (optional)    
 	   * @returns {EggTimer} the new timer.
 	   */  
-	  var EggTimer = function EggTimerCtor(timeMs) {
+	  var EggTimer = function EggTimerCtor(timeMs, name) {
 	    var self = this;
-	    var ms = timeMs ? timeMs : 2 * 60 * 1000;
+	    var ms = 2 * 60 * 1000;
+	    /* istanbul ignore next */
+	    if (_.isString(timeMs)) {
+	      self.name = timeMs;
+	    }
+	    else if (_.isNumber(timeMs)) {
+	      ms = timeMs;
+	    }
+	    else {
+	      /* istanbul ignore next */
+	      self.name = 'Timer';
+	    }
+	    if (_.isString(name)) {
+	      self.name = name;
+	    }
 	    self.duration = ms;
 	    self.remaining = ms;
 	    self.running = false;
@@ -19996,12 +20165,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	  /**
 	   * @summary **Set a Ding event**
 	   * @description
-	   * Set the event to call when the timer elapses.
+	   * Set the event to call when the timer elapses.  There is ONLY one
+	   * ding handler per timer. Setting a new one replaces the prior one.
 	   * @returns {EggTimer} the same timer for chaining.
 	   */
 	  EggTimer.prototype.onDing = function onDing(dingHandler) {
 	    var self = this;
 	    self.dingHandler = dingHandler;
+	    return self;
+	  }
+
+	  /**
+	   * @summary **Force a Ding event**
+	   * @description
+	   * Force the ding event to occur, thus triggering the ding handlers.
+	   * This is like winding the timer to zero before the timer has expired
+	   * and letting it go Ding!
+	   * @returns {EggTimer} the same timer for chaining.
+	   */
+	  EggTimer.prototype.forceDing = function forceDing(dingHandler) {
+	    var self = this;
+	    /* istanbul ignore else */
+	    if (self.timedDefer) {
+	      self.timedDefer.reject('forced Ding!');
+	    }
 	    return self;
 	  }
 	  
@@ -20017,6 +20204,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (self.timedDefer) {
 	      self.timedDefer.resolve(self.getRemainingTime());
 	    }
+	    /* istanbul ignore if */
 	    if (timeMs) {
 	      self.duration = timeMs;
 	    }
@@ -20054,8 +20242,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	    self.running = false;
 	    self.stopTime = _.now();
 	    self.dinged = true;
+	    /* istanbul ignore else */ // Inspected.
 	    if (self.dingHandler) {
-	      self.dingHandler();
+	      try {
+	        self.dingHandler();
+	      }
+	      catch (e) {
+	        /* istanbul ignore next */
+	        mm.log.error(self.name + 'handler failed', e.stack);
+	      }
 	    }
 	  }
 
@@ -20073,6 +20268,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    self.running = false;
 	    self.stopTime = _.now();
 	    self.remaining = self.getRemainingTime();
+	    /* istanbul ignore else */ // Inspected.
 	    if (self.timedDefer) {
 	      self.timedDefer.resolve(self.remaining);
 	    }
@@ -20081,7 +20277,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  /**
 	   * @summary **Get the elapsed time for the timer**
-	   * @returns {time} the elapsed in ms.
+	   * @returns {number} the elapsed in ms.
 	   */
 	  EggTimer.prototype.getElapsedTime = function getElapsedTime() {
 	    var self = this;
@@ -20091,7 +20287,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  
 	  /**
 	   * @summary **Get the remaining time for the timer**
-	   * @returns {time} the time until the ding event fires
+	   * @returns {number} the time until the ding event fires
 	   */
 	  EggTimer.prototype.getRemainingTime = function getRemainingTime() {
 	    var self = this;
@@ -20104,7 +20300,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 21 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -20119,7 +20315,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 22 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -20514,7 +20710,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 23 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use srict';
@@ -20586,6 +20782,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @alias module:utils/log.consoleLogHandler
 	   */
 	  function rawConsoleLogHandler(message, logger, priority) {
+	    /* istanbul ignore next */ // Tested independently.
 	    var text = (priority.level > 1 ? '(!)' : '') + message;
 	    /* istanbul ignore next */
 	    if (log.writeLine) {
@@ -20606,6 +20803,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {number} priority the `Logger.Priority` of the message
 	   * @alias module:utils/log.consoleLogHandler
 	   */
+	  /* istanbul ignore next */ // Test logging takes over.
 	  function consoleLogHandler(message, logger, priority) {
 	    defaultLogHandler(console.log, message, logger, priority);
 	  }
@@ -20689,6 +20887,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      console.log(text);
 	    }
 	    else {
+	      /* istanbul ignore else */ // Tested independently.
 	      if (log.writeLine) {
 	        log.writeLine(text);
 	      }
@@ -20720,9 +20919,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  /**
 	   * @summary **Replace all console outputs with a CliConsole**
 	   * @description
-	   * When the application is using an interactive command handler (i.e. it is
+	   * When an application is using an interactive command handler (i.e. it is
 	   * a CLI or REPL) then don't use built-in node console logs, instead
-	   * use the supplied CliConsole. Th
+	   * use the supplied CliConsole. This is also used by the mocha test
+	   * clients to prefix or mute console outputs as needed.
 	   * @param {CliConsole} cliConsole the Cli Console instance.
 	   * @alias module:utils/log.setCliConsole
 	   */
@@ -20748,6 +20948,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    
 	    // The logHandler is synchronous, but it triggers an async writer.
 	    function fileLogHandler(message, logger, priority) {
+	      /* istanbul ignore next */ // Tested independently.
 	      if (logFailed) return;
 	      var entry = {
 	        timestamp: mm._.now(),
@@ -20762,8 +20963,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	    
 	    function startRunning() {
+	      /* istanbul ignore if */ // Tested independently.
 	      if (logFailed) return;
+	      /* istanbul ignore if */ // Tested independently.
 	      if (running > recursionLimit) {
+	        // TODO: Note that since this is not really recursion (it is callbacks
+	        // the limit here seems somewhat arbitrary. Perhaps this check
+	        // should be dropped as serving no good purpose.
 	        logFailed = true;
 	        mm.log.error('Writing to log [' + filePath +
 	            '] was getting too far too far behind. Sorry, I give up.');
@@ -20773,6 +20979,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      try {
 	        var text = formatTextLines();
 	        mm.mkdirp(fileDir, function (err, made) {
+	          /* istanbul ignore if */ // Tested independently.
 	          if (err) {
 	            logFailed = true;
 	            mm.log.error('Creating log dir [' + fileDir + '] has failed', err);      
@@ -20780,6 +20987,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          }
 	          mm.fs.appendFile(filePath, text, function (err) {
 	            // A log file error kills logging dead.
+	            /* istanbul ignore if */ // Tested independently.
 	            if (err) {
 	              logFailed = true;
 	              mm.log.error('Writing to log [' + filePath + '] has failed', err);
@@ -20792,8 +21000,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	          });
 	        });
 	      }
-	      catch (err) {
-	        logFailed = true;
+	      catch (err) {       /* istanbul ignore next */
+	        logFailed = true; /* istanbul ignore next */
 	        mm.log.error('Formatting log [' + filePath + '] has failed', err.stack);
 	      }
 	    }
@@ -20810,8 +21018,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function formatTextLine(entry) {
 	      var ts = mm.util.timestamp(entry.timestamp);
 	      var text = ts + ' ' +
-	        mm._.pad(entry.origin, 8) +
-	        (entry.priority.level > 1 ? '!!!' : '') +
+	        /* istanbul ignore next */ // Tested independently.
+	        mm._.pad(entry.origin, 8) + (entry.priority.level > 1 ? '!!!' : '') +
 	         entry.message +
 	         '\n';
 	      return text;
@@ -20832,6 +21040,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @alias module:utils/log.setupAppDebugLog
 	   */
 	   log.setupAppDebugLog = function setupAppDebugLog(appName, debugToConsole) {
+	    /* istanbul ignore if */ // Tested independently (in WebCLI).
 	    if (mm.config.inBrowser) return;
 	    var logDir = path.join(mm.config.baseDir, 'logs');
 	    var appId = path.basename(appName, '.js');
@@ -20843,6 +21052,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    // will log to both log files.  Most entertaining.
 	    mm.loggers.rootLogger.addDestination(log.getFileLogHandler(logPath));
 	    
+	    /* istanbul ignore if */ // Tested independently (in CLI).
 	    if (debugToConsole) {
 	      // Log debug messages only to the log file.
 	      mm.log('- Debug logging to console enabled.');    
@@ -20860,1032 +21070,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 24 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * @fileOverview SequencedObject static methods and constructor.
-	 * @module util/SequencedObject
-	 */
-	'use strict';
-	module.exports = function registerSequencedObject(mm) {
-	  var qq = mm.Q,
-	      debug = mm.log.debug;
-	  var CoreObject = mm.obj.CoreObject;
-
-	  /**
-	   * @class
-	   * @summary Create a SequencedObject.
-	   * @description
-	   * An object which has an internal `q` promise that is used to sequence
-	   * some or all of the methods called on the object. Methods that need to
-	   * be sequenced (i.e. deferred or promise based) use either the
-	   * `sequencedFunc` or `deferredFunc` internally.
-	   * @constructor
-	   * @returns {SequencedObject} the new `SequencedObject`.
-	   */
-	  var SequencedObject = function SequencedObject() {
-	    var self = this;
-
-	    /**
-	     * The `Q` promise used to sequence operations on this object.
-	     * @type {Promise}
-	     * @name q
-	     * @memberOf module:util/SequencedObject~SequencedObject#
-	     */          
-	    self.q = qq(true);
-
-	    /**
-	     * The number of sequenced operations performed on this object.
-	     * @type {number}
-	     * @name sequencedOperationsCount
-	     * @memberOf module:util/SequencedObject~SequencedObject#
-	     */
-	    self.sequencedOperationsCount = 0;  
-	  }
-	  
-	  SequencedObject.prototype = Object.create(CoreObject.prototype);
-
-	  /**
-	   * @summary **Schedules a deferred function on the `q` promise**
-	   * @description
-	   * Calls from a function in your `SequencedObject` which will resolve 
-	   * or fail by calling `deferred.reject(err)` or
-	   * `deferred.resolve(returnValue)` from within a callback or event
-	   * handler routine. 
-	   * 
-	   * The function will not be called until all other currently scheduled
-	   * routines on the object have resolved. If any of the currently scheduled
-	   * routines break the promise this this routine will not be called.
-	   *    
-	   * @param {function} f A function that takes (`deferred` as its first
-	   *    argument. The remaining arguments will be the ones that were passed
-	   *    to your function.
-	   * @returns {Promise} a Promise to whatever the function returns.
-	   * @example
-	   * var YourSeqObj = function() { // Constructor for your object.
-	   *   var self = this;
-	   *   SequencedObject.call(self); // populate parent instance fields.
-	   *   self.xxxx // your objects members;
-	   *   ..
-	   * }
-	   * YourSeqObj.prototype = Object.create(SequencedObject.prototype);
-	   * 
-	   * YourSeqObj.prototype.yourFunc = function yourFunc(a1, a2, a3) {
-	   *   var self = this;
-	   *   return self.deferredFunc(a1, a2, a3, function(deferred, a1, a2, a3) {
-	   *     ... the meat of your routine to be executed in sequence ...
-	   *     ... then somewhere in a callback or event handler routine use:
-	   *       deferred.resolve(yourReturnValue); // call on success.
-	   *     or if something goes wrong:
-	   *       deferred.reject(new Error('your failure message'));  
-	   *     ...
-	   *   })
-	   * };   
-	   */
-	  SequencedObject.prototype.deferredFunc = function deferredFunc() {
-	    var self = this;
-	    var deferred = qq.defer();
-	    var func = arguments[arguments.length - 1];
-	    var fargs = Array.prototype.slice.call(arguments, 0, -1);
-	    var q = self.q;
-	    //debug('++ Sequence for "' + func.name + '" on ', q);
-	    var promise = deferred.promise;
-	    fargs.unshift(deferred);
-	    // Subsequent callers will follow this sequenced operation.
-	    self.q = promise;    
-	    q.then(function sequenced() {
-	      //debug('++++ THEN resolved Sequence for "' + func.name + '" using ', q);
-	      // The func must resolve the deferred which is passed as
-	      // the first argument to the function.
-	      try {
-	        func.apply(self, fargs); // Do the deferred operation function.
-	        self.sequencedOperationsCount++;
-	      }
-	      catch(err) {
-	        debug('**** EXCEPTION "' + func.name + '" using ', q, err);
-	        deferred.reject(err);
-	      }
-	      //debug('++++ Applied "' + func.name + '" using ', q);
-	    }, function(err) {
-	      debug('**** FAILED "' + func.name + '" using ', q, err);
-	      // trigger any error handling for users of this operation.
-	      deferred.reject(err);
-	    });
-
-	    // The callers .then will resolve only when this operation in
-	    // the sequence is completed - regardless of whether there have
-	    // been other operations scheduled on the object later.
-	    //debug('++ Sequence for "' + func.name + '" RETURNED ', promise);    
-	    return promise;
-	  }
-
-	  /**
-	   * @summary **Clears a broken `q` promise**
-	   * @description
-	   * Once a function in your `SequencedObject` has broken a promise
-	   * (or called `deferred.reject`) then all subsequent operations will
-	   * immediately fail, returning the same broken promise.
-	   * 
-	   * If a failure has (or may have) happened on your object, then call
-	   * `clearFailure()` first. 
-	   * @example
-	   * yourObj.doSomethingThatMayFail()
-	   * .then{function(success) {
-	   *   ... handle the success ...
-	   * }, function(fail) {
-	   *   ... handle the failure ...  
-	   *   yourObj.clearFailure(); // Without this, thingToDoNow will fail.
-	   *   yourObj.thingToDoNow();
-	   * });
-	   */
-	  SequencedObject.prototype.clearFailure = function clearFailure() {
-	    var self = this;
-	    self.q = qq(true);
-	  };
-
-	  /**
-	   * @summary **Schedule operations on the object**
-	   * @description
-	   * Places a one or more functions on the queue of this sequenced object.
-	   * @example
-	   *   yourObj.next(successFunc, failFunc, progressFunc) ...
-	   *   // note this is identical to:
-	   *   yourObj.q.then(successFunc, failFunc, progressFunc) ...
-	   */
-	  SequencedObject.prototype.next = function () {
-	    // Don't define a .then function or Q will try to do odd things
-	    // with it.  This is fancy enough for now.
-	    var self = this;
-	    return self.q.then.apply(self.q, arguments);
-	  };  
-
-	  return SequencedObject;
-	}
-
-/***/ },
-/* 25 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview Storage abstractions and utility classes
-	 * @module sal/storage
-	 */ 
-	 module.exports = function(mm) {
-	  var _     = mm.check(mm._);
-
-	  var storage = {};
-	  storage.providers = {};
-
-	  //--------------------------------------------------------------------------
-	  /**
-	   * @summary **Location of a stored object**
-	   * @description
-	   * A StoragePath specifies a location in persistent storage. A path
-	   * must be created and initialized to store any objects in persistent
-	   * storage.
-	   * @constructor
-	   * @param {StorageClient} context the context for the path
-	   * @param {string} text text form of the path
-	   * @returns {StoragePath} the new storage path.
-	   */
-	  var StoragePath = (function storagePathCtorCreator() {
-	    var ctor = function StoragePath(context, text) {
-	      var self = this;
-	      var FILEPREFIX = 'file:';
-	      self.toFile = _.startsWith(text, FILEPREFIX);
-	      if ( self.toFile ) {
-	        text = text.substr(FILEPREFIX.length);
-	      }
-	      var parts = text.split('/');
-	      if (parts.length < 2) {
-	        // The userName will match the owner field in content.
-	        self.userName = context.user;
-	        self.collectionName = parts[0];
-	      }
-	      else {
-	        self.userName = parts[0];
-	        self.collectionName = parts[1];
-	      }
-	    };
-	    
-	    return ctor;
-	  }());
-	  
-	  //--------------------------------------------------------------------------
-	  
-	  /**
-	   * @summary **Information about a persistenly stored object**
-	   * @description
-	   * A StorageInfo contains information about an object in persistent
-	   * storage such as its path, size, storage state, etc.
-	   * @constructor
-	   * @param {fs.Stats} stat the fs.Stat object.
-	   * @returns {StorageInfo} the new storage info.
-	   */  
-	  var StorageInfo = (function storageInfoCtorCreator() {
-	    var ctor = function StorageInfo(stat) {
-	      var self = this;
-	      _.defaults(self, stat);
-	    };
-
-	    return ctor;
-	  }());
-
-	  storage.StoragePath = StoragePath;
-	  storage.StorageInfo = StorageInfo;
-
-	  return storage;
-	}
-
-
-/***/ },
 /* 26 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview Storage MongoDBProvider
-	 * @module sal/MongoDBProvider
-	 */ 
-	 module.exports = function(mm) {
-	//var _     = mm.check(mm._);
-	  var qq    = mm.check(mm.Q);
-	  
-	  var storage     = mm.check(mm.storage);
-	  var StorageInfo = mm.check(storage.StorageInfo);
-	  var EggTimer    = mm.check(mm.obj.EggTimer);
-	 
-	  //--------------------------------------------------------------------------
-	  /**
-	   * @summary **Provides file-like operations on MongoDB database**
-	   * @description
-	   * A MongoDBProvider is plugged into a StorageEngine when running under
-	   * Node.js to provide access to collections in a MongoDB database.
-	   * These very limited operations use mongo much like a file system,
-	   * although objects in collections must contain `name` and `owner` fields
-	   * for indexing.
-	   * @constructor
-	   * @param {StorageEngine} engine context for this engine
-	   */  
-	  function MongoDBProvider(engine, url) {
-	    var self = this;
-	    self.engine = engine;
-	    self.dbOpen = false; // Database starts out closed.
-	    self.operationTimeout = 60000; // Time to keep DB open.
-	    self.url = url;
-	    self.opTimer = new EggTimer(self.operationTimeout);
-	    self.connectDB = function connectDB() {
-	      self.opTimer.onDing(self.close.bind(self));
-	      self.opTimer.reset();
-
-	      // The database is open or being opened, return it to the caller.
-	      if (self.dbOpen || self.dbOpenP) {
-	        return self.dbOpenP;
-	      }
-
-	      //mm.log.status('- Connecting to MongoDB database: ', url);
-	      mm.log.status('- Connecting to MongoDB database: ', url);
-	      var mongodb = mm.check(__webpack_require__(72));
-	      var MongoClient = mongodb.MongoClient;
-	      var dbOpenDeferred = qq.defer(); // Add a promise and resolver.
-	      self.dbOpenP = dbOpenDeferred.promise;
-	    
-	      // Use connect method to connect to the Server
-	      MongoClient.connect(url, function (err, db) {
-	        if (err) {
-	          mm.log.error('Unable to connect to the mongoDB server. Error:', err);
-	          dbOpenDeferred.reject(err);
-	          return;
-	        }
-
-	        mm.log.status('----- Connection established to:', url);
-	        self.dbOpen = true;
-	        self.db = db;
-	        self.opTimer.reset();
-	        dbOpenDeferred.resolve(db);
-	      });
-	      
-	      return dbOpenDeferred.promise;
-	    }
-	  }
-
-	  /**
-	   * @summary **registers the MongoDb Storage Provider to an Engine**
-	   * @static
-	   * @description
-	   * Provides file-like storage operations to a MongoDB.
-	   * @param {StorageEngine} engine the current storage engine
-	   */  
-	  MongoDBProvider.register = function registerMongoDbProvider(engine) {
-	    var url = 'mongodb://localhost/mydb';
-	    url = mm.util.envOption('OPENSHIFT_MONGODB_DB_URL', url);
-	    url = mm.util.mmEnvOption('MONGODB_DB_URL', url);
-	    if (!url) {
-	      mm.log.warn('- No DB specified. Provider not registered.');
-	      return;
-	    }
-
-	    engine.dbProvider = new MongoDBProvider(engine, url);
-	  }
-	  
-	  /**
-	   * @summary **initialize the database provider**
-	   * @return {Promise} resolves when successful.
-	   */  
-	  MongoDBProvider.prototype.initialize =
-	  function initialize(op) {
-	    var self = this;
-	    if (!self.initialized) {
-	      self.initialized = self.connectDB();
-	    }
-	    return self.initialized;
-	  }  
-
-	  MongoDBProvider.prototype.perform = 
-	  function perform(op) {
-	    var self = this;
-	    var opFunction = self[op.op];
-	    if (!opFunction) {
-	      var s = 'Unrecognized MONGO DB operation: ' + op.op;
-	      op.deferred.reject(new Error(s));
-	      return;
-	    }
-
-	    self.connectDB().then(function (db) {
-	      try {
-	        opFunction(db, op);
-	      }
-	      catch (e) {
-	        op.deferred.reject(e);
-	      }
-	    },
-	    function(err) {
-	      op.deferred.reject(new Error(err));
-	    });
-	  }
-
-	  /**
-	   * @summary **close the database**
-	   * @description
-	   * Closes the database and releases its resources.
-	   */
-	  MongoDBProvider.prototype.close = 
-	  function close() {
-	    var self = this;
-	    if (self.dbOpen) {
-	      self.db.close();
-	      self.dbOpen = false;
-	      self.dbOpenP = false;
-	      self.opTimer.stop();
-	      mm.log.status('- Database closed: ', self.url);
-	    }
-	  }
-
-	  /**
-	   * @summary **load an object from a collection**
-	   * @description
-	   * Loads a named object from a collection. Called internally by perform
-	   * and exposed to test cases.  Not for public use.
-	   */    
-	  MongoDBProvider.prototype.load = 
-	  function load(db, op) {
-	    var collectionName = op.path.collectionName;
-	    var userName = op.path.userName;
-	    var itemName = op.path.itemName;
-	    var collection = db.collection(collectionName);
-	    var callbacks = 0;
-	    var objectQuery = {name: itemName, owner: userName};
-	    collection.find(objectQuery).toArray(function(err, items) {
-	      callbacks++;
-	      if (callbacks > 1) return; // Ignore long replies.
-	      if (err) {
-	        mm.log.error('*** DB find failure', err);
-	        op.deferred.reject(err);
-	        return;
-	      }
-	      
-	      if (items.length === 0) {
-	        mm.log.error('*** DB find failure', err);
-	        op.deferred.reject(
-	            new Error('ENOENT, Item "' + itemName + '" not found.'));
-	        return;
-	      }
-
-	      if (items.length > 1) {
-	        mm.log.warn('- Warning: %d items of name "%s" found.',
-	          items.length, itemName);
-	      }
-	      
-	      mm.log.debug.low.log(items);
-	      var content = items[0];
-	      var info = new StorageInfo({});
-	      info.userName = userName;
-	      info.itemName = itemName;
-	      info.collectionName = collectionName;
-	      info.content = content;
-	      op.deferred.resolve(info);
-	    });
-	  }
-
-	  /**
-	   * @summary **store an object to a collection**
-	   * @description
-	   * Stores a named object to a collection. Called internally by perform
-	   * and exposed to test cases.  Not for public use.
-	   */    
-	  MongoDBProvider.prototype.store = 
-	  function store(db, op) {
-	    var collectionName = op.path.collectionName;
-	    var userName = op.path.userName;
-	    var itemName = op.path.itemName;
-	    var collection = db.collection(collectionName);
-	    var objectQuery = {name: itemName, owner: userName};
-	    //Collection.prototype.findAndModify = function(query, sort, doc, options, callback)
-	    //Collection.prototype.findOneAndUpdate = function(filter, update, options, callback)
-	    collection.findOneAndUpdate(objectQuery, op.content,
-	      { upsert: true, returnOriginal: false },
-	      function(err, r) {
-	      if (err) {
-	        mm.log.error('*** DB upsert failure', err);
-	        op.deferred.reject(err);
-	        return;
-	      }
-	      // returns { value: { _id: 55614ebf1e46fb426cc4d26d, ... fields },
-	      //           lastErrorObject: { updatedExisting: false, n: 1,
-	      //                              upserted: 55614ebf1e46fb426cc4d26d },
-	      //           ok: 1 }
-	      var info = new StorageInfo(r);
-	      info.itemName = itemName;
-	      info.collectionName = collectionName;
-	      info.userName = userName;
-	      info.ok = true;
-	      op.deferred.resolve(info);
-	    });
-	  }
-
-	  /**
-	   * @summary **remove an object**
-	   * @description
-	   * Removes the named file. Called internally by perform and exposed
-	   * to test cases.  Not for public use.
-	   */
-	  MongoDBProvider.prototype.remove = 
-	  function remove(db, op) {
-	    var collectionName = op.path.collectionName;
-	    var userName = op.path.userName;
-	    var itemName = op.path.itemName;
-	    var objectQuery = {name: itemName, owner: userName};
-	    var collection = db.collection(collectionName);
-	    collection.remove(objectQuery, function (err, r) {
-	      if (err) {
-	        mm.log.error('*** DB remove failure', err);
-	        op.deferred.reject(err);
-	        return;
-	      }
-
-	      var result = r.result;
-	      // { result: { ok: 1, n: 39 },
-	      var nRemoved = result.n;
-	      if (nRemoved === 0) {
-	        op.deferred.resolve(false);
-	      }
-	      else {
-	        op.deferred.resolve(true);
-	      }
-	    });
-	  }
-	  
-	  return MongoDBProvider;
-	}
-
-
-
-
-/***/ },
-/* 27 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview Storage File Provider
-	 * @module sal/FileProvider
-	 */ 
-	 module.exports = function(mm) {
-	  var qq    = mm.check(mm.Q);
-	  var path  = mm.check(mm.path);  
-	  
-	  var storage     = mm.check(mm.storage);
-	  var StorageInfo = mm.check(storage.StorageInfo);
-
-	  //--------------------------------------------------------------------------
-	  /**
-	   * @summary **Provides operations on Node.JS files**
-	   * @description
-	   * A FileProvider is plugged into a StorageEngine when running under
-	   * Node.js to provide direct access to system files.
-	   * @constructor
-	   * @param {StorageEngine} engine context for this engine
-	   */  
-	  function FileProvider(engine) {
-	    var self = this;
-	    self.engine = engine;
-	    self.fs = mm.check(mm.fs);
-	  }
-
-	  /**
-	   * @summary **registers the Node File Storage Provider**
-	   * @description
-	   * Provides storage operations to node.js local file system.
-	   * @static
-	   * @param {StorageEngine} engine the current storage engine
-	   */  
-	  FileProvider.register = function registerFileProvider(engine) {
-	    engine.basePath = mm.path.join(mm.config.baseDir, 'storage');
-	    engine.fileExtension = '.mm.json';
-	    engine.fileProvider = new FileProvider(engine);
-	  }    
-
-	  /**
-	   * @summary **initialize the file storage provider**
-	   * @return {Promise} resolves when successful.
-	   */  
-	  FileProvider.prototype.initialize =
-	  function initialize(op) {
-	    var self = this;
-	    if (!self.initialized) {
-	      self.initialized = qq(true);
-	    }
-	    return self.initialized;
-	  }  
-
-	  /**
-	   * @summary **perform a file storage operation**
-	   * @param {StorageEngine} op the operation to perform.
-	   */  
-	  FileProvider.prototype.perform =
-	  function perform(op) {
-	    var self = this;
-	    var opFunction = self[op.op];
-	    if (!opFunction) {
-	      var s = 'Unrecognized storage operation: ' + op.op;
-	      op.deferred.reject(new Error(s));
-	      return;
-	    }
-
-	    try {
-	      var p = op.path;
-	      var localDir = path.join(p.userName, p.collectionName);
-	      var fileDir = path.join(self.engine.basePath, localDir);
-	      var fileName = p.itemName + self.engine.fileExtension;
-	      var filePath = path.join(fileDir, fileName);
-	      opFunction(self.fs, op, fileName, filePath, fileDir);
-	    }
-	    catch (e) {
-	      mm.log.error('-FILEOP FAILED', e.stack);
-	      op.deferred.reject(e);
-	    }
-	  }
-
-	  /**
-	   * @summary **load an object from a file**
-	   * @description
-	   * Loads a named object from a file of the same name. The object is in
-	   * well formed JSON with a `name` field.  Called internally by `perform`
-	   * and exposed to test cases.  Not for public use.
-	   */  
-	  FileProvider.prototype.load =
-	  function load(fs, op, fileName, filePath, fileDir) {
-	    fs.stat(filePath, function (err, stat) {
-	      if (err) {
-	        op.deferred.reject(err);
-	        return;
-	      }
-	      var info = new StorageInfo(stat);
-	      info.collectionName = op.path.collectionName;
-	      info.itemName = op.path.itemName;
-	      info.fileName = fileName;
-	      info.fileDir = fileDir;
-	      fs.readFile(filePath, 'utf8', function (err, text) {
-	        if (err) {
-	          op.deferred.reject(err);
-	          return;
-	        }
-	        info.text = String(text);
-	        info.content = JSON.parse(text);
-	        info.owner = info.content.owner;
-	        op.deferred.resolve(info);
-	      });
-	    });
-	  }
-	  
-	  function wildMatch(str, pattern) {
-	    var si = pattern.indexOf('*');
-	    var qi = pattern.indexOf('?');
-	    var n = pattern.length;
-	    var m = str.length;
-	    var ch;
-	    var pc;
-	    // If there must ne an exact match then return it.
-	    if (si < 0 && qi < 0) {
-	      match = pattern === str;
-	      return match;
-	    }
-	    // For ? only matches do it now.
-	    var match = true;
-	    if (si < 0) {
-	      // No need to check, the lengths have to match.
-	      if (m !== n) return false;
-	      for (var j = 0; j < n; j++) {
-	        pc = pattern[j];
-	        if (pc !== '?' && pc !== str[j]) match = false;
-	      }
-	      return match;
-	    }
-	    var leftPattern = pattern.substr(0, si);
-	    var leftStr = str.substr(0, si);
-	    // Match the ? parts.
-	    if (!wildMatch(leftStr, leftPattern)) return false;
-	    // Eat up to the * and one character from the source str.
-	    var rightPattern = pattern.substr(si + 1);
-	    // An end of pattern * always matches everything else.
-	    if (rightPattern.length === 0) return true;
-	    n = rightPattern.length;
-	    var rightStr = str.substr(str.length - n);
-	    match = wildMatch(rightStr, rightPattern);
-	    return match;
-	  }
-
-	  /**
-	   * @summary **load one or more object files**
-	   * @description
-	   * Loads multiple named objects from a files of the same name. Each
-	   * object is in well formed JSON with a `name` field.  The fileName
-	   * used here is actually a file wildcard pattern.  This is called
-	   * internally by `perform` and exposed to test cases.
-	   * Not for public use.
-	   */  
-	  FileProvider.prototype.loadMultiple =
-	  function loadMultiple(fs, op, fileName, filePath, fileDir) {
-	    // where files is an array of the names of the files in the
-	    // directory excluding '.' and '..'. 
-	    mm.log.debug('- loadMultiple Dir:{0}  Pattern;"{1}"', fileDir, fileName);
-	    fs.readdir(fileDir, function(err, files) {
-	      if (err) {
-	        op.deferred.reject(err);
-	        return;
-	      }
-	      mm.log.debug('- loadMultiple:', files);
-	      var info = new StorageInfo();
-	      info.collectionName = op.path.collectionName;
-	      info.itemName = op.path.itemName;
-	      info.fileName = fileName;
-	      info.fileDir = fileDir;
-	      info.count = 0;
-	      info.text = [];
-	      info.content = [];
-	      var fileSet = [];
-	      files.forEach(function (candidateFileName) {
-	        if (wildMatch(candidateFileName, fileName)) {
-	          fileSet.push(path.join(fileDir, candidateFileName));
-	        }
-	      });
-	      var n = fileSet.length;
-	      var erred = false;
-	      if (n === 0) {
-	        op.deferred.resolve(info);
-	        return;
-	      }
-	      fileSet.forEach(function (aFilePath) {
-	        fs.readFile(aFilePath, 'utf8', function (err, text) {
-	          if (err || erred) {
-	            // It doesn't matter that we reject the promise a zillion
-	            // times after an error.
-	            op.deferred.reject(err);
-	            erred = true;
-	            return;
-	          }
-	          info.text.push(String(text));
-	          info.content.push(JSON.parse(text));
-	          info.count++;
-	          n--;
-	          // When all files have been appended, return.
-	          if (n === 0) {
-	            mm.log.debug('- loadMultiple ---> :', info);          
-	            op.deferred.resolve(info);
-	          }
-	          // TODO!!! Stop me before I kill again.  This could
-	          // load half the planet if there was a lot of matching
-	          // stuff.
-	        });
-	      });
-	    });
-	  }
-
-	  /**
-	   * @summary **store an object to a file**
-	   * @description
-	   * Store a named object to a file of the same name. The object is in
-	   * well formed JSON with a `name` field.  Called internally by `perform`
-	   * and exposed to test cases.  Not for public use.
-	   */  
-	  FileProvider.prototype.store =
-	  function store(fs, op, fileName, filePath, fileDir) {
-	    var mkdirp = mm.check(mm.mkdirp);
-	    var options = {
-	      encoding: 'utf8', 
-	      mode: 438, // (aka 0666 in Octal)
-	      flag: 'w'
-	    };
-	    mkdirp(fileDir, function (err, made) {
-	      if (err) {
-	        op.deferred.reject(err);
-	        return;
-	      }
-	      if (made) {
-	        // First Directory made if anybody cares.
-	      }
-	      op.content.owner = op.path.userName;
-	      var text = mm.util.JSONify(op.content, 2);
-	      fs.writeFile(filePath, text, options, function (err) {
-	        if (err) {
-	          op.deferred.reject(err);
-	          return;
-	        }
-	        fs.stat(filePath, function (err, stat) {
-	          if (err) {
-	            op.deferred.reject(err);
-	            return;
-	          }
-	          var info = new StorageInfo(stat);
-	          info.owner = op.content.owner;
-	          info.collectionName = op.path.collectionName;
-	          info.itemName = op.content.name;
-	          info.fileName = fileName;
-	          info.fileDir = fileDir;
-	          info.text = text;
-	          info.ok = true;
-	          op.deferred.resolve(info);
-	        });
-	      });
-	    });
-	  }
-
-	  /**
-	   * @summary **remove an object**
-	   * @description
-	   * Removes the named file. Called internally by `perform` and exposed
-	   * to test cases.  Not for public use.
-	   */
-	  FileProvider.prototype.remove =
-	  function remove(fs, op, fileName, filePath, fileDir) {
-	    fs.unlink(filePath, function(err) {
-	      if (err) {
-	        op.deferred.resolve(false);
-	        return;
-	      }
-	      op.deferred.resolve(true);
-	    });
-	  }
-	  
-	  return FileProvider;
-	}
-
-
-
-
-/***/ },
-/* 28 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview Storage Engine
-	 * @module sal/storageEngine
-	 */ 
-	 module.exports = function(mm) {
-	  var _     = mm.check(mm._);
-	  var qq    = mm.check(mm.Q);
-	  
-	  //--------------------------------------------------------------------------
-	  /**
-	   * @summary **Background persistent storage service**
-	   * @description
-	   * A storage engine services storage requests for clients or the server.
-	   * @constructor
-	   * @returns {StorageEngine} the new storage engine.
-	   */  
-	  var StorageEngine = (function storageEngineCtorCreator() {
-	    var ctor = function StorageEngine() {
-	      var self = this;
-	      self.todo = [];
-	      self.idle = true;
-	      self.engineTimeout = 10000;
-	      self.initialized = false;
-	    };
-
-	    return ctor;
-	  }());
-
-	  /**
-	   * @summary **Close the engine**
-	   * @description
-	   * The engine closes any pending clients and releases any resources 
-	   * it currently holds.
-	   */
-	  StorageEngine.prototype.close = 
-	  function engineClose() {
-	    var self = this;
-	    if (self.dbProvider && self.dbProvider.close) {
-	      self.dbProvider.close();
-	    }
-	    if (self.fileProvider && self.fileProvider.close) {
-	      self.fileProvider.close();
-	    }
-	    self.initialized = false;
-	  }
-
-	  /**
-	   * @summary **Initiate object storage by engine**
-	   * @description
-	   * The object is stored in the specified path. A promise is returned
-	   * which evaluates to the full `StorageInfo` to the object when it
-	   * has been successfully saved. Note that storage can be successful
-	   * even if operation is on a browser and the connection to the server
-	   * is lost, since the object will be saved to local storage.
-	   * @param {StoragePath} path the path object
-	   * @param {object} content the named object to store
-	   * @returns {Promise} a promise to a `StorageInfo`
-	   */
-	  StorageEngine.prototype.store = 
-	  function engineStore(path, content) {
-	    var self = this;
-	    path.itemName = content.name;
-	    content.owner = path.userName;
-	    return self.queue({ op: 'store', path: path, content: content});
-	  }
-
-	  /**
-	   * @summary **Initiate object loading by engine**
-	   * @description
-	   * The object is loaded from the specified path. A promise is returned
-	   * which evaluates to the full `StorageInfo` which contains the 
-	   * object content  field along with other info about the object access.
-	   * @param {StoragePath} path the text path or object
-	   * @param {string} name unique name of the object  
-	   * @returns {Promise} a promise to a `StorageInfo`
-	   */
-	  StorageEngine.prototype.load = 
-	  function engineLoad(path, name) {
-	    var self = this;
-	    path.itemName = name ? name : path.itemName;
-	    return self.queue({ op: 'load', path: path});
-	  }
-
-	  /**
-	   * @summary **Initiate multiple object loading by engine**
-	   * @description
-	   * The object set is loaded from the specified path. A promise is
-	   * returned which evaluates to a `StorageInfo` which contains an 
-	   * object content array field along with other info about the 
-	   * object set access.
-	   * @param {StoragePath} path the text path or object
-	   * @param {string} namePattern a pattern to search for the objects
-	   * @returns {Promise} a promise to a `StorageInfo`
-	   */
-	  StorageEngine.prototype.loadMultiple = 
-	  function engineLoad(path, name) {
-	    var self = this;
-	    path.itemName = name ? name : path.itemName;
-	    return self.queue({ op: 'loadMultiple', path: path});
-	  }
-
-	  /**
-	   * @summary **Initiate object removal by engine**
-	   * @description
-	   * The object is removed from the specified path. A promise is returned
-	   * which evaluates to true if the object was removed, false if it did
-	   * not exist.
-	   * @param {StoragePath} path the text path or object
-	   * @param {string} name unique name of the object  
-	   * @returns {Promise} a promise to a boolean value
-	   */
-	  StorageEngine.prototype.remove = 
-	  function engineRemove(path, name) {
-	    var self = this;
-	    path.itemName = name ? name : path.itemName;
-	    return self.queue({ op: 'remove', path: path});
-	  }
-
-	  StorageEngine.prototype.queue = 
-	  function engineQueue(op) {
-	    var self = this;
-	    op.deferred = qq.defer(); // Add a promise and resolver.
-	    var ms = self.engineTimeout;
-	    // If the called provider goes to see the wizard, this will finally
-	    // terminate the operation with a failure after a couple of minutes.
-	    var tp = op.deferred.promise.timeout(ms, 
-	      'Storage engine timed out after ' + ms + ' ms');
-	    self.todo.push(op);
-	    if (self.idle) {
-	      self.initializeProviders()
-	      .then(function () {
-	        // Schedule run operation.
-	        self.run(); // Kick the engine into gear.
-	      });
-	    }
-
-	    return tp;
-	  }
-
-	  StorageEngine.prototype.run = 
-	  function engineRun() {
-	  try {
-	      var self = this;
-	      self.idle = false;
-
-	      // Do stuff as long as work is available.
-	      while (self.todo.length > 0) {
-	        var op = self.todo.shift();
-	        op.started = _.now();
-	        self.startOp(op);
-	      }
-	      
-	      self.idle = true;
-	    }
-	    catch (e) {
-	      mm.log.error('* Storage Engine Failure:', e.stack);
-	    }
-	  }
-
-	  /**
-	   * @summary **Initialize the engine providers**
-	   * @description
-	   * All registered providers are initialized once. If initialization of a
-	   * provider fails, it is removed and will not be used.
-	   */  
-	  StorageEngine.prototype.initializeProviders =
-	  function engineInitializeProviders() {
-	    var self = this;
-	    var initializedProviders = [];
-	    if (!self.initialized) {
-	      self.initializer = qq.defer();
-	      var p;
-	      if (self.dbProvider) {
-	        p = self.dbProvider.initialize();
-	        initializedProviders.push(p);
-	        p.catch(function () {
-	          mm.log.error('*** Database provider is not available');
-	          delete self.dbProvider;
-	        })
-	      }
-
-	      if (self.fileProvider) {
-	        p = self.fileProvider.initialize();
-	        initializedProviders.push(p);
-	        p.catch(function () {
-	          mm.log.error('*** File provider is not available');
-	          delete self.fileProviderfileProvider;
-	        })
-	      }
-
-	      self.initialized = qq.allSettled(initializedProviders);
-	    }
-
-	    return self.initialized;
-	  }
-	  
-	  /**
-	   * @summary **Peform a node.js filesystem operation**
-	   * @description
-	   * This handles `fs` based file IO operations.
-	   * @param {Object} op the operation being performed
-	   */  
-	  StorageEngine.prototype.startOp = 
-	  function startOp(op) {
-	    var self = this;
-	    var p = op.path;
-	    if (!p.toFile && self.dbProvider) {
-	      self.dbProvider.perform(op);
-	      return;
-	    }
-
-	    if (self.fileProvider) {
-	      self.fileProvider.perform(op);
-	      return;
-	    }
-
-	    var s = 'Unavailable storage operation: ' + op.op;
-	    op.deferred.reject(new Error(s));
-	  }
-	  
-	  return StorageEngine;
-	}
-
-
-/***/ },
-/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -21907,16 +21092,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * LocalStorage is persistent for the site across executions of the browser.
 	   * No more than 2.49 million characters total can be stored in localStorage.
 	   * @constructor
-	   * @param {StorageClient} context the context for the path
-	   * @param {string} text text form of the path
-	   * @returns {StoragePath} the new storage path.
+	   * @returns {LocalStorage} the new local storage service.
 	   */  
 	  var LocalStorage = (function localStorageCtorCreator() {
 	    var ctor = function LocalStorage() {
 	      var self = this;
 	      /* istanbul ignore else */
 	      if (mm.config.inNode) {
-	        var domain = mm.util.mmEnvOption('LOCALSTORAGE', 'app');
+	        var domain = mm.util.mmEnvOption('LOCALSTORAGE', mm.config.appName);
 	        var dir = mm.path.join(mm.config.baseDir, 
 	            'storage', 'localStorage', domain);
 	        self.baseDir = dir;
@@ -22006,8 +21189,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var self = this;
 	    /* istanbul ignore else */
 	    if (mm.config.inNode) {
-	      if (mm.fs.exists(self.filePath(name))) {
-	        mm.fs.unlinkSync(self.filePath(name));
+	      var fp = self.filePath(name);
+	      if (mm.fs.existsSync(fp)) {
+	        mm.fs.unlinkSync(fp);
 	      }
 	    }
 	    else {
@@ -22016,6 +21200,337 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 
 	  return LocalStorage;
+	}
+
+
+/***/ },
+/* 27 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview Storage path abstraction
+	 * @module sal/StoragePath
+	 */ 
+	 module.exports = function(mm) {
+
+	  //--------------------------------------------------------------------------
+	  /**
+	   * @summary **Location of a stored object**
+	   * @description
+	   * A StoragePath specifies a location in persistent storage. Options
+	   * for the storage engine can also be part of the path. The storage
+	   * clients provide Path, operation names, and additional info to the
+	   *  storage engine.
+	   * @constructor
+	   * @param {StorageClient} context the context for the path
+	   * @param {string} text text form of the path
+	   * @returns {StoragePath} the new storage path.
+	   */
+	  var StoragePath = (function storagePathCtorCreator() {
+	    var ctor = function StoragePath(context, text) {
+	      var self = this;
+	      var parts = text.split('/');
+	      /* istanbul ignore else */
+	      if (parts.length < 2) {
+	        // The userName matches the owner field in content.
+	        self.userName = context.user;
+	        self.collectionName = parts[0];
+	      }
+	      else {
+	        self.userName = parts[0];
+	        self.collectionName = parts[1];
+	      }
+	      if (context.prefer) self.prefer = context.prefer;
+	    };
+	    
+	    return ctor;
+	  }());
+
+	  return StoragePath;
+	}
+
+
+/***/ },
+/* 28 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview Storage information about a file operation.
+	 * @module sal/StorageInfo
+	 */ 
+	 module.exports = function(mm) {
+	 
+	  /**
+	   * @summary **Information about a persistenly stored object**
+	   * @description
+	   * A StorageInfo contains information about an object in persistent
+	   * storage such as its path, size, storage state, etc.
+	   * @constructor
+	   * @param {fs.Stats} stat optional the fs.Stat object.
+	   * @returns {StorageInfo} the new storage info.
+	   */  
+	  var StorageInfo = (function storageInfoCtorCreator() {
+	    var ctor = function StorageInfo(stat) {
+	      var self = this;
+	      if (stat) mm._.defaults(self, stat);
+	    };
+
+	    return ctor;
+	  }());
+
+	  return StorageInfo;
+	}
+
+
+/***/ },
+/* 29 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview Storage Engine
+	 * @module sal/storageEngine
+	 */ 
+	 module.exports = function(mm) {
+	  var _     = mm.check(mm._);
+	  var qq    = mm.check(mm.Q);
+	  
+	  //--------------------------------------------------------------------------
+	  /**
+	   * @summary **Background persistent storage service**
+	   * @description
+	   * A storage engine services storage requests for clients or the server.
+	   * @constructor
+	   * @returns {StorageEngine} the new storage engine.
+	   */  
+	  var StorageEngine = (function storageEngineCtorCreator() {
+	    var ctor = function StorageEngine() {
+	      var self = this;
+	      self.todo = [];
+	      self.idle = true;
+	      self.engineTimeout = 10000;
+	      self.initialized = false;
+	    };
+
+	    return ctor;
+	  }());
+
+	  /**
+	   * @summary **Close the engine**
+	   * @description
+	   * The engine closes any pending clients and releases any resources 
+	   * it currently holds.
+	   */
+	  StorageEngine.prototype.close = /* istanbul ignore next */
+	  function engineClose() {
+	    var self = this;
+	    if (self.dbProvider && self.dbProvider.close) {
+	      self.dbProvider.close();
+	    }
+	    if (self.fileProvider && self.fileProvider.close) {
+	      self.fileProvider.close();
+	    }
+	    self.initialized = false;
+	  }
+
+	  /**
+	   * @summary **Initiate object storage by engine**
+	   * @description
+	   * The object is stored in the specified path. A promise is returned
+	   * which evaluates to the full `StorageInfo` to the object when it
+	   * has been successfully saved. Note that storage can be successful
+	   * even if operation is on a browser and the connection to the server
+	   * is lost, since the object will be saved to local storage.
+	   * @param {StoragePath} path the path object
+	   * @param {object} content the named object to store
+	   * @returns {Promise} a promise to a `StorageInfo`
+	   */
+	  StorageEngine.prototype.store = 
+	  function engineStore(path, content) {
+	    var self = this;
+	    path.itemName = content.name;
+	    content.owner = path.userName;
+	    return self.queue({ op: 'store', path: path, content: content});
+	  }
+
+	  /**
+	   * @summary **Initiate object loading by engine**
+	   * @description
+	   * The object is loaded from the specified path. A promise is returned
+	   * which evaluates to the full `StorageInfo` which contains the 
+	   * object content  field along with other info about the object access.
+	   * @param {StoragePath} path the text path or object
+	   * @param {string} name unique name of the object  
+	   * @returns {Promise} a promise to a `StorageInfo`
+	   */
+	  StorageEngine.prototype.load = 
+	  function engineLoad(path, name) {
+	    var self = this;
+	    /* istanbul ignore next */
+	    path.itemName = name ? name : path.itemName;
+	    return self.queue({ op: 'load', path: path});
+	  }
+
+	  /**
+	   * @summary **Initiate multiple object loading by engine**
+	   * @description
+	   * The object set is loaded from the specified path. A promise is
+	   * returned which evaluates to a `StorageInfo` which contains an 
+	   * object content array field along with other info about the 
+	   * object set access.
+	   * @param {StoragePath} path the text path or object
+	   * @param {string} namePattern a pattern to search for the objects
+	   * @returns {Promise} a promise to a `StorageInfo`
+	   */
+	  StorageEngine.prototype.loadMultiple = 
+	  function engineLoad(path, name) {
+	    var self = this;
+	    /* istanbul ignore next */
+	    path.itemName = name ? name : path.itemName;
+	    return self.queue({ op: 'loadMultiple', path: path});
+	  }
+
+	  /**
+	   * @summary **Initiate object removal by engine**
+	   * @description
+	   * The object is removed from the specified path. A promise is returned
+	   * which evaluates to true if the object was removed, false if it did
+	   * not exist.
+	   * @param {StoragePath} path the text path or object
+	   * @param {string} name unique name of the object  
+	   * @returns {Promise} a promise to a boolean value
+	   */
+	  StorageEngine.prototype.remove = 
+	  function engineRemove(path, name) {
+	    var self = this;
+	    /* istanbul ignore next */
+	    path.itemName = name ? name : path.itemName;
+	    return self.queue({ op: 'remove', path: path});
+	  }
+
+	  StorageEngine.prototype.queue = 
+	  function engineQueue(op) {
+	    var self = this;
+	    op.deferred = qq.defer(); // Add a promise and resolver.
+	    var ms = self.engineTimeout;
+	    // If the called provider goes to see the wizard, this will finally
+	    // terminate the operation with a failure after a couple of minutes.
+	    var tp = op.deferred.promise.timeout(ms, 
+	      'Storage engine timed out after ' + ms + ' ms');
+	    self.todo.push(op);
+	    /* istanbul ignore else */
+	    if (self.idle) {
+	      // TODO: Since this is never idle, perhaps I should rethink the
+	      // operation queue.
+	      self.initializeProviders()
+	      .then(function () {
+	        // Schedule run operation.
+	        self.run(); // Kick the engine into gear.
+	      });
+	    }
+
+	    return tp;
+	  }
+
+	  StorageEngine.prototype.run = 
+	  function engineRun() {
+	  try {
+	      var self = this;
+	      self.idle = false;
+
+	      // Do stuff as long as work is available.
+	      while (self.todo.length > 0) {
+	        var op = self.todo.shift();
+	        op.started = _.now();
+	        self.startOp(op);
+	      }
+	      
+	      self.idle = true;
+	    }
+	    catch (e) {
+	      /* istanbul ignore next */
+	      mm.log.error('* Storage Engine Failure:', e.stack);
+	    }
+	  }
+
+	  /**
+	   * @summary **Initialize the engine providers**
+	   * @description
+	   * All registered providers are initialized once. If initialization of a
+	   * provider fails, it is removed and will not be used.
+	   */  
+	  StorageEngine.prototype.initializeProviders =
+	  function engineInitializeProviders() {
+	    var self = this;
+	    var initializedProviders = [];
+	    if (!self.initialized) {
+	      self.initializer = qq.defer();
+	      var p;
+	      if (self.dbProvider) {
+	        p = self.dbProvider.initialize();
+	        initializedProviders.push(p);
+	        p.catch( /* istanbul ignore next */
+	        function () {
+	          mm.log.warn('Database provider is not available');
+	          delete self.dbProvider;
+	        })
+	      }
+
+	      if (self.fileProvider) {
+	        p = self.fileProvider.initialize();
+	        initializedProviders.push(p);
+	        p.catch( /* istanbul ignore next */
+	        function () {
+	          mm.log.error('File provider is not available');
+	          delete self.fileProviderfileProvider;
+	        })
+	      }
+
+	      self.initialized = qq.allSettled(initializedProviders);
+	    }
+
+	    return self.initialized;
+	  }
+	  
+	  /**
+	   * @summary **Peform a node.js filesystem operation**
+	   * @description
+	   * This handles `fs` based file IO operations.
+	   * @param {Object} op the operation being performed
+	   */  
+	  StorageEngine.prototype.startOp = 
+	  function startOp(op) {
+	    var self = this;
+	    var p = op.path;
+	    
+	    // Use the filesystem if it was preferred by the client.
+	    if (p.prefer === 'fs' && self.fileProvider) {
+	      self.fileProvider.perform(op);
+	      return;
+	    }
+	    
+	    // Use the db by default (or if it is preferred)
+	    if (self.dbProvider) {
+	      self.dbProvider.perform(op);
+	      return;
+	    }
+
+	    // Fall back on using the file provider as needed.
+	    /* istanbul ignore if */ // Tested independently and repeatedly.
+	    if (self.fileProvider) {
+	      self.fileProvider.perform(op);
+	      return;
+	    }
+
+	    /* istanbul ignore next */
+	    var s = 'Unavailable storage operation: ' + op.op; 
+	    /* istanbul ignore next */
+	    op.deferred.reject(new Error(s));
+	  }
+	  
+	  return StorageEngine;
 	}
 
 
@@ -22037,7 +21552,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @summary **Client for access to persistent storage**
 	   * @description
 	   * A StorageClient provides access to the storage services to save and
-	   * load objects to the persistent store.
+	   * load objects to the persistent store. The `user` field in the client
+	   * constructor options specifies the owner for every object that can be
+	   * written by this client. Other objects can be read by specifying their
+	   * owners in the path parameter of operations.
 	   * @constructor
 	   * @param {Object} options the options for the client type.
 	   * @returns {StorageClient} the new storage client.
@@ -22046,6 +21564,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var ctor = function StorageClient(options) {
 	      var self = this;
 	      _.defaults(self, options);
+	      /* istanbul ignore if */
 	      if (typeof self.engine === 'undefined') {
 	        self.engine = mm.check(storage.storageEngine);
 	      }
@@ -22063,8 +21582,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @returns {bool} true if the Error object indicates NOT FOUND.
 	   */
 	  StorageClient.prototype.notFound = function notFound(err) {
-	    var errString = err.toString();
-	    return (errString.indexOf('ENOENT, ') >= 0)
+	    return mm.util.ENOENT(err);
 	  }
 
 	  /**
@@ -22082,6 +21600,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   */
 	  StorageClient.prototype.store = function clientStore(path, obj) {
 	    var self = this;
+	    /* istanbul ignore else */
 	    if (!(path instanceof StoragePath)) {
 	      path = new StoragePath(self, path);
 	    }
@@ -22102,6 +21621,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   */
 	  StorageClient.prototype.load = function clientLoad(path, name) {
 	    var self = this;
+	    /* istanbul ignore else */
 	    if (!(path instanceof StoragePath)) {
 	      path = new StoragePath(self, path);
 	    }
@@ -22130,6 +21650,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  function clientLoadMultiple(path, namePattern) 
 	  {
 	    var self = this;
+	    /* istanbul ignore else */
 	    if (!(path instanceof StoragePath)) {
 	      path = new StoragePath(self, path);
 	    }
@@ -22151,6 +21672,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   */
 	  StorageClient.prototype.remove = function clientRemove(path, name) {
 	    var self = this;
+	    /* istanbul ignore else */
 	    if (!(path instanceof StoragePath)) {
 	      path = new StoragePath(self, path);
 	    }
@@ -22177,464 +21699,597 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	/**
-	 * @fileOverview The Loggers used by mMeddleSequencedObject static methods 
-	 *       and constructor.
-	 * @module sal/users
+	 * @fileOverview Storage MongoDBProvider
+	 * @module sal/MongoDBProvider
 	 */ 
-	module.exports = function registerSalUsers(mm) {
-	  var text2ua = mm.util.text2ua,
-	      ua2hex = mm.util.ua2hex,
-	      debug = mm.log.debug;
+	 module.exports = function(mm) {
+	//var _     = mm.check(mm._);
+	  var qq    = mm.check(mm.Q);
 	  
-	  var SequencedObject = mm.obj.SequencedObject,
-	      Enum = mm.obj.Enum;
-	      
-	  var sha256 = __webpack_require__(77);
-
-	  var T = 10;
-	  
-	  // The cache of users and user management methods.  
-	  var users = {};
-	  users.inMemoryUserCache = {};
-	  
+	  var storage     = mm.check(mm.storage);
+	  var StorageInfo = mm.check(storage.StorageInfo);
+	  var EggTimer    = mm.check(mm.obj.EggTimer);
+	 
+	  //--------------------------------------------------------------------------
 	  /**
-	   * @summary **Create a PersistentUser**
+	   * @summary **Provides file-like operations on MongoDB database**
 	   * @description
-	   * A PersistentUser contains the information about a user that is
-	   * persistently stored in files, or a database.
+	   * A MongoDBProvider is plugged into a StorageEngine when running under
+	   * Node.js to provide access to collections in a MongoDB database.
+	   * These very limited operations use mongo much like a file system,
+	   * although objects in collections must contain `name` and `owner` fields
+	   * for indexing.
 	   * @constructor
-	   * @param {User} u the User used to create this one.
-	   * @returns {PersistentUser} the new persistent user.
+	   * @param {StorageEngine} engine context for this engine
 	   */  
-	  var PersistentUser = (function persistentUserCtorCreator() {
-	    var ctor = function PersistentUser(u) {
-	      var self = this;
-	      self.name = u.name;
-	      self.privatePassword = u.privatePassword;
-	      self.creationDate = u.creationDate;
-	      self.pbkdf2Salt = u.pbkdf2Salt;
-	    };
+	  function MongoDBProvider(engine, url) {
+	    var self = this;
+	    self.engine = engine;
+	    self.dbOpen = false; // Database starts out closed.
+	    self.operationTimeout = 60000; // Time to keep DB open.
+	    self.url = url;
+	    self.opTimer = new EggTimer(self.operationTimeout);
+	    self.connectDB = function connectDB() {
+	      self.opTimer.onDing(self.close.bind(self));
+	      self.opTimer.reset();
 
-	    return ctor;
-	  }());
+	      // The database is open or being opened, return it to the caller.
+	      if (self.dbOpen || self.dbOpenP) {
+	        return self.dbOpenP;
+	      }
 
-	  /**
-	   * @summary **Create a User**
-	   * @description
-	   * A User holds information about a person or authority that has
-	   * access rights to some part of a workspace and its storage.
-	   * Users are SequencedObjects since most of the activites on a given
-	   * user must occur in specific orders.
-	   * @constructor
-	   * @param {string} userName the name of the user's alias.
-	   * @returns {User} the new user
-	   */  
-	  var User = (function userCtorCreator() {
-	    // static initialization here.
-	    var STATUS = new Enum('unknown|loaded|saved|pending|created|active|failed');
+	      //mm.log.status('- Connecting to MongoDB database: ', url);
+	      mm.log.debug('- Connecting to MongoDB database: ', url);
+	      var mongodb = mm.check(__webpack_require__(71));
+	      var MongoClient = mongodb.MongoClient;
+	      var dbOpenDeferred = qq.defer(); // Add a promise and resolver.
+	      self.dbOpenP = dbOpenDeferred.promise;
+	    
+	      // Use connect method to connect to the Server
+	      MongoClient.connect(url, function (err, db) {
+	        /* istanbul ignore if */   // Tested independently and often.
+	        if (err) {
+	          if (err.message === 'connect ECONNREFUSED') {
+	            mm.log.warn('MongoDB: Not available');
+	          }
+	          else {
+	            mm.log.error('MongoDB: Connection failure:', err);
+	          }
+	          dbOpenDeferred.reject(err);
+	          return;
+	        }
 
-	    var ctor = function User(userName) {
-	      var self = this;
-
-	      SequencedObject.call(self); // populate parent instance fields.
-	      self.privatePassword = '';
-	      self.name = userName;
-	      self.STATUS = STATUS;
-	      self.status = self.STATUS.unknown;
+	        mm.log.debug('- Connection established to:', url);
+	        self.dbOpen = true;
+	        self.db = db;
+	        self.opTimer.reset();
+	        dbOpenDeferred.resolve(db);
+	      });
 	      
-	      function setPassword(pwd) { 
-	        self.privatePassword = pwd; 
-	      }
-
-	      function getPassword() { 
-	        return self.privatePassword; 
-	      }
-
-	      function passwordMatches(testPassword) {
-	        return self.privatePassword === testPassword;
-	      }
-
-	      self.setPassword = setPassword;
-	      self.passwordMatches = passwordMatches;
-	      self.getPassword = getPassword;
-
-	      self.lock = function lockUser() { 
-	        self.getPassword = function userIsLocked() { return ''; }
-	      }
+	      return dbOpenDeferred.promise;
 	    }
-	    return ctor;
-	  }());
-
-	  User.prototype = Object.create(SequencedObject.prototype);
-	  User.prototype.PBKDF2_ROUNDS = 1000; // A reasonable number of rounds.
-	  User.prototype.PBKDF2_DKLEN = 16; // 16 byte derived key.
+	  }
 
 	  /**
-	   * @summary Loads a User from persistent storage
+	   * @summary **registers the MongoDb Storage Provider to an Engine**
+	   * @static
 	   * @description
-	   * The PersistentUser in storage is looked up by the name alias
-	   * loaded into this User object. All existing fields in the user are
-	   * replaced by those from storage.
-	   * @returns {Promise} a promise to the User
-	   */
-	  User.prototype.load = function loadUser () {
-	    var self = this;
-	    return self.deferredFunc(function loadSequenced(deferred) {
-	      //var statusMessage = 'loading user: ' + self.name;
-	      setTimeout(function() {
-	          var u = users.inMemoryUserCache[self.name];
-	          if (u) {
-	            self.name = u.name;
-	            self.privatePassword = u.privatePassword;
-	            self.creationDate = u.creationDate;
-	            self.pbkdf2Salt = u.pbkdf2Salt;
-	            self.status = self.STATUS.loaded;
-	            var finishedMessage = 'loaded "' + self.name + '"';
-	            debug(finishedMessage, self.sequencedOperationsCount);
-	            deferred.resolve(self);
-	          }
-	          else {
-	            var notLoadedMessage = 'not loaded "' + self.name + '"';
-	            debug(notLoadedMessage, self.sequencedOperationsCount);
-	            self.status = self.STATUS.failed;            
-	            deferred.reject(new Error(notLoadedMessage));
-	          }
-	      }, T);
-	    })
-	  };
+	   * Provides file-like storage operations to a MongoDB.
+	   * @param {StorageEngine} engine the current storage engine
+	   */  
+	  MongoDBProvider.register = function registerMongoDbProvider(engine) {
+	    var url = 'mongodb://localhost/mydb';
+	    url = mm.util.envOption('OPENSHIFT_MONGODB_DB_URL', url);
+	    url = mm.util.mmEnvOption('MONGODB_DB_URL', url);
+	    /* istanbul ignore if */   // Inspected, not tested.
+	    if (!url) {
+	      mm.log.warn('No DB specified. Provider not registered.');
+	      return;
+	    }
 
-	  /**
-	   * @summary Save a User into persistent storage
-	   * @description
-	   * The PersistentUser in storage is replaced by information from this
-	   * one, or a new user is created in storage.
-	   * @returns {Promise} a promise to the User
-	   */
-	  User.prototype.save = function saveUser () {
-	    var self = this;
-	    return self.deferredFunc(function saveSequenced(deferred) {
-	      var statusMessage = 'saving user: "' + self.name + '"';
-	      debug(statusMessage);
-	      setTimeout(function() {
-	          var u = users.inMemoryUserCache[self.name];
-	          if (u) {
-	            if (self.privatePassword === u.privatePassword) {
-	              self.status = self.STATUS.loaded;
-	              var finishedMessage = 'already saved "' + self.name + '"';
-	              debug(finishedMessage, self.sequencedOperationsCount);
-	              deferred.resolve(self);
-	            }
-	            else {
-	              var failedMessage = '*save failed for "' + self.name + '"';
-	              debug(failedMessage);
-	              deferred.reject(new Error(failedMessage));
-	            }
-	          }
-	          else {
-	            u = new PersistentUser(self);
-	            self.status = self.STATUS.saved;
-	            users.inMemoryUserCache[u.name] = u;
-	            var savedMessage = 'saved "' + self.name + '"';
-	            debug(savedMessage, self.sequencedOperationsCount);
-	            deferred.resolve(self);
-	          }
-	      }, T);
-	    })
-	  };
+	    engine.dbProvider = new MongoDBProvider(engine, url);
+	  }
 	  
 	  /**
-	   * @summary Create a password for a User
-	   * @description
-	   * The User is given a password. Persistent storage is not accessed.
-	   * The plain text password is immediately encoded as a PBKDF2 hash.
-	   * @param {string} password the plain text of a password.
-	   * @returns {Promise} a promise to the User
-	   */
-	  User.prototype.create = function createUser(password) {
+	   * @summary **initialize the database provider**
+	   * @return {Promise} resolves when successful.
+	   */  
+	  MongoDBProvider.prototype.initialize =
+	  function initialize(op) {
 	    var self = this;
-	    return self.deferredFunc(password,
-	      function createSequenced(deferred, password) {
-	      self.creationDate = new Date();
-	      self.status = self.STATUS.pending;
-	      if (password) {
-	        //statusMessage = 'computing ' + self.name;
-	        // The PBKDF2 salt is per user and is based on the sub millisecond
-	        // datetime for when the user was created. Its a small comfort.
-	        self.pbkdf2Salt = ua2hex(text2ua(self.creationDate.toISOString()));
-	        var uIntArrayPassword = sha256.pbkdf2(
-	            text2ua(password), 
-	            self.pbkdf2Salt,
-	            self.PBKDF2_ROUNDS,
-	            self.PBKDF2_DKLEN);
-	        self.setPassword(ua2hex(uIntArrayPassword));
-	        self.status = self.STATUS.created;
-	      }
+	    /* istanbul ignore else */   // Inspected, not tested.
+	    if (!self.initialized) {
+	      self.initialized = self.connectDB();
+	    }
+	    return self.initialized;
+	  }  
 
-	      setTimeout(function() {
-	          var createdMessage = 'created user"' + self.name + '"';
-	          debug(createdMessage);
-	          deferred.resolve(self);
-	      }, T);
-	    })
-	  };
+	  MongoDBProvider.prototype.perform = 
+	  function perform(op) {
+	    var self = this;
+	    var opFunction = self[op.op];
+	    /* istanbul ignore if */   // Tested independently.
+	    if (!opFunction) {
+	      var s = 'Unrecognized MONGO DB operation: ' + op.op;
+	      op.deferred.reject(new Error(s));
+	      return;
+	    }
+
+	    self.connectDB().then(function (db) {
+	      try {
+	        opFunction(db, op);
+	      }
+	      catch (e) {
+	        /* istanbul ignore next */   // Tested independently.
+	        op.deferred.reject(e);
+	      }
+	    },
+	    /* istanbul ignore next */
+	    function(err) {
+	      op.deferred.reject(err);
+	    });
+	  }
 
 	  /**
-	   * @summary Login the User
+	   * @summary **close the database**
 	   * @description
-	   * The plain text password is checked against the User to determine
-	   * if there is a match. If there is a match then private information
-	   * about this user will be loaded from storage.
-	   * @param {string} password the plain text of a password to check.
-	   * @returns {Promise} a promise to the User
+	   * Closes the database and releases its resources.
 	   */
-	  User.prototype.login = function loginUser(password) {
+	  /* istanbul ignore next */  // Tested independently.
+	  MongoDBProvider.prototype.close = 
+	  function close() {
 	    var self = this;
-	    return self.deferredFunc(password,
-	      function loginSequenced(deferred, password) {
-	      var testPassword = ua2hex(sha256.pbkdf2(
-	          text2ua(password), 
-	          self.pbkdf2Salt,
-	          self.PBKDF2_ROUNDS,
-	          self.PBKDF2_DKLEN));
-	      debug('-- login test pwd:', '[' + testPassword + ']');
-	      debug('-- login user pwd:', '[' + self.getPassword() + ']');
-	      setTimeout(function() {
-	        if (self.passwordMatches(testPassword)) {
-	          self.status = self.STATUS.active;
-	          var activatedMessage = 'logged in ' + self.name;
-	          debug(activatedMessage);
-	          deferred.resolve(self);
+	    if (self.dbOpen) {
+	      self.db.close();
+	      self.dbOpen = false;
+	      self.dbOpenP = false;
+	      self.opTimer.stop();
+	      mm.log.status('- Database closed: ', self.url);
+	    }
+	  }
+
+	  /**
+	   * @summary **load an object from a collection**
+	   * @description
+	   * Loads a named object from a collection. Called internally by perform
+	   * and exposed to test cases.  Not for public use.
+	   */    
+	  MongoDBProvider.prototype.load = 
+	  function load(db, op) {
+	    var collectionName = op.path.collectionName;
+	    var userName = op.path.userName;
+	    var itemName = op.path.itemName;
+	    var collection = db.collection(collectionName);
+	    var callbacks = 0;
+	    var objectQuery = {name: itemName, owner: userName};
+	    collection.find(objectQuery).toArray(function(err, items) {
+	      callbacks++;
+	      /* istanbul ignore if */
+	      if (callbacks > 1) return; // Ignore long replies.
+	      /* istanbul ignore if */ // Tested independently.
+	      if (err) {
+	        mm.log.error('DB find failure', err);
+	        op.deferred.reject(err);
+	        return;
+	      }
+	      
+	      if (items.length === 0) {
+	        mm.log.debug('MongoDBProvider: * No items found on DB load', objectQuery);
+	        op.deferred.reject(
+	            // Make a nice looking ENOENT error message.
+	            new Error('ENOENT, Item "' + itemName + '" not found.'));
+	        return;
+	      }
+
+	      // TODO: Consider changing to Find one.
+	      /* istanbul ignore if */
+	      if (items.length > 1) {
+	        mm.log.warn('%d items of name "%s" found.', items.length, itemName);
+	      }
+	      
+	      mm.log.debug(items, mm.Logger.Priority.LOW); 
+	      var content = items[0];
+	      var info = new StorageInfo({});
+	      info.userName = userName;
+	      info.itemName = itemName;
+	      info.collectionName = collectionName;
+	      info.content = content;
+	      op.deferred.resolve(info);
+	    });
+	  }
+
+	  /**
+	   * @summary **load one or more object files**
+	   * @description
+	   * Loads multiple named objects from a collection where the name fields
+	   * match the wildcard pattern. This is called internally by `perform`
+	   * and exposed to test cases.
+	   * Not for public use.
+	   */  
+	  MongoDBProvider.prototype.loadMultiple = 
+	  function loadMultiple(db, op) {
+	    var collectionName = op.path.collectionName;
+	    var itemName = op.path.itemName;
+	    var collection = db.collection(collectionName);
+	    var info = new StorageInfo();
+	    info.collectionName = op.path.collectionName;
+	    info.itemName = op.path.itemName;
+	    info.count = 0;
+	    info.text = [];
+	    info.content = [];
+	    var wildcardRegex = itemName.replace( /\./g, '\.');   // Escape '.'
+	    wildcardRegex = wildcardRegex.replace( /\*/g, '.*');
+	    wildcardRegex = '^' + wildcardRegex.replace(/\?/g, '.');
+	    var objectQuery = {name: { $regex: wildcardRegex, $options: 'i' } };
+	    mm.log.debug('- loadMultiple Collection:', 
+	        collectionName, ', Pattern:', objectQuery);
+	    var cursor = collection.find(objectQuery);
+	    cursor.each(function (err, item) {
+	      /* istanbul ignore if */  // I haven't seen this yet. Inspected.
+	      if (err) {
+	        mm.log.error('DB loadMultiple each failure', err);
+	        op.deferred.reject(err);
+	        return;
+	      }
+	      if (item) {
+	        info.content.push(item);
+	        info.count++;
+	      }
+	      else {
+	        /* istanbul ignore if */  // Tested independently
+	        if (info.count === 0) {
+	          mm.log.debug('MongoDBProvider: * No items found on DB loadMultiple', objectQuery);
 	        }
 	        else {
-	          self.status = self.STATUS.failed;
-	          var failedMessage = '*login failed for ' + self.name;
-	          debug(failedMessage);
-	          deferred.reject(new Error(failedMessage));
-	          //debug('=== Deferred:', deferred);
+	          mm.log.debug('loadMultiple ---> :', info);
 	        }
-	      }, T);
+	        op.deferred.resolve(info);
+	      }
 	    })
-	  };
+	  }
+	  
+	  /**
+	   * @summary **store an object to a collection**
+	   * @description
+	   * Stores a named object to a collection. Called internally by perform
+	   * and exposed to test cases.  Not for public use.
+	   */    
+	  MongoDBProvider.prototype.store = 
+	  function store(db, op) {
+	    var collectionName = op.path.collectionName;
+	    var userName = op.path.userName;
+	    var itemName = op.path.itemName;
+	    var collection = db.collection(collectionName);
+	    var objectQuery = {name: itemName, owner: userName};
+	    //Collection.prototype.findAndModify = function(query, sort, doc, options, callback)
+	    //Collection.prototype.findOneAndUpdate = function(filter, update, options, callback)
+	    collection.findOneAndUpdate(objectQuery, op.content,
+	    { upsert: true, returnOriginal: false },
+	    function(err, r) {
+	      /* istanbul ignore if */  // I haven't seen this yet. Inspected.
+	      if (err) {
+	        mm.log.error('DB upsert failure', err);
+	        op.deferred.reject(err);
+	        return;
+	      }
+	      // returns { value: { _id: 55614ebf1e46fb426cc4d26d, ... fields },
+	      //           lastErrorObject: { updatedExisting: false, n: 1,
+	      //                              upserted: 55614ebf1e46fb426cc4d26d },
+	      //           ok: 1 }
+	      var info = new StorageInfo(r);
+	      info.itemName = itemName;
+	      info.collectionName = collectionName;
+	      info.userName = userName;
+	      info.ok = true;
+	      op.deferred.resolve(info);
+	    });
+	  }
 
 	  /**
-	   * @summary Remove the User
+	   * @summary **remove an object**
 	   * @description
-	   * The user is removed from storage.
-	   * @returns {Promise} a promise to the User
+	   * Removes the named file. Called internally by perform and exposed
+	   * to test cases.  Not for public use.
 	   */
-	  User.prototype.remove = function removeUser() {
-	    var self = this;
-	    return self.deferredFunc(function deleteSequenced(deferred) {
-	      setTimeout(function() {
-	          var finishedMessage = 'deleted ' + self.name;
-	          debug(finishedMessage);
-	          deferred.resolve(self);
-	      }, T); 
-	    })
-	  };
+	  MongoDBProvider.prototype.remove = 
+	  function remove(db, op) {
+	    var collectionName = op.path.collectionName;
+	    var userName = op.path.userName;
+	    var itemName = op.path.itemName;
+	    var objectQuery = {name: itemName, owner: userName};
+	    var collection = db.collection(collectionName);
+	    collection.remove(objectQuery, function (err, r) {
+	      /* istanbul ignore if */  // I haven't seen this yet. Inspected.
+	      if (err) {
+	        mm.log.error('DB remove failure', err);
+	        op.deferred.reject(err);
+	        return;
+	      }
 
-	  users.User = User;
-	  return users;
+	      var result = r.result;
+	      // { result: { ok: 1, n: 39 },
+	      var nRemoved = result.n;
+	      /* istanbul ignore if */  // Tested.
+	      if (nRemoved === 0) {
+	        op.deferred.resolve(false);
+	      }
+	      else {
+	        op.deferred.resolve(true);
+	      }
+	    });
+	  }
+	  
+	  return MongoDBProvider;
 	}
+
+
+
 
 /***/ },
 /* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	module.exports = function registerSalUserStorage(mm) {
-	//var SequencedObject = mm.obj.SequencedObject;
+	/**
+	 * @fileOverview Storage File Provider
+	 * @module sal/FileProvider
+	 */ 
+	 module.exports = function(mm) {
+	  var qq    = mm.check(mm.Q);
+	  var path  = mm.check(mm.path);  
 
-	  var us = {};
-	  
-	  
-	  
-	/*  
-	  
-	  // The cache of users and user management methods.  
-	  var users = {};
-	  users.inMemoryUserCache = {};
-	  
-	  var PersistentUser = (function persistentUserCtorCreator() {
-	    var ctor = function PersistentUser(u) {
-	      var self = this;
-	      self.name = u.name;
-	      self.privatePassword = u.privatePassword;
-	      self.creationDate = u.creationDate;
-	      self.pbkdf2Salt = u.pbkdf2Salt;
-	    };
+	  var storage     = mm.check(mm.storage);
+	  var StorageInfo = mm.check(storage.StorageInfo);
+	  var wildMatch   = mm.check(mm.util.wildMatch);
 
-	    return ctor;
-	  }());
+	  //--------------------------------------------------------------------------
+	  /**
+	   * @summary **Provides operations on Node.JS files**
+	   * @description
+	   * A FileProvider is plugged into a StorageEngine when running under
+	   * Node.js to provide direct access to system files.
+	   * @constructor
+	   * @param {StorageEngine} engine context for this engine
+	   */  
+	  function FileProvider(engine) {
+	    var self = this;
+	    self.engine = engine;
+	    self.fs = mm.check(mm.fs);
+	  }
 
-	  var User = (function userCtorCreator() {
-	    // static initialization here.
-	    var STATUS = new Enum('unknown|loaded|saved|pending|created|active|failed');
+	  /**
+	   * @summary **registers the Node File Storage Provider**
+	   * @description
+	   * Provides storage operations to node.js local file system.
+	   * @static
+	   * @param {StorageEngine} engine the current storage engine
+	   */  
+	  FileProvider.register = function registerFileProvider(engine) {
+	    engine.basePath = mm.path.join(mm.config.baseDir, 'storage');
+	    engine.fileExtension = '.mm.json';
+	    engine.fileProvider = new FileProvider(engine);
+	  }    
 
-	    var ctor = function User(userName) {
-	      var self = this;
-
-	      SequencedObject.call(self); // populate parent instance fields.
-	      self.privatePassword = '';
-	      self.name = userName;
-	      self.STATUS = STATUS;
-	      self.status = self.STATUS.unknown;
-	      
-	      function setPassword(pwd) { 
-	        self.privatePassword = pwd; 
-	      }
-
-	      function getPassword() { 
-	        return self.privatePassword; 
-	      }
-
-	      function passwordMatches(testPassword) {
-	        return self.privatePassword === testPassword;
-	      }
-
-	      self.setPassword = setPassword;
-	      self.passwordMatches = passwordMatches;
-	      self.getPassword = getPassword;
-
-	      self.lock = function lockUser() { 
-	        self.getPassword = function userIsLocked() { return ''; }
-	      }
+	  /**
+	   * @summary **initialize the file storage provider**
+	   * @return {Promise} resolves when successful.
+	   */  
+	  FileProvider.prototype.initialize =
+	  function initialize(op) {
+	    var self = this;
+	    /* istanbul ignore else */
+	    if (!self.initialized) {
+	      self.initialized = qq(true);
 	    }
-	    return ctor;
-	  }());
+	    return self.initialized;
+	  }  
 
-	  User.prototype = Object.create(SequencedObject.prototype);
-	  User.prototype.PBKDF2_ROUNDS = 1000; // A reasonable number of rounds.
-	  User.prototype.PBKDF2_DKLEN = 16; // 16 byte derived key.
+	  /**
+	   * @summary **perform a file storage operation**
+	   * @param {StorageEngine} op the operation to perform.
+	   */  
+	  FileProvider.prototype.perform =
+	  function perform(op) {
+	    var self = this;
+	    var opFunction = self[op.op];
+	    /* istanbul ignore if */ // Tested independently and often.
+	    if (!opFunction) {
+	      var s = 'Unrecognized storage operation: ' + op.op;
+	      op.deferred.reject(new Error(s));
+	      return;
+	    }
 
-	  User.prototype.load = function loadUser () {
-	    var self = this;
-	    return self.sequencedFunc(function loadSequenced(deferred) {
-	      //var statusMessage = 'loading user: ' + self.name;
-	      setTimeout(function() {
-	          var u = users.inMemoryUserCache[self.name];
-	          if (u) {
-	            self.name = u.name;
-	            self.privatePassword = u.privatePassword;
-	            self.creationDate = u.creationDate;
-	            self.pbkdf2Salt = u.pbkdf2Salt;
-	            self.status = self.STATUS.loaded;
-	            var finishedMessage = 'loaded "' + self.name + '"';
-	            debug(finishedMessage, self.sequencedOperationsCount);
-	            deferred.resolve(self);
-	          }
-	          else {
-	            var notLoadedMessage = 'not loaded "' + self.name + '"';
-	            debug(notLoadedMessage, self.sequencedOperationsCount);
-	            self.status = self.STATUS.failed;            
-	          }
-	      }, T);
-	    })
-	  };
+	    try {
+	      var p = op.path;
+	      var localDir = path.join(p.userName, p.collectionName);
+	      var fileDir = path.join(self.engine.basePath, localDir);
+	      var fileName = p.itemName + self.engine.fileExtension;
+	      var filePath = path.join(fileDir, fileName);
+	      opFunction(self.fs, op, fileName, filePath, fileDir);
+	    }
+	    catch (e) {
+	      /* istanbul ignore if */ 
+	      mm.log.error('-FILEOP FAILED', e.stack); /* istanbul ignore if */
+	      op.deferred.reject(e);
+	    }
+	  }
 
-	  User.prototype.save = function saveUser () {
-	    var self = this;
-	    return self.sequencedFunc(function saveSequenced(deferred) {
-	      var statusMessage = 'saving user: "' + self.name + '"';
-	      debug(statusMessage);
-	      setTimeout(function() {
-	          var u = users.inMemoryUserCache[self.name];
-	          if (u) {
-	            if (self.privatePassword === u.privatePassword) {
-	              self.status = self.STATUS.loaded;
-	              var finishedMessage = 'already saved "' + self.name + '"';
-	              debug(finishedMessage, self.sequencedOperationsCount);
-	              deferred.resolve(self);
-	            }
-	            else {
-	              var failedMessage = '*save failed for "' + self.name + '"';
-	              debug(failedMessage);
-	              deferred.reject(new Error(failedMessage));
-	            }
-	          }
-	          else {
-	            u = new PersistentUser(self);
-	            self.status = self.STATUS.saved;
-	            users.inMemoryUserCache[u.name] = u;
-	            var savedMessage = 'saved "' + self.name + '"';
-	            debug(savedMessage, self.sequencedOperationsCount);
-	            deferred.resolve(self);
-	          }
-	      }, T);
-	    })
-	  };
-	  
-	  User.prototype.create = function createUser(password) {
-	    var self = this;
-	    return self.sequencedFunc(password,
-	      function createSequenced(deferred, password) {
-	      self.creationDate = new Date();
-	      self.status = self.STATUS.pending;
-	      if (password) {
-	        //statusMessage = 'computing ' + self.name;
-	        // The PBKDF2 salt is per user and is based on the sub millisecond
-	        // datetime for when the user was created. Its a small comfort.
-	        self.pbkdf2Salt = ua2hex(text2ua(self.creationDate.toISOString()));
-	        var uIntArrayPassword = sha256.pbkdf2(
-	            text2ua(password), 
-	            self.pbkdf2Salt,
-	            self.PBKDF2_ROUNDS,
-	            self.PBKDF2_DKLEN);
-	        self.setPassword(ua2hex(uIntArrayPassword));
-	        self.status = self.STATUS.created;
+	  /**
+	   * @summary **load an object from a file**
+	   * @description
+	   * Loads a named object from a file of the same name. The object is in
+	   * well formed JSON with a `name` field.  Called internally by `perform`
+	   * and exposed to test cases.  Not for public use.
+	   */  
+	  FileProvider.prototype.load =
+	  function load(fs, op, fileName, filePath, fileDir) {
+	    fs.stat(filePath, function (err, stat) {
+	      if (err) {
+	        op.deferred.reject(err);
+	        return;
 	      }
-
-	      setTimeout(function() {
-	          var createdMessage = 'created user"' + self.name + '"';
-	          debug(createdMessage);
-	          deferred.resolve(self);
-	      }, T);
-	    })
-	  };
-
-	  User.prototype.login = function loginUser(password) {
-	    var self = this;
-	    return self.sequencedFunc(password,
-	      function loginSequenced(deferred, password) {
-	      var testPassword = ua2hex(sha256.pbkdf2(
-	          text2ua(password), 
-	          self.pbkdf2Salt,
-	          self.PBKDF2_ROUNDS,
-	          self.PBKDF2_DKLEN));
-	      debug('-- login test pwd:', '[' + testPassword + ']');
-	      debug('-- login user pwd:', '[' + self.getPassword() + ']');
-	      setTimeout(function() {
-	        if (self.passwordMatches(testPassword)) {
-	          self.status = self.STATUS.active;
-	          var activatedMessage = 'logged in ' + self.name;
-	          debug(activatedMessage);
-	          deferred.resolve(self);
+	      var info = new StorageInfo(stat);
+	      info.collectionName = op.path.collectionName;
+	      info.itemName = op.path.itemName;
+	      info.fileName = fileName;
+	      info.fileDir = fileDir;
+	      fs.readFile(filePath, 'utf8', function (err, text) {
+	        /* istanbul ignore if */ 
+	        if (err) {
+	          op.deferred.reject(err);
+	          return;
 	        }
-	        else {
-	          self.status = self.STATUS.failed;
-	          var failedMessage = '*login failed for ' + self.name;
-	          debug(failedMessage);
-	          deferred.reject(new Error(failedMessage));
-	          //debug('=== Deferred:', deferred);
+	        info.text = String(text);
+	        info.content = JSON.parse(text);
+	        info.owner = info.content.owner;
+	        op.deferred.resolve(info);
+	      });
+	    });
+	  }
+
+	  /**
+	   * @summary **load one or more object files**
+	   * @description
+	   * Loads multiple named objects from files with names that match a
+	   * wildcard pattern. This is called internally by `perform` and exposed
+	   * to test cases.  Not for public use.
+	   */  
+	  FileProvider.prototype.loadMultiple =
+	  function loadMultiple(fs, op, fileName, filePath, fileDir) {
+	    // where files is an array of the names of the files in the
+	    // directory excluding '.' and '..'. 
+	    mm.log.debug('- loadMultiple Dir:{0}  Pattern;"{1}"', fileDir, fileName);
+	    fs.readdir(fileDir, function(err, files) {
+	      /* istanbul ignore if */ // Tested independently.
+	      if (err) {
+	        op.deferred.reject(err);
+	        return;
+	      }
+	      mm.log.debug('- loadMultiple:', files);
+	      var info = new StorageInfo();
+	      info.collectionName = op.path.collectionName;
+	      info.itemName = op.path.itemName;
+	      info.fileName = fileName;
+	      info.fileDir = fileDir;
+	      info.count = 0;
+	      info.text = [];
+	      info.content = [];
+	      var fileSet = [];
+	      files.forEach(function (candidateFileName) {
+	        if (wildMatch(candidateFileName, fileName)) {
+	          fileSet.push(path.join(fileDir, candidateFileName));
 	        }
-	      }, T);
-	    })
-	  };
+	      });
+	      var n = fileSet.length;
+	      var erred = false;
+	      /* istanbul ignore if */ // Tested independently.
+	      if (n === 0) {
+	        op.deferred.resolve(info);
+	        return;
+	      }
+	      fileSet.forEach(function (aFilePath) {
+	        fs.readFile(aFilePath, 'utf8', function (err, text) {
+	          /* istanbul ignore if */
+	          if (err || erred) {
+	            // It doesn't matter that we reject the promise a zillion
+	            // times after an error.
+	            op.deferred.reject(err);
+	            erred = true;
+	            return;
+	          }
+	          info.text.push(String(text));
+	          info.content.push(JSON.parse(text));
+	          info.count++;
+	          n--;
+	          // When all files have been appended, return.
+	          if (n === 0) {
+	            mm.log.debug('- loadMultiple ---> :', info);          
+	            op.deferred.resolve(info);
+	          }
+	          // TODO!!! Stop me before I kill again.  This could
+	          // load half the planet if there was a lot of matching
+	          // stuff.
+	        });
+	      });
+	    });
+	  }
 
-	  User.prototype.remove = function removeUser() {
-	    var self = this;
-	    return self.sequencedFunc(function deleteSequenced(deferred) {
-	      setTimeout(function() {
-	          var finishedMessage = 'deleted ' + self.name;
-	          debug(finishedMessage);
-	          deferred.resolve(self);
-	      }, T); 
-	    })
-	  };
-	*/
+	  /**
+	   * @summary **store an object to a file**
+	   * @description
+	   * Store a named object to a file of the same name. The object is in
+	   * well formed JSON with a `name` field.  Called internally by `perform`
+	   * and exposed to test cases.  Not for public use.
+	   */  
+	  FileProvider.prototype.store =
+	  function store(fs, op, fileName, filePath, fileDir) {
+	    var mkdirp = mm.check(mm.mkdirp);
+	    var options = {
+	      encoding: 'utf8', 
+	      mode: 438, // (aka 0666 in Octal)
+	      flag: 'w'
+	    };
+	    mkdirp(fileDir, function (err, made) {
+	      /* istanbul ignore if */
+	      if (err) {
+	        op.deferred.reject(err);
+	        return;
+	      }
+	      /* istanbul ignore if */
+	      if (made) {
+	        // First Directory made if anybody cares.
+	      }
+	      op.content.owner = op.path.userName;
+	      var text = mm.util.JSONify(op.content, 2);
+	      fs.writeFile(filePath, text, options, function (err) {
+	        /* istanbul ignore if */
+	        if (err) {
+	          op.deferred.reject(err);
+	          return;
+	        }
+	        fs.stat(filePath, function (err, stat) {
+	          /* istanbul ignore if */
+	          if (err) {
+	            op.deferred.reject(err);
+	            return;
+	          }
+	          var info = new StorageInfo(stat);
+	          info.owner = op.content.owner;
+	          info.collectionName = op.path.collectionName;
+	          info.itemName = op.content.name;
+	          info.fileName = fileName;
+	          info.fileDir = fileDir;
+	          info.text = text;
+	          info.ok = true;
+	          op.deferred.resolve(info);
+	        });
+	      });
+	    });
+	  }
 
-	  return us;
+	  /**
+	   * @summary **remove an object**
+	   * @description
+	   * Removes the named file. Called internally by `perform` and exposed
+	   * to test cases.  Not for public use.
+	   */
+	  FileProvider.prototype.remove =
+	  function remove(fs, op, fileName, filePath, fileDir) {
+	    fs.unlink(filePath, function(err) {
+	      /* istanbul ignore if */  // Tested.
+	      if (err) {
+	        op.deferred.resolve(false);
+	        return;
+	      }
+	      op.deferred.resolve(true);
+	    });
+	  }
+	  
+	  return FileProvider;
 	}
+
+
+
 
 /***/ },
 /* 33 */
@@ -22696,7 +22351,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var text2ua    = mm.check(mm.util.text2ua);
 	  var ua2hex     = mm.check(mm.util.ua2hex);
 	  var CoreObject = mm.check(mm.obj.CoreObject);
-	  var sha256     = mm.check(__webpack_require__(77));
+	  var sha256     = mm.check(__webpack_require__(76));
+	  
+	  var ANONYMOUS = 'anonymous';
 	  
 	  /**
 	   * @summary **Create a ClientUser**
@@ -22711,7 +22368,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var ClientUser = (function clientUserCtorCreator() {
 	    var ctor = function ClientUser(userName) {
 	      var self = this;
-	      self.name = userName;
+	      self.name = userName ? userName : ANONYMOUS;
 	      self.firstName = null;
 	      self.lastName = null;
 	      self.email = null;
@@ -22745,7 +22402,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   */
 	  ClientUser.prototype.init = function init(userObj, sanitize) {
 	    var self = this;  
-	    _.assign(self, userObj);
+	    if (userObj) _.assign(self, userObj);
 	    if (sanitize) {
 	      delete self.pbkdf2Salt;
 	      delete self.pdk;
@@ -22763,7 +22420,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var self = this;  
 	    return (!self.name) ||
 	           (!self.lastName) ||
-	           _.startsWith(self.name, 'anonymous');
+	           _.startsWith(self.name, ANONYMOUS);
 	  }
 
 	  /**
@@ -22800,12 +22457,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {string} a seed for the hash.
 	   * @returns self for chaining.
 	   */
-	  ClientUser.prototype.hashPdk = function hashP(seed) {
+	  ClientUser.prototype.hashPdk = function hashPdk(seed) {
 	    var self = this;  
 	    var seedypdk = 'HASHPDK:' + seed + '_' + self.pdk;
 	    var uIntArrayPDK = sha256(text2ua(seedypdk));
 	    self.hpdk = ua2hex(uIntArrayPDK);
-	//mm.log(seedypdk, '--->', self.hpdk);
+	    //mm.log(seedypdk, '--->', self.hpdk);
 	    return self;
 	  }
 
@@ -22814,6 +22471,4199 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 34 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
+	/**
+	 * @fileOverview Console line input and output for mMeddle CLI
+	 * @module core/CliConsole
+	 */ 
+	module.exports = function registerCliConsole(mm) {
+	  var check      = mm.check;
+	  var _          = check(mm._);
+	  var qq         = check(mm.Q);
+	  var EggTimer   = check(mm.obj.EggTimer);
+
+	  var BS    = String.fromCharCode(0x08);                   // jshint ignore:line 
+	  var CR    = String.fromCharCode(0x0D);                   // jshint ignore:line 
+	  var LF    = String.fromCharCode(0x0A);                   // jshint ignore:line 
+	  var NL    = String.fromCharCode(0x0A);                   // jshint ignore:line 
+	  var CRLF  = String.fromCharCode(0x0D, 0x0A);             // jshint ignore:line 
+	  var HOME  = String.fromCharCode(0x1b, 0x5b, 0x31, 0x7e); // jshint ignore:line 
+	  var UP    = String.fromCharCode(0x1b, 0x5b, 0x41);       // jshint ignore:line 
+	  var DOWN  = String.fromCharCode(0x1b, 0x5b, 0x42);       // jshint ignore:line 
+	  
+	  var KeyCodes = {
+	    null  : [0x00],
+	    ctrlA : [0x01], // A
+	    ctrlB : [0x02], // B
+	    ctrlC : [0x03], // C
+	    ctrlD : [0x03], // D
+	    ctrlE : [0x03], // E
+	    ctrlF : [0x03], // F
+	    bell  : [0x07], // G
+	    bs    : [0x08], // H
+	    tab   : [0x09], // I
+	    lf    : [0x0A], // J
+	    ff    : [0x0B], // K
+	    ctrlL : [0x0C], // L
+	    cr    : [0x0D], // M
+	    ctrlN : [0x0E], // N
+	    ctrlO : [0x0F], // O
+	    ctrlP : [0x10], // P
+	    ctrlQ : [0x11], // Q
+	    ctrlR : [0x12], // R
+	    ctrlS : [0x13], // S
+	    ctrlT : [0x14], // T
+	    ctrlU : [0x15], // U 
+	    ctrlV : [0x16], // V
+	    ctrlW : [0x17], // W
+	    ctrlX : [0x18], // X
+	    ctrlY : [0x19], // Y
+	    ctrlZ : [0x1A], // Z
+	    esc   : [0x1B],
+	    up    : [0x1b, 0x5b, 0x41],
+	    down  : [0x1b, 0x5b, 0x42],
+	    right : [0x1b, 0x5b, 0x43],
+	    left  : [0x1b, 0x5b, 0x44],
+	    ins   : [0x1b, 0x5b, 0x32, 0x7e],
+	    del   : [0x1b, 0x5b, 0x33, 0x7e],
+	    home  : [0x1b, 0x5b, 0x31, 0x7e],
+	    end   : [0x1b, 0x5b, 0x34, 0x7e],
+	    pgup  : [0x1b, 0x5b, 0x35, 0x7e],
+	    pgdn  : [0x1b, 0x5b, 0x36, 0x7e],
+	    F1    : [0x1b, 0x5b, 0x5b, 0x41],
+	    F2    : [0x1b, 0x5b, 0x5b, 0x42],
+	    F3    : [0x1b, 0x5b, 0x5b, 0x43],
+	    F4    : [0x1b, 0x5b, 0x5b, 0x44],
+	    F5    : [0x1b, 0x5b, 0x5b, 0x45],
+	    F6    : [0x1b, 0x5b, 0x31, 0x37, 0x7e],
+	    F7    : [0x1b, 0x5b, 0x31, 0x38, 0x7e],
+	    F8    : [0x1b, 0x5b, 0x31, 0x39, 0x7e],
+	    F9    : [0x1b, 0x5b, 0x32, 0x30, 0x7e],
+	    F10   : [0x1b, 0x5b, 0x32, 0x31, 0x7e],
+	    F11   : [0x1b, 0x5b, 0x32, 0x33, 0x7e],
+	    F12   : [0x1b, 0x5b, 0x32, 0x34, 0x7e],
+	  };
+	  
+	  /**
+	   * @summary **console input and output for mMeddle CLI**
+	   * @description
+	   * Handles  console input and output so interruptions from asynchronous
+	   * events don't muck up the command as its being entered. Also provides
+	   * the usual command stack, line edit and tab completion operations.
+	   *
+	   * On Node.js the CliConsole uses process.stdin and out. On a browser,
+	   * the constructor takes the ids for the text input and the div that
+	   * will be expanded as output.
+	   *
+	   * On Node as soon as the CliConsole is created process.stdin is 
+	   * switched to raw character mode.  All output to the console must use
+	   * CliConsole or it will be confused about what is on the display.
+	   *
+	   * @constructor
+	   * @param {string} cliInText the id of the text input 
+	   * @param {string} cliPrompt the id of the text input label
+	   * @param {string} outDiv the id of the text ouput div
+	   * @returns {CliConsole} the cli client.
+	   */  
+	  var CliConsole = 
+	  function cliConsoleCtor(cliInText, cliPrompt, outDiv) {
+	    var self = this;
+	    var inNode = mm.config.inNode;
+	    var inBrowser = inNode ? false : true;
+	    var activity = false;
+
+	    // Defined on Node clients.
+	    var outStream;
+	    var inStream;
+	    var cursor;
+
+	    // Defined on Browser clients.
+	    var consoleOutput;
+	    var consolePrompt;
+	    var consoleInput;
+
+	    self.idleTimer = null; // User supplied idle timer.
+	    self.eventHandlers = [];
+	    /* istanbul ignore else */ 
+	    if (inNode) {
+	      // On node clients initialize stdin and out.
+	      outStream = process.stdout;
+	      cursor = __webpack_require__(77)(outStream);
+	      inStream = process.stdin;
+	      
+	      // Make sure the console is in raw character mode.
+	      inStream.setEncoding('utf8');
+	      // Raw mode reads from the console without echoing characters and
+	      // doesn't buffer up the keys.  
+	      inStream.setRawMode(true);
+
+	      self.displayRows = outStream.rows;
+	      self.displayCols = outStream.columns;
+
+	      var h = [];
+	      h.push({ obj: outStream, name:'resize',   func: resizeHandler  });
+	      h.push({ obj: inStream,  name:'end',      func: inCloseHandler });
+	      h.push({ obj: inStream,  name:'close',    func: inCloseHandler });
+	      h.push({ obj: inStream,  name:'readable', func: inReadableHandler });
+	      h.push({ obj: inStream,  name:'error',    func: inErrorHandler });
+	      self.eventHandlers = h;
+	    }
+	    else {
+	      // On browser clients obtain the relevent DOM elements.
+	      consoleOutput = mm.document.getElementById(outDiv);
+	      consolePrompt = mm.document.getElementById(cliPrompt);
+	      consoleInput  = mm.document.getElementById(cliInText);
+	      
+	      // TODO - Define browser event handlers.
+	    }
+
+	    self.mute = mm.config.mochaConsoleMute; // Hacky way to mute console.
+	    self.lastLine = '';
+	    self.error = null;
+	    self.saveOnlyUnique = false;
+	    self.closeHandler = null;
+	    self.maxPasswordLength = 15;
+	    self.savedInputLines = [];
+
+	    function makeLine (text) {
+	      return {
+	        textLine: text,
+	        multiLine: false
+	      };
+	    }
+
+	    var handlers = []; // The stack of input handlers;
+	    self.handler = {
+	      func: null,     // caller must supply one.
+	      prompt: (inNode ? '-->' : 'Cmd:'),
+	      pwdMode: false  // show * during input.
+	    };
+	    /* istanbul ignore if */ 
+	    if (inBrowser) {
+	      consolePrompt.innerHTML = self.handler.prompt;
+	    }
+	    
+	    var pendingInputs = [];
+	    var keyQueue = [];   // unhandled keystrokes/keycodes.
+	    
+	    var currentInput = makeLine('');
+	    var inputOffset = 0; //offset from beginning of currentInput.
+	    var insertMode = true;
+	    var promptVisible = false;
+	    var partialOutputLine = true; // Require a NL before prompt.
+
+	    var currentSavedInputIndex = 0;
+	    var savedInitialLine = '';
+	    var scrollingPrevious = true;
+
+	    //console.log('- screen size is: ', 
+	    //    self.displayRows + 'x' + self.displayCols);
+	    
+	    // This eggTimer is used to trigger handling of all user input.
+	    // When there other outputs from other routines going on, the
+	    // input is bufferred in the keyQueue until and the timer is 
+	    // reset until there is a chance to deal with the inputs.
+	    var timer = new EggTimer(100).start();
+
+	    // Start running.
+	    var running = true;
+	    installEventHandlers();
+	/*    
+	self.annoyTimer = new EggTimer(10000).start();
+	var nn = 0;
+	self.annoyTimer.onDing(function () {
+	  mm.log.status('Are you annoyed yet?', nn++);
+	  self.annoyTimer.reset();
+	});
+	*/
+	    // Examines a keysequence to see of it is a control char,
+	    // alt code, or control code.
+	    function getKeyCode(unicodes) {
+	      var c = [];
+	      var keyEvent = null;
+	      //var ch1 = unicodes[0];
+	      var n = unicodes.length;
+	      var ch2 = n > 1 ? unicodes[1] : '';
+	      var c1 = unicodes.charCodeAt(0);
+	      for (var i = 0; i < n; i++) {
+	        c.push(unicodes.charCodeAt(i));
+	      }
+	      
+	      function keyMatch() {
+	        for (var key in KeyCodes) {
+	          if (_.isEqual(KeyCodes[key], c)) {
+	            keyEvent = key;
+	            return true;
+	          }
+	        }
+	        return false;
+	      }
+	      
+	      if (keyMatch()) return keyEvent;
+	      if (c1 === 0x1b && c.length > 1) {
+	        c.shift();
+	        if (keyMatch()) {
+	          return 'alt' + keyEvent;
+	        }
+	        else {
+	          return 'alt' + ch2;
+	        }
+	      }
+	      return null;
+	    }
+	    
+	    function isPrintableAscii(cc) {
+	      if (cc.length === 1) {
+	        var c = cc.charCodeAt(0);
+	        return c >= 32 && c < 128;
+	      }
+	      return false;
+	    }
+
+	    function hexString(unicode) {
+	      var h = '';
+	      var sep = '';
+	      for (var i = 0; i < unicode.length; i++) {
+	        var cc = unicode.charCodeAt(i);
+	        h += sep + hexOfUnicode(cc);
+	        sep = '|';
+	      }
+	      return h;
+	    }
+	    
+	    function hexOfUnicode(cc) {
+	      var d = cc.toString(16);
+	      while (d.length < 4) d = '0' + d;
+	      return d;
+	    }
+
+	    function hexOfAscii(cc) { // jshint ignore:line 
+	      var d = cc.toString(16);
+	      return (d.length < 2) ? '0' + d : d;
+	    }
+
+	    // Replaces or inserts a character at a specific position in the string.
+	    function setChar(str, offset, ch, insert) {
+	      var n = str.length;
+	      // Pad the string with spaces.
+	      while (n < offset) { str += ' '; n++; }
+	      // Append the character.
+	      if (offset === n) {
+	        return str += ch;
+	      }
+	      var left = str.substring(0, offset);
+	      var right = str.substring(offset + (insert ? 0 : 1));
+	      return left + ch + right;
+	    }
+
+	    // Remove a character at a specific position in the string.
+	    function delChar(str, offset) {
+	      var n = str.length;
+	      // Pad the string with spaces.
+	      while (n < offset) { str += ' '; n++; }
+	      if (offset === n) {
+	        return str.substring(0, offset - 1);
+	      }
+	      var left = str.substring(0, offset);
+	      var right = str.substring(offset + 1);
+	      return left + right;
+	    }
+
+	    // Handle saving of the text line stack.
+	    function saveInput(currentInput) {
+	      // Passwords are never saved.
+	      if (self.handler.pwdMode) {
+	        return false;
+	      }
+	      currentSavedInputIndex = 0;
+	      var textLine = currentInput.textLine;
+	      // Only single lines are saved in the stack.
+	      if (currentInput.multiLine) {
+	        return false;
+	      }
+	      // Lines must be at least 2 characters long to be worth saving.
+	      if (textLine.length === 0) {
+	       return false;
+	      }
+	      // Only unique lines are saved in the stack.
+	      if (self.saveOnlyUnique) {
+	        if (_.includes(self.savedInputLines, textLine)) {
+	         return false;
+	        }
+	      }
+	      // Do not save two duplicate lines in a row.
+	      if (self.savedInputLines.length > 0 &&
+	        self.savedInputLines[0] === textLine) 
+	      {
+	        return false;
+	      }
+	      self.savedInputLines.unshift(textLine); // stick it in the stack.
+	      return true;
+	    }
+	    
+	    function fetchPendingInput() {
+	      self.lastInput = pendingInputs.shift();
+	      self.lastLine = self.lastInput.textLine;
+	      saveInput(self.lastInput);
+	    }
+
+	    function out(chars) {
+	      if (self.idleTimer) self.idleTimer.reset();
+	      if (self.pauseTimer) self.pauseTimer.reset();
+	      
+	      /* istanbul ignore next */ 
+	      if (self.mute) return self;
+	      /* istanbul ignore if */ 
+	      if (inBrowser) {
+	        consoleOutput.appendChild(mm.document.createTextNode(chars));
+	      }
+	      else {
+	        cursor.write(chars);
+	      }
+	      return self;
+	    }
+
+	    // Zero based horizontal line cursor positioning.
+	    function setLineOffset(n) {
+	      /* istanbul ignore next */ 
+	      if (self.mute) return;
+	      /* istanbul ignore else */ 
+	      if (inNode) {
+	        cursor.horizontalAbsolute(n + 1);
+	      }
+	    }
+
+	    // Displays the prompt, current input, and positions  the cursor.
+	    function showPrompt(reprompt) {
+	      /* istanbul ignore else */ 
+	      if (inNode) {
+	        if (!promptVisible || reprompt) {
+	          promptVisible = true;
+	          if (partialOutputLine) {
+	            out(NL); // Always goes to the next line.
+	            partialOutputLine = false;
+	          }
+	          setLineOffset(0);
+	          if (!self.mute) {
+	            cursor.eraseLine();
+	            //cursor.red();
+	            out(self.handler.prompt);
+	            cursor.show();
+	          }
+	        }
+	      }
+	      return self;
+	    }
+	    
+	    // Displays the prompt, current input, and positions  the cursor.
+	    function showCurrentLine(reprompt) {
+	      showPrompt(reprompt);
+	      /* istanbul ignore else */ 
+	      if (inNode) {
+	        setLineOffset(self.handler.prompt.length);
+	        //cursor.green();
+	        var text = currentInput.textLine;
+	        if (self.handler.pwdMode) {
+	          text = _.repeat('*', text.length);
+	        }
+	        out(text);
+	        if (!self.mute) cursor.eraseLine();
+	        var lineOffset = self.handler.prompt.length + inputOffset;
+	        setLineOffset(lineOffset);
+	        
+	        // TODO - allow the entry to be longer than the visible line.
+	        // use:  self.displayCols and when the text is wider than available
+	        // switch to :
+	        //     'prompt>...line of text is too long.'
+	        //  or 'prompt>This line of text is too ...'
+	      }
+	      return self;
+	    }
+	  
+	    // Displays the prompt, current input, and positions  the cursor.
+	    function updateCurrentLine() {      
+	      /* istanbul ignore else */
+	      if (inNode) {
+	        if (!promptVisible) showCurrentLine();
+	      }
+	    }
+
+	    function rightArrow() {
+	      if (inputOffset < currentInput.textLine.length) {
+	        inputOffset++;
+	      }
+	      return showCurrentLine();
+	    }
+	    
+	    function leftArrow() {
+	      if (inputOffset > 0) {
+	        inputOffset--;
+	      }
+	      return showCurrentLine();
+	    }
+	    
+	    function backSpace() {
+	      if (inputOffset > 0) {
+	        inputOffset--;
+	        currentInput.textLine = delChar(currentInput.textLine, inputOffset);
+	      }
+	      return showCurrentLine();
+	    }
+
+	    function deleteChar() {
+	      if (inputOffset < currentInput.textLine.length) {
+	        inputOffset++;
+	        return backSpace();
+	      }
+	      return showCurrentLine();
+	    }
+	    
+	    function endOfLine() {
+	      inputOffset = currentInput.textLine.length;
+	      return showCurrentLine();
+	    }
+
+	    function startOfLine() {
+	      inputOffset = 0;
+	      return showCurrentLine();
+	    }
+
+	    function toggleInsertMode() {
+	      insertMode = !insertMode;
+	      return self;
+	    }
+
+	    function clearLine() {
+	      inputOffset = 0;
+	      currentInput.textLine = '';
+	      return showCurrentLine();
+	    }
+
+	    function previousSavedLine() {
+	      if (currentInput.multiLine) {
+	        // Not Implemented.
+	      }
+	      else {
+	        promptVisible = false;
+	        if (currentSavedInputIndex === 0) {
+	          savedInitialLine = currentInput.textLine;
+	        }
+	        if (self.savedInputLines.length > currentSavedInputIndex) {
+	          if (!scrollingPrevious &&
+	            self.savedInputLines.length > currentSavedInputIndex + 1) {
+	            currentSavedInputIndex++;
+	          }
+	          currentInput = makeLine(self.savedInputLines[currentSavedInputIndex]);
+	          currentSavedInputIndex++;
+	          scrollingPrevious = true;
+	        }
+	        else {
+	          currentInput = makeLine(savedInitialLine);
+	        }
+	        return endOfLine();
+	      }  
+	    }
+
+	    function nextSavedLine() {
+	      if (currentInput.multiLine) {
+	        // Not Implemented.
+	      }
+	      else {
+	        promptVisible = false;
+	        if (currentSavedInputIndex > 0) {
+	          currentSavedInputIndex--;
+	          if (scrollingPrevious && currentSavedInputIndex > 0) {
+	            currentSavedInputIndex--;
+	          }
+	          scrollingPrevious = false;
+	          currentInput = makeLine(self.savedInputLines[currentSavedInputIndex]);
+	        }
+	        else {
+	          currentInput = makeLine(savedInitialLine);
+	        }
+	        return endOfLine();
+	      }
+	    }
+	    
+	    // Handles auto completion.
+	    function autoComplete() {
+	      if (self.completer) {
+	        currentInput.textLine += '-TAB FIXME-';
+	        return endOfLine();
+	      }
+	    }
+
+	    // Provide the input to a client.
+	    function handlePendingInput() {
+	      if (pendingInputs.length > 0) {
+	        // If there's a consumer for the input, handle it.
+	        if (self.handler.func) {
+	          fetchPendingInput();
+	        }
+	        while (self.handler.func) {
+	          var response = self.handler.func(self.lastLine);
+	          // This handler no longer wants to do the job.
+	          if (response === false) {
+	            self.handler = handlers.pop();
+	            if (inBrowser) {
+	              consolePrompt.innerHTML = self.handler.prompt;
+	              consoleInput.type = self.handler.pwdMode ? 'password' : 'text';
+	            }
+	            return self; // All done.
+	          }
+	          else if (response === true) {
+	            return self; // All is well, all done.
+	          }
+	          else if (_.isString(response)) {
+	            // Allow the handler to act as a translator for the input.
+	            self.handler = handlers.pop();
+	            self.lastLine = response;
+	          }
+	          else {
+	            throw new Error('Invalid line handler response');
+	          }
+	        }
+	      }
+	      return self;
+	    }
+	    
+	    // Handles Enter for single line entries.
+	    function enter() {
+	      activity = true;
+	      if (inNode) {
+	        if (self.handler.pwdMode) {
+	          showPrompt(true);
+	          out(_.repeat('*', self.maxPasswordLength));
+	        }
+	        else {
+	          showCurrentLine();
+	        }
+	        out(NL);
+	      }
+	      else {
+	        // Enters the current line even if it has not changed.
+	        currentInput = makeLine(consoleInput.value);
+	        consoleInput.value = '';
+	        var textLine = currentInput.textLine;
+	        if (self.handler.pwdMode) {
+	          textLine = _.repeat('*', self.maxPasswordLength);
+	        }
+	        out('--> ' + self.handler.prompt + textLine + '\n');
+	      }
+	      pendingInputs.push(currentInput);
+	      currentInput = makeLine('');
+	      inputOffset = 0;
+	      promptVisible = false;
+	      return handlePendingInput();
+	    }
+
+	    function handleKeyEvent(kc) {
+	      switch (kc) {
+	        case 'cr': return enter();
+	        case 'tab': return autoComplete();
+	        case 'bs': return backSpace();
+	        case 'del': return deleteChar();
+	        case 'esc': return clearLine();
+	        case 'ins': return toggleInsertMode();
+	        case 'right': return rightArrow();
+	        case 'left': return leftArrow();
+	        case 'home': return startOfLine();
+	        case 'end': return endOfLine();
+	        case 'up': return previousSavedLine();
+	        case 'down': return nextSavedLine();
+	      }
+	      return self;
+	    }
+
+	    function handleVisibleInputChar(ch) {
+	      currentInput.textLine = 
+	          setChar(currentInput.textLine, inputOffset, ch, insertMode);
+	      inputOffset++;
+	      return showCurrentLine();
+	    }
+
+	    //------------------------------------------------------------------------
+	    //                            Public Methods
+	    //------------------------------------------------------------------------
+
+	    /**
+	     * @summary **Define a close handler**
+	     */    
+	    CliConsole.prototype.onClose = function onClose(func) {
+	      self.closeHandler = func;
+	    }
+	    
+	    /**
+	     * @summary **Close the input stream**
+	     */    
+	    CliConsole.prototype.close = function close() {
+	      if (running) {
+	        running = false;
+	        removeEventHandlers();
+	        timer.stop();
+	        if (self.closeHandler) self.closeHandler();
+	      }
+	    }
+	    
+	    /**
+	     * @summary **Clear the screen**
+	     */    
+	    CliConsole.prototype.clearScreen = inNode ? 
+	      function clearScreen() {
+	        if (self.mute) return;
+	        activity = true;
+	        var windowSize = process.stdout.getWindowSize();
+	        var linesPerScreen = windowSize[1];
+	        var lineFeeds = _.repeat('\n', linesPerScreen);
+	        cursor.write(lineFeeds);
+	        cursor.eraseData(2);
+	        cursor.goto(1, 1);
+	      }
+	    : /* istanbul ignore next */
+	      function clearScreen() {
+	        if (self.mute) return;
+	        activity = true;
+	        consoleOutput.innerHTML = '';
+	      };
+
+	    /**
+	     * @summary **Output some text info to the consolee**
+	     * @description
+	     * Outputs normal text to the console. On node clients the pending
+	     * input line is erased and restored later when input continues.
+	     * On a browser this just adds text to the output.
+	     * @param {string} the line to output to the console.
+	     */    
+	    CliConsole.prototype.write = inNode ? 
+	      function write(text) {
+	        if (promptVisible) {
+	          setLineOffset(0);
+	          /* istanbul ignore else */ 
+	          if (!self.mute) {
+	            cursor.eraseLine();
+	            cursor.hide();
+	          }
+	        }
+	        out(text);
+	        partialOutputLine = false;
+	        if (text.length > 0) {
+	          var ch = text[text.length - 1];
+	          partialOutputLine = (ch !== '\r' && ch !== '\n');
+	        }
+	        promptVisible = false;
+	        return self;
+	      }
+	    : /* istanbul ignore next */
+	      function write(text) {
+	        out(text);
+	      };
+	    
+	    /**
+	     * @summary **Output a text line to the consolee**
+	     * @description
+	     * Outputs a normal text line to the console.
+	     * @param {string} the line to output to the console.
+	     */    
+	    CliConsole.prototype.writeLine = inNode ? 
+	      function writeLine(textLine) {
+	        activity = true;
+	        self.write(textLine);
+	        out(NL);
+	        partialOutputLine = false;
+	        return self
+	      }
+	    : /* istanbul ignore next */
+	      function writeLine(textLine) {
+	        activity = true;
+	        self.write(textLine + '\n');
+	        return self
+	      };
+
+	    /**
+	     * @summary **Establish the line handler**
+	     * @description
+	     * There is only one line handler at a time. Each new handler
+	     * pushes the previous one on a stack. If a handler returns true,
+	     * then it will continue to accept new messages. A handler returns
+	     * false to indicate that it the previous handler should accept the
+	     * next input. Return the input string (or a different one) to pop
+	     * to the prior handler and provide it with the string.
+	     * @param {function} handler the function(text)
+	     * @param {string} prompt a new prompt to use (optional).
+	     * @param {bool} password true for password entry mode (optional)
+	     */    
+	    CliConsole.prototype.setLineHandler =
+	    function setLineHandler(handler, prompt, passwordMode) {
+	      activity = true;
+	      // Use the previous prompt if one is not supplied.
+	      if (!prompt) prompt = self.handler.prompt;
+	      handlers.push(self.handler);
+	      self.handler = {
+	        func: handler,
+	        prompt: prompt,
+	        pwdMode: passwordMode
+	      };
+	      /* istanbul ignore else */
+	      if (inNode) {
+	        showCurrentLine(true);
+	      }
+	      else {
+	        consolePrompt.innerHTML = self.handler.prompt;
+	        consoleInput.type = self.handler.pwdMode ? 'password' : 'text';
+	      }
+	    }
+	    
+	    /**
+	     * @summary **Establish a line completer**
+	     * @description
+	     * When present the line completer provide info for tab completion.
+	     * @param {function} completer the tab completion function
+	     */    
+	    CliConsole.prototype.setCompleter = function setCompleter(completer) {
+	      self.completer = completer;
+	    }
+	    
+	    /**
+	     * @summary Ask a question from the console
+	     * @description
+	     * Asks for a response from the user. If an object is supplied this
+	     * returns a promise to the object being modified, otherwise it returns
+	     * a promise to the answer string.
+	     * Blank lines return an error.
+	     * If the passed in object contains an initialized field of
+	     * then no question is asked and the promise is satisfied immediately.
+	     * @param {string} query the text question to ask.
+	     * @param {Object} obj the optional object to be modified
+	     * @param {string} field the field name in the obj to be set
+	     * @param {bool} isPwd true if password blanking is to be used.
+	     * @returns {Q} returns Promise(Object|string), the `obj` or the answer string
+	     */
+	    CliConsole.prototype.ask = function ask (query, obj, field, isPwd) {
+	      if (obj && obj.field) {
+	        return qq(obj);
+	      }
+	      var qD = qq.defer();
+	      self.setLineHandler(function(answer) {
+	        if (answer) {
+	          if (obj) {
+	            obj[field] = answer;
+	            qD.resolve(obj);
+	          }
+	          else {
+	            qD.resolve(answer);
+	          }
+	        }
+	        else {
+	          qD.reject(new Error('Blank line not allowed. Entry abandoned'));
+	        }
+	        return false; // Only ask once.
+	      }, query, isPwd === true ? true : false);
+	      return qD.promise;
+	    }
+
+	    /**
+	     * @summary **Spoof a line into input**
+	     * @description
+	     * The line of text is pushed to the console just as if it was entered
+	     * by a human being. This is usually used by test routines but can
+	     * be used by apps for sneaky purposes.
+	     * @param {string} text the line to spoof.
+	     */    
+	    CliConsole.prototype.spoofInput = function spoofInput(text) {
+	      var line = makeLine(text);
+	      pendingInputs.push(line);
+	      out('--- Spoofed>' + text + NL);
+	    }
+
+	    /**
+	     * @summary **Spoof text chars into input**
+	     * @description
+	     * If a string is supplied, it is treated as a line and is spoofed as
+	     * the chars in the string followed by ENTER. A number is treated as
+	     * a single Unicode character value, and an array must be an array
+	     * of keycode values that represents a single action (such as a VT100
+	     * escape sequence).
+	     * @param {string|array|number} text the text to spoof.
+	     */    
+	    CliConsole.prototype.spoofInputChars = function spoofInputChars(text) {
+	      var chars = [];
+	      if (_.isString(text)) {
+	        var inputLine = text + CR;
+	        for (var i = 0; i < inputLine.length; i++) {
+	          var cc = inputLine.charCodeAt(i);
+	          pushRawKey(String.fromCharCode(cc));
+	        }
+	        return;
+	      }
+	      else if (_.isArray(text)) {
+	        chars = text;
+	      }
+	      else {
+	        chars.push(text);
+	      }
+	      var rc = '';
+	      chars.forEach(function (cc) { rc += String.fromCharCode(cc); });
+	      pushRawKey(rc);
+	    }
+	    
+	    /**
+	     * @summary **Call a function when a pause has occurred**
+	     * @description
+	     * Test routines that need to answer questions like password entry
+	     * must wait for the question to be asked.  This lets the test
+	     * pause until the output is idle for a few ms.
+	     * @param {number} ms optional pause time in ms (default 100).
+	     * @param {function} handler the handler to call after the pause.
+	     */    
+	    CliConsole.prototype.onPause = function onPause(ms, func) {
+	      var t = 100;
+	      var f = func;
+	      if (_.isNumber(ms)) {
+	        t = ms;
+	        f = func;
+	      }
+	      else {
+	        f = ms;
+	      }
+	      self.pauseTimer = new EggTimer(t).onDing(function() {
+	        self.pauseTimer = null;
+	        f();
+	      });
+	    }
+
+	    /**
+	     * @summary **Set up an output idle timer**
+	     * @description
+	     * Test routines can supply an EggTimer that will be reset on every
+	     * keystroke or output, but will ding when nothing happens for a
+	     * while.
+	     * @param {EggTimer} idleTimer the timer
+	     */    
+	    CliConsole.prototype.setIdleTimer = function setIdleTimer(idleTimer) {
+	      self.idleTimer = idleTimer;
+	    }
+
+	    //------------------------------------------------------------------------
+	    //                            Event Handlers
+	    //------------------------------------------------------------------------
+
+	    // This eggTimer is the core handler for interaction with the user.
+	    // Whenever output stops for a while, this timer handles any keys
+	    // that the user has managed to type in the meantime.
+	    timer.onDing(function processPendingInputs() {
+	try {
+	      // In a browser client, the inputs are pushed directly into the
+	      // pendingInputs list so no keys ever end up in the keyQueue.
+	      var n = keyQueue.length;
+	      var keys = keyQueue;
+	      keyQueue = [];
+	      if (n > 0) {
+	        keys.forEach(function handleKey(key) {
+	          if (key.keyCode) {
+	            handleKeyEvent(key.keyCode);
+	          }
+	          else if (key.visibleChar) {
+	            handleVisibleInputChar(key.visibleChar);
+	          }
+	          /* istanbul ignore next */
+	          else if (key.ctrlCode) {
+	console.log('********** Unhandled key code', key);                        
+	            var e = 'Unhandled key code:' + hexString(key.ctrlCode);
+	            self.error = new Error(e);
+	            keyQueue = [];
+	          }
+	          /* istanbul ignore next */
+	          else {
+	console.log('********** Unrecognized key event', key);            
+	            var ee = 'Unrecognized key event' + JSON.stringify(key);
+	            self.error = new Error(ee);
+	            keyQueue = [];
+	          }
+	        });
+	      }
+	      else {
+	        // Prompt the user for more input.
+	        handlePendingInput();
+	        updateCurrentLine();
+	      }
+
+	      // The keyboard is more peppy when there are pending keystrokes.
+	      timer.reset();
+	      /* istanbul ignore if */
+	      if (inBrowser & activity) {
+	        var alignToTop = false;
+	        consoleInput.scrollIntoView(alignToTop);
+	        activity = false;
+	      }
+	}
+	catch (e) {
+	  /* istanbul ignore next */
+	  console.log('********** timer.onDing', e.stack);
+	}      
+	    });
+
+	    // Character input just saves the characters for later.
+	    // Control C is the only exception - by default, it will kill the
+	    // process graveyard dead.
+	    function pushRawKey(cch) {
+	      if (cch !== null) {
+	        var k = getKeyCode(cch);
+	        if (k) {
+	          if (k === 'ctrlC') {
+	            if (self.closeHandler) {
+	              self.closeHandler();
+	            }
+	            self.writeLine('[' + k + '] - Exit');
+	            process.exit();
+	          }
+	          keyQueue.push({ keyCode: k });
+	        }
+	        else {
+	          if (cch.length > 1) {
+	            keyQueue.push({ ctrlCode: cch });
+	          }
+	          else {
+	            if (isPrintableAscii(cch)){
+	              keyQueue.push({ visibleChar: cch });
+	            }
+	            else {
+	              keyQueue.push({ ctrlCode: cch });
+	            }
+	          }
+	        }
+	      }
+
+	      timer.forceDing();
+	    }
+
+	    function inReadableHandler() {
+	      var cch = inStream.read();
+	      pushRawKey(cch);
+	    }
+	    
+	    function inCloseHandler() {
+	      self.close();
+	      console.log('---- END ----');
+	      self.error = new Error('The console is now endeed');
+	    }  
+
+	    function inErrorHandler(e) {
+	      self.close();
+	      console.log('---- ERROR:', e.stack);
+	      self.error = e;
+	    }
+
+	    //------------------------------------------------------------------------
+	    // Note that on Windows, resizing the window by dragging the size
+	    // handle around never changes the column count (since it can scroll)
+	    // but strangely does change the row count to match the number of
+	    // visible rows.
+	    /* istanbul ignore next */
+	    function resizeHandler () {
+	      console.log('- screen size has changed to ',
+	         outStream.columns + ' columns by ' + outStream.rows + ' rows.');
+	      self.displayRows = outStream.rows;
+	      self.displayCols = outStream.columns;
+	    }
+
+	    //------------------------------------------------------------------------
+	    // Install or remove the list of event handlers.
+	    function installEventHandlers(remove) {
+	      self.eventHandlers.forEach(function (handler) {
+	        if (remove) {
+	          handler.obj.removeListener(handler.name, handler.func);
+	        }
+	        else {
+	          handler.obj.on(handler.name, handler.func);
+	        }
+	      });
+	    }
+	    
+	    function removeEventHandlers() {
+	      installEventHandlers(true);
+	      self.eventHandlers = [];
+	    }
+	    
+	    //------------------- Browser client event handlers -------------------
+	    // TODO: Add a removeEventListener to get rid of these on close.
+	    
+	    /* istanbul ignore if */
+	    if (inBrowser) {
+	      // TODO: Switch to using addEventListener.
+	      consoleInput.onchange = function () {
+	        enter();
+	        timer.forceDing();
+	      };
+
+	      // TODO: Switch this to use event.key instead of 'which'.
+	      // TODO: Switch to using addEventListener.
+	      consoleInput.onkeydown = function (event) {
+	        var handled = false;
+	        var keynum = event.which;
+	        if (keynum === 13) { // Enter
+	          enter();
+	          timer.forceDing();
+	          handled = true;
+	        }
+	        else if (keynum === 27) { // Escape
+	          consoleInput.value = '';
+	          handled = true;
+	        }
+	        else if (keynum === 38) { // Arrow Up
+	          previousSavedLine();
+	          consoleInput.value = currentInput.textLine;
+	          handled = true;
+	        }
+	        else if (keynum === 40) { // Arrow Down
+	          nextSavedLine();
+	          consoleInput.value = currentInput.textLine;
+	          handled = true;
+	        }
+
+	        if (handled) {
+	          event.preventDefault();
+	          event.stopPropagation();
+	        }
+	      };
+
+	    } // end Browser specific event handlers.      
+	  }
+
+	  CliConsole.KeyCodes = KeyCodes;
+	  return CliConsole;
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
+
+/***/ },
+/* 35 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview A single commands along its handler and documentation
+	 * @module core/Cmd
+	 */ 
+	module.exports = function registerCliCommands(mm) {
+
+	  /**
+	   * @summary **A single CLI commands**
+	   * @description
+	   * Declares a command, its parameters help information and a
+	   * function for handling the command.
+	   * @constructor
+	   * @param {string} keywordFormat a command keyword followed by optional format
+	   * @param {string} desc the short (one line) command description
+	   * @param {string} help the multiline help message if available
+	   * @returns {Cmd} the command
+	   */  
+	  var Cmd = function cmdCtor(keywordFormat, desc, help) {
+	    var cmd = this;
+	    var format = keywordFormat.split(' ');
+	    var keyword = format.shift();
+	    cmd.keyword = keyword;
+	    cmd.format = format;
+	    cmd.handler = null;
+	    cmd.desc = desc;
+	    cmd.help = Array.prototype.slice.call(arguments, 2).join(' ');
+	    cmd.aliases = [];
+	    cmd.variants = [];
+	    cmd.argEnums = {};
+	    
+	    // all functions are members in the closure.
+
+	    /**
+	     * @summary **Restrict input arguments to an enum**
+	     * @description
+	     * An alias is an alternate keyword for execution of the command.
+	     * @param {string} argName keyword a command keyword
+	     * @param {string} values the set of values separated by |
+	     * @returns {Cmd} the parent command for chaining
+	     */  
+	    cmd.argEnum = function argEnum(argName, values) {
+	      cmd.argEnums[argName] = values;
+	      return cmd;
+	    }
+
+	    /**
+	     * @summary **Declare an alias to a command**
+	     * @description
+	     * An alias is an alternate keyword for execution of the command.
+	     * @param {string} keyword a command keyword
+	     * @returns {Cmd} the parent command for chaining
+	     */  
+	    cmd.alias = function alias(keyword) {
+	      cmd.aliases.push(keyword);
+	      return cmd;
+	    }
+
+	    /**
+	     * @summary **Make a command available only to administrators**
+	     * @description
+	     * An admin command is not visible, nor is it executable by a user who
+	     * is does not have 'admnistrator: true` in the cs.userConfig. This is more
+	     * about preventing stupid mistakes than security.
+	     * @returns {Cmd} the parent command for chaining
+	     */  
+	    cmd.setAdmin = function setAdmin() {
+	      cmd.adminRequired = true;
+	      return cmd;
+	    }
+
+	    /**
+	     * @summary **Set a timeout in seconds for the command**
+	     * @description
+	     * Commands will normally timeout after a time fixed by the CmdSet.
+	     * Provide a timeout only if this command should be allowed to run
+	     * longer than the usual time.
+	     * @param {number} timeoutSeconds a time in seconds
+	     * @returns {Cmd} the parent command for chaining
+	     */  
+	    cmd.setTimeout = function setTimeout(timeoutSeconds) {
+	      cmd.timeoutSec = timeoutSeconds;
+	      return cmd;
+	    }
+
+	    /**
+	     * @summary **Declare a variant to a single CLI commands**
+	     * @description
+	     * A variant has different behavior than the parent command, but uses
+	     * the same handler function. The handler function determines what to
+	     * do for the variant by checking its `context.keyword`
+	     * @param {string} keywordFormat a command keyword followed by optional format
+	     * @param {string} desc the short (one line) command description
+	     * @param {string} help the multiline help message if available
+	     * @returns {Cmd} the parent command for chaining
+	     */  
+	    cmd.variant = function variant(keywordFormat, desc, help) {
+	      var fullhelp = Array.prototype.slice.call(arguments, 2).join(' ');
+	      var newcmd = new Cmd(keywordFormat, desc, fullhelp);
+	      cmd.variants.push(newcmd);
+	      return cmd;
+	    }
+
+	    /**
+	     * @summary **Define the handler for a command**
+	     * @description
+	     * The handler is called when a matching text command has been supplied 
+	     * to the owning `CmdSet` via console entry or other source.
+	     * The handler is supplied a `context` object. 
+	     * Handlers can be immediate or promise based async.  If immediate, the
+	     * handler should return a truthy value reqardess of whether it 
+	     * succeeds or not. Return a new Error on false.
+	     * When async, return a promise to the result. Handlers are always
+	     * evaluated in execution order, so when a promise is returned, all other
+	     * command evaluations will be queued until the command has completed.
+	     * @param {function(context)} handler the handler function
+	     * @returns {Cmd} the command for chaining.
+	     */  
+	    cmd.setHandler = function setHandler(handler) {
+	      cmd.handler = handler;
+	      return cmd;
+	    }
+	  }
+
+	  return Cmd;
+	}
+
+
+/***/ },
+/* 36 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview A set of commands along with handlers and documentation
+	 * @module core/CmdSet
+	 */ 
+	module.exports = function registerCliCommands(mm) {
+	  var check = mm.check;
+	  var _     = check(mm._);
+	  var qq    = check(mm.Q);
+	  var Cmd   = check(mm.core.Cmd);
+
+	  /**
+	   * @summary **A set of CLI commands**
+	   * @description
+	   * Declares command keywords, parameters, help information and a
+	   * function for handling the command.
+	   * @constructor
+	   * @returns {CmdSet} the set of commands.
+	   */  
+	  var CmdSet = function cmdSetCtor() {
+	    var self = this;
+	    self.initialized = false;
+	    self.basecmds = [];
+	    self.subsets = {};
+	    self.keywords = [];
+	    self.cmds = {};
+	    self.timeoutSec = 30;
+	    self.helpPrefix = '';
+	    return self;
+	  }
+
+	  /**
+	   * @summary **set the title for the set**
+	   * @description
+	   * A title is used in help messages.
+	   * @param {string} title text to add to start of the help summary
+	   * @returns {CmdSet} the CmdSet for chaining.
+	   */    
+	  CmdSet.prototype.setTitle = function setTitle(title) {
+	    var self = this;
+	    self.title = title;
+	    return self;
+	  }
+
+	  /**
+	   * @summary **add a footer to the help summary**
+	   * @param {string} footer the text to add to the end of the help summary
+	   * @returns {CmdSet} the CmdSet for chaining.
+	   */    
+	  CmdSet.prototype.helpFooter = function helpFooter(footer) {
+	    var self = this;
+	    self.footer = footer;
+	    return self;
+	  }
+
+	  /**
+	   * @summary **add a special footer to the help summary**
+	   * @description
+	   * Declares a footer for the help summary that is only shown when logged
+	   * in as an administrator.
+	   * @param {string} footer the text to add to the end of the help summary
+	   * @returns {CmdSet} the CmdSet for chaining.
+	   */    
+	  CmdSet.prototype.adminHelpFooter = function adminHelpFooter(footer) {
+	    var self = this;
+	    self.adminFooter = footer;
+	    return self;
+	  }
+
+	  /**
+	   * @summary **initialize the command set**
+	   * @returns {CmdSet} the CmdSet.
+	   */    
+	  CmdSet.prototype.done = function initialize() {
+	    var self = this;
+	    function setCmd(keyword, base) {
+	      var word = keyword.toLowerCase();
+	      self.keywords.push(word);
+	      self.cmds[word] = base;
+	    }
+	    
+	    function registerCmd(cmd, base) {
+	      setCmd(cmd.keyword, base);
+	      cmd.aliases.forEach(function(alias) { setCmd(alias, base); });
+	      cmd.variants.forEach(function(variant) {
+	        registerCmd(variant, base);
+	      });
+	    }
+	    if (!self.initialized) {
+	      self.basecmds.forEach(function(basecmd) {
+	        registerCmd(basecmd, basecmd);
+	      });
+	    }
+	    self.initialized = true;
+	    if (!self.cmds.help) {
+	      self.registerHelpCmd();
+	    }
+	    return self;
+	  }
+	  
+	  /**
+	   * @summary **add a `help` command to the set**
+	   * @description
+	   * If there is no `help` command declared before the set initialization
+	   * is done, then this creates a default version of one.
+	   * @returns {CmdSet} the CmdSet for chaining.
+	   */    
+	  CmdSet.prototype.registerHelpCmd = function registerHelpCmd() {
+	    var self = this;
+	    function helpCmdHandler(context, args) {
+	      try { 
+	        if (args.commandName) return self.helpCmdDetail(context, args);
+	        return self.helpCmdSummary(context, args);
+	      } catch (e) { mm.log.error('helpCmdHandler', e.stack); }
+	    }
+
+	    var helpCmd = new Cmd('help [commandName]',
+	        'Display available commands')
+	       .setHandler(helpCmdHandler);
+	    self.cmds.help = helpCmd;
+	    return self;
+	  }
+
+	  // List all of the available commands in this set.  
+	  CmdSet.prototype.helpCmdSummary = function helpCmdSummary(context, args) {
+	    var self = context.set;
+	    var isAdmin = context.cs.userConfig.administrator;
+	    var prefix = self.helpPrefix;
+	    if (_.isString(self.title)) {
+	      mm.log('-----', self.title, '-----');
+	      mm.log();
+	    }
+	    var sortedCmds = [];
+	    self.basecmds.forEach(function(basecmd) {
+	      // Show admin commands only to an administrator.
+	      if ((!basecmd.adminRequired) || isAdmin) {
+	        sortedCmds.push(basecmd);
+	        basecmd.variants.forEach(function(variant) {
+	          sortedCmds.push(variant);
+	        });
+	      }
+	    });
+	    sortedCmds = _.sortBy(sortedCmds, 'keyword');
+	    sortedCmds.forEach(function (cmd) {
+	      var cmdName = prefix + cmd.keyword;
+	      var helpLine = _.padRight(cmdName, 9) + ': ' + cmd.desc;
+	      mm.log(helpLine);
+	    });
+	    if (_.size(self.subsets) > 0) {
+	      mm.log();
+	      _.forEach(self.subsets, function (subset, key) {
+	        var sp = key.length > 1 ? ' ' : '';
+	        mm.log(key + sp + '[command] : ' + subset.title);
+	      });
+	    }
+	    
+	    if (self.adminFooter && isAdmin) {
+	      mm.log(self.adminFooter);
+	    }
+	    if (self.footer) {
+	      mm.log(self.footer);
+	    }
+	    return true;
+	  }
+
+	  CmdSet.prototype.helpCmdDetail = function helpCmdDetail(context, args) {
+	    var self = context.set;
+	    var prefix = self.helpPrefix;
+	    var cmdName = args.commandName.toLowerCase();
+	    var cmd = self.cmds[cmdName];
+	    if (!cmd && prefix && _.startsWith(cmdName, prefix)) {
+	      cmdName = cmdName.substr(prefix.length);
+	      cmd = self.cmds[cmdName];
+	    }
+	    if (cmd) {
+	      cmdName = prefix + cmd.keyword;
+	      var format = cmd.format.join(' ');
+	      mm.log('Command:', cmdName, format, ':', cmd.desc);
+	      // Show the acceptable enumerated argument values.
+	      if (_.size(cmd.argEnums) > 0) {
+	        _.forEach(cmd.argEnums, function (values, key) {
+	          mm.log('   Argument "' + key + '" are in [' + values + ']');
+	        });
+	      }
+	      if (cmd.aliases.length > 0) {
+	        var aliasText = '   Alias' + (cmd.aliases.length > 1 ? 'es' : '');
+	        aliasText = aliasText + ': ' + cmd.aliases.join(', ');
+	        mm.log(aliasText);
+	      }
+	      if (cmd.help) {
+	        mm.log('  ', cmd.help);
+	      }
+	      return true;    
+	    }
+	    else {
+	      var e = new Error('No such command: "' + args.commandName + '"'); 
+	      mm.log.error(e);
+	      return true; // The help command has succeeded.
+	    }
+	  }
+	  
+	  /**
+	   * @summary **add a command subset to the set**
+	   * @description
+	   * A command subset is a set of commands that require a prefix on
+	   * the command line. If the prefix is a single character then no
+	   * space is required between it and the sub-command keyword.
+	   * Subsets are displayed with their own help (i.e. [prefix] help [cmd]).
+	   * @param {string} prefix prefix to select the subset.
+	   * @param {CmdSet} cmdSet command subset to add to this set.
+	   * @returns {CmdSet} the current CmdSet being added to.
+	   */    
+	  CmdSet.prototype.addSubset = function addSubset(prefix, cmdSet) {
+	    var self = this;
+	    self.subsets[prefix] = cmdSet;
+	    /* istanbul ignore next */ // Tested independently.
+	    cmdSet.helpPrefix = prefix + (prefix.length > 1 ? ' ' : '');
+	    return self;
+	  }
+
+	  /**
+	   * @summary **set the default handler**
+	   * @description
+	   * The default handler is called when the command does not otherwise
+	   * match any commands in the set or its subsets. The context is passed
+	   * (which contains the exact `text` for the text that did not match.
+	   * @param {function} handler the command handler.
+	   * @returns {CmdSet} the current CmdSet being added to.
+	   */    
+	  CmdSet.prototype.defaultHandler = function defaultHandler(handler) {
+	    var self = this;
+	    self.defaultHandler = handler;
+	    return self;
+	  }
+
+	  /**
+	   * @summary **add an existing command to the set**
+	   * @param {Cmd} cmd existing cmd to add to this set.
+	   * @returns {Cmd} the Cmd being added.
+	   */    
+	  CmdSet.prototype.add = function addCommand(cmd) {
+	    var self = this;
+	    self.basecmds.push(cmd);
+	    return cmd;
+	  }
+
+	  /**
+	   * @summary **create a new command and add it to the set**
+	   * @description
+	   * A helper method for `cmd=new Cmd(), cmdSet.add(cmd)`.
+	   * @param {string} keywordFormat a command keyword followed by optional format
+	   * @param {string} desc the short (one line) command description
+	   * @param {string} help the multiline help message if available
+	   * @returns {Cmd} the command
+	   */    
+	  CmdSet.prototype.cmd = function newCommand(keywordFormat, desc, help) {
+	    var self = this;
+	    var helpArg = Array.prototype.slice.call(arguments, 2).join(' ');
+	    var cmd = new Cmd(keywordFormat, desc, helpArg);
+	    self.add(cmd);
+	    return cmd;
+	  }
+
+	  /**
+	   * @summary **do a command in this set**
+	   * @description
+	   * A command line is parsed and used to populate the context for a 
+	   * matching keyword.
+	   * @param {string} the single or multiline command
+	   * @param {ClientSession} the current client session
+	   * @returns {Q(result)} Promise to the result of the handler or Q(false).
+	   */    
+	  CmdSet.prototype.doCmd = function doCmd(cmdText, cs) {
+	    var self = this;
+	    /* istanbul ignore if */ // Tested independently.
+	    if (!self.initialized) self.done();
+	    var args = mm.util.removeWhitespace(cmdText).split(' ');
+	    var keyword = args[0].toLowerCase();
+	    var cmd = self.cmds[keyword];
+	    var arg1 = args.length > 1 ? args[1] : '';
+	    var arg2 = args.length > 2 ? args[2] : '';
+	    var arg3 = args.length > 3 ? args[3] : '';
+	    
+	    // Check for a matching command subset prefix.
+	    if (!cmd && _.size(self.subsets) > 0) {
+	      for (var prefix in self.subsets) {
+	        if (_.startsWith(keyword, prefix)) {
+	          var subset = self.subsets[prefix];
+	          var subCmdText = cmdText.substr(prefix.length);
+	          // Handle special subcmd help command format: "[prefix]? [command]"
+	          if (_.startsWith(subCmdText, '?')) {
+	            subCmdText = 'help ' + subCmdText.substring(1);
+	          }
+	          return subset.doCmd(subCmdText, cs);
+	        }
+	      }
+	    }
+
+	    // Handle special help command format: "[command] -h / -?"
+	    if (arg1 === '-h' || arg1 === '-?' ) {
+	      cmdText = 'help ' + keyword;
+	      args = cmdText.split(' ');
+	      arg1 = keyword;
+	      keyword = 'help';
+	      cmd = self.cmds[keyword];
+	    }
+	    
+	    // Put QQ pending handling here xxxxxxxxxxxx
+	    // Sequence the commands.
+
+	    var handler = self.defaultHandler;
+	    var timeout = self.timeoutSec * 1000;
+	    if (!cmd && !handler) {
+	      return qq(false);
+	    }
+
+	    var context = {
+	      keyword: keyword,
+	      args: args,
+	      arg1: arg1,
+	      arg2: arg2,
+	      arg3: arg3,
+	      text: cmdText,
+	      set: self,
+	      cs: cs
+	    }
+
+	    if (cmd) {
+	      if (cmd.adminRequired) {
+	        /* istanbul ignore if */ // Tested independently.
+	        if (!cs.userConfig.administrator) {
+	          var ea = 'You must be an administrator to do this.';
+	          return qq.reject(new Error(ea));
+	        }
+	      }
+	      /* istanbul ignore next */ // Tested independently.
+	      timeout = (cmd.timeoutSec ? cmd.timeoutSec * 1000 : timeout);
+	      // When a format is supplied, check the arguments against it and
+	      // build a populated args object.
+	      var oargs = {};
+	      var remainderIsArray = false;
+	      if (cmd.format.length > 0) {
+	        var i = 0;
+	        var fargs = cmd.format;
+	        for (var fargi in fargs) {
+	          i++;
+	          var farg = fargs[fargi];
+	          /* istanbul ignore if */ // Tested independently.
+	          if (remainderIsArray) return;
+	          var arg = args[i];
+	          var optional = _.startsWith(farg, '['); 
+	          if (optional) farg = farg.substring(1, farg.length - 1);
+	          var array = _.endsWith(farg, '()');
+	          if (array) {
+	            remainderIsArray = true;
+	            farg = farg.substring(0, farg.length - 2);
+	            var arrayArg = _.slice(args, i);
+	            oargs[farg] = arrayArg;
+	            if (!optional && arrayArg.length === 0) {
+	              var e1 = cmd.keyword + ' requires at least one "' +
+	                      farg + '" argument';
+	              return qq.reject(new Error(e1));
+	            }
+	          }
+	          else {
+	            oargs[farg] = ''; // Create blanks for each argument.
+	            /* istanbul ignore if */ // Tested independently.
+	            if (!optional && !arg) {
+	              var e2 = cmd.keyword + ' requires a "' + farg + '" argument';
+	              return qq.reject(new Error(e2));
+	            }
+	            if (arg) {
+	              var argEnum = cmd.argEnums[farg];
+	              if (argEnum) {
+	                var allowedVals = argEnum.split('|');
+	                /* istanbul ignore if */ // Tested independently.
+	                if (!_.contains(allowedVals, arg)) {
+	                  var e3 = 'Argument "' + farg + '" must be in ' + allowedVals;
+	                  return qq.reject(new Error(e3));
+	                }
+	              }
+	              oargs[farg] = arg; // Add to the object.
+	            }
+	          }
+	        } // next arg
+	        //mm.log('-------- Arguments:', oargs);      
+	      }
+	      
+	      handler = cmd.handler.bind(cmd, context, oargs);
+	    }
+	    else {
+	      handler = self.defaultHandler.bind(self, context);
+	    }
+
+	    var result = qq.fcall(handler);
+	    return result.timeout(timeout, 'The command timed out');
+	      // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx QQ pending .... stuff
+	      // xxxxxxxxxxxxxxx Command Timeout ...stuff
+	  }
+
+	  CmdSet.Cmd = Cmd;
+	  return CmdSet;
+	}
+
+
+/***/ },
+/* 37 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * @fileOverview mmath math function evaluator.
+	 * @module core/mmath
+	 * @description
+	 * mmath wrappers the mathjs package to provide mmeddle specific
+	 *  typing, to return symbolic expressions whenever an function is not yet
+	 *  resolved to a constant value and to perform unit conversions.
+	 * @credits
+	 * mmath makes extensive use of the truly excellent mathjs package by 
+	 *   Jos de Jong <wjosdejong@gmail.com> (https://github.com/josdejong) for 
+	 *   numerical evaluation, and significant code and ideas from mathjs have
+	 *    been hacked into mmeddle.
+	 */ 
+	'use strict';
+	module.exports = function registerMmath(mm) {
+	  var math = __webpack_require__(72);
+	  var BigNumber = math.bignumber;
+	  var log = mm.check(mm.log);  
+	  var dbg = mm.check(log.debug);
+	  var LOW = mm.check(mm.Logger.Priority.LOW);  
+
+	  math.config({
+	    number: 'bignumber', // Default type of number: 'number' (default) or 'bignumber'
+	    precision: 64        // Number of significant digits for BigNumbers
+	  });  
+
+	  var MMath = (function mMathCtorCtor() {
+	    // Any static data for all mMath goes here.
+	  
+	    var MMath = function mMathCtor() {
+	      var mmath = this;
+	      mmath.E       = { constant: Math.E, 
+	              desc: 'The mathematical constant e. This is Euler\'s number,' +
+	                    'the base of natural logarithms.' };
+	      mmath.LN2     = { constant: Math.LN2, 
+	              desc: 'The natural logarithm of 2' };
+	      mmath.LN10    = { constant: Math.LN10, 
+	              desc: 'The natural logarithm of 10' };
+	      mmath.LOG2E   = { constant: Math.LOG2E, 
+	              desc: 'The base-2 logarithm of e' };
+	      mmath.LOG10E  = { constant: Math.LOG10E, 
+	              desc: 'The base-10 logarithm of e' };
+	      mmath.PI      = { constant: Math.PI, 
+	              desc: 'Pi. This is the ratio of the circumference of a circle ' + 
+	                    'to its diameter' };
+	      mmath.SQRT1_2 = { constant: Math.SQRT1_2, 
+	              desc: 'The square root of 0.5, or, equivalently, one divided by ' +
+	                    'the square root of 2' };
+	      mmath.SQRT2   = { constant: Math.SQRT2, 
+	              desc: 'The square root of 2' };
+	      mmath.abs     = { func: Math.abs, 
+	              desc: 'Returns the absolute value of a number.' };
+	      mmath.acos    = { func: Math.acos, 
+	              desc: 'Returns the arccosine of a number.' };
+	      mmath.asin    = { func: Math.asin, 
+	              desc: 'Returns the arcsine of a number.' };
+	      mmath.atan    = { func: Math.atan, 
+	              desc: 'Returns the arctangent of a number.' };
+	      mmath.atan2   = { func: Math.atan2, 
+	              desc: 'Returns the angle (in radians) from the X axis to a point ' +
+	                    'represented by the supplied y and x coordinates.' }; 
+	      mmath.ceil    = { func: Math.ceil, 
+	              desc: 'Returns the smallest integer that ' +
+	                    'is greater than or equal to the supplied numeric expression.' };
+	      mmath.cos     = { func: Math.cos, 
+	              desc: 'Returns the cosine of a number.' };
+	      mmath.exp     = { func: Math.exp, 
+	              desc: 'Returns e (the base of natural logarithms) raised to a power.' };
+	      mmath.floor   = { func: Math.floor, 
+	              desc: 'Returns the greatest integer that is less than or equal to ' +
+	                    'the supplied numeric expression.' };
+	      mmath.log     = { func: Math.log, 
+	              desc: 'Returns the natural logarithm of a number.' };
+	      mmath.max     = { func: Math.max, 
+	              desc: 'Returns the greater of two supplied numeric expressions.' };
+	      mmath.min     = { func: Math.min, 
+	              desc: 'Returns the lesser of two supplied numbers.' };
+	      mmath.pow     = { func: Math.pow, 
+	              desc: 'Returns the value of a base expression raised to a ' + 
+	                    'specified power.' };
+	      mmath.random  = { func: Math.random, 
+	              desc: 'Returns a pseudorandom number between 0 and 1.' };
+	      mmath.round   = { func: Math.round, 
+	              desc: 'Returns a specified numeric expression rounded to ' + 
+	                    'the nearest integer.' };
+	      mmath.sin     = { func: Math.sin,
+	              desc: 'Returns the sine of a number.' };
+	      mmath.sqrt    = { func: Math.sqrt, 
+	              desc: 'Returns the square root of a number.' };
+	      mmath.tan     = { func: Math.tan, 
+	              desc: 'Returns the tangent of a number.' };
+
+	      // Memoized big number factorial.
+	      var factorial = (function factorialCtor() {
+	        var f = [1, 1];
+	        var i = 2;
+	        return function _factorial (n) {
+	          if (f[n] > 0) return f[n];
+	          var result = f[i-1]; // get the highest memoized result.
+	          for (; i <= n; i++) f[i] = result = result * i;
+	          return result;
+	        }
+	      }())
+
+	      // Memoized simple number factorial.
+	      var bnFactorial = (function bnFactorialCtor() {
+	        var f = [new BigNumber('1'), new BigNumber('1')];
+	        var i = 2;
+	        return function bn_factorial(n)
+	        {
+	          if (typeof f[n] !== 'undefined') return f[n];
+	          var result = f[i-1];
+	          for (; i <= n; i++) f[i] = result = math.multiply(result, i);
+	          return result;
+	        }
+	      }())
+	      
+	      // Takes about 8 iterations to converge on the same result as Math.sin
+	      // with a typical delta under 3E-16.  Note this is a direct implementation
+	      // of the taylor series without optimization.  An intelligent version
+	      // would take advantage of the work done in the prior iteration. Even
+	      // the factorial can be avoided that way.
+	      // sin(x) = x - x^3/3! + x^5/5! - x^7/7! + x^9/9! - ...
+	      mmath.sin.real = function sin(x) {
+	        dbg('- Taylor series version of sine function for (', x, ')', LOW);
+	        function nodd(n) { return (n % 2 === 0) ? 1 : -1 }
+	        function t(x, n) { return Math.pow(x, n) / factorial(n) }
+	        function s(n) { return nodd((n - 1) / 2) }
+	        var result = x;
+	        var lastResult = x;
+	        var n = 1;
+	        var i = 0;
+	        var unchanged = false;
+	        do {
+	          lastResult = result;
+	          n += 2;
+	          i++;
+	          var tn = t(x, n);
+	          result += s(n) * tn;
+	          dbg('--- sin(', x, ') i=', i, 'tn=', tn,
+	              'lastr=', lastResult, 'r=', result, LOW);
+	          unchanged = result === lastResult;
+	        } while (!unchanged);
+	        var msin = Math.sin(x);
+	        dbg('- real.sin(', result, ') Math.sin=', msin,
+	            'delta=', Math.abs(result - msin), LOW);
+	        return result;    
+	      }
+	      
+	      // Takes about 23 iterations to converge on the same result as Math.sin.
+	      // Since decimal inputs are limited to 15 significant digits, the delta
+	      // is less than 10e-14.
+	      // Note this is a direct implementation of the taylor series without
+	      //  optimization.  An intelligent version would take advantage of the 
+	      // work done in the prior iteration. Even the factorial can be avoided.  
+	      // sin(x) = x - x^3/3! + x^5/5! - x^7/7! + x^9/9! - ...
+	      mmath.sin.big = function bn_sin(xin) {
+	        var x = new BigNumber(xin.toString().substring(0, 15));
+	        dbg(
+	            '- Taylor series version of BigNumber sine function for ({0})',
+	            x, LOW);
+	        function nodd(n) { return (n % 2 === 0) ? 1 : -1 }
+	        function s(n) { return nodd((n - 1) / 2) }
+	        function t(x, n) { 
+	          return math.divide(math.pow(x, n), bnFactorial(n));
+	        }
+	        
+	        var result = x;
+	        var lastResult;
+	        var n = 1;
+	        var i = 0;
+	        var unchanged = false;
+	        do {
+	          n += 2;
+	          i++;
+	          lastResult = result;    
+	          var tn = t(x, n);
+	          dbg('--- sin({0}) i={1} tn={2} lastr={3} r={4}',
+	              x, i, tn, lastResult, result, LOW);
+	          if (s(n) < 0) result = math.subtract(result, tn)
+	                   else result = math.add(result, tn);
+	          unchanged = result.equals(lastResult);        
+	        } while (!unchanged);
+	        var msin = Math.sin(xin);
+	        dbg('- big.sin({0}) Math.sin={1} delta={2}', 
+	           result, msin, math.abs(math.subtract(result, msin)),
+	           LOW);
+	        return result;    
+	      }
+	      
+	      mmath.sin.f = mmath.sin.real; // default implementation for real values.
+
+	    } // End of constructor for access to constructor closure.
+
+	    return MMath;
+	  }()); // Run constructor initializer for static creations.
+
+	  return MMath;
+	}  
+
+
+/***/ },
+/* 38 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * @fileOverview Workspace manages the objects available to a session.
+	 * @module core/Workspace
+	 */ 
+	'use strict';
+	module.exports = function registerWorkspace(mm) {
+	  var check       = mm.check;
+	  var _           = mm.check(mm._);
+	  var Enum        = check(mm.obj.Enum);
+	  var log         = check(mm.log);
+	  var Logger      = check(mm.Logger);
+	  var CmdSet      = check(mm.core.CmdSet);
+	  
+	  // fixme - get the settings from mm.
+	  var settings = {}
+	  settings._props = {
+	    numberMode: {
+	      values: new Enum('num|big|imp')
+	    }
+	  };
+	  
+	  var NUMBERMODE = settings._props.numberMode.values;
+	  settings.numberMode = NUMBERMODE.num;
+	  settings.debugMode = false;
+	  settings.glorm = 'fuzzle';
+
+	  /**
+	   * @summary **Create a persistent workspace**
+	   * @description
+	   * A workspace manages the persistent information about what a user is
+	   * working on. It is saved to both browser/client localStorage and to
+	   * server storage when online.
+	   * @constructor
+	   * @param {ClientSession} cs the current client session 
+	   * @returns {Workspacee} the SocketService
+	   */   
+	  var Workspace = (function workspaceCtorCtor() {
+	    // Any static data for all workspaces goes here.
+	  
+	    var Workspace = function workspaceCtor(cs) {
+	      var ws = this;
+	      ws.name = '';
+	      ws.vars = {};
+	      ws.settings = settings;
+	      
+	      /**
+	       * @summary Initialize a ws from a saved JSON object.
+	       * @description
+	       * All fields of the existing ws are replaced by those in the source
+	       * object. Any fields NOT in the source object remain in the ws.
+	       */      
+	      Workspace.prototype.init = function init(wsObj) {
+	        var ws = this;  
+	        _.assign(ws, wsObj);
+	      }
+
+	      Object.defineProperty(ws, 'varsCount', {
+	        get: function () { return _.keys(this.vars).length; },
+	        enumerable: true,
+	        configurable: true
+	      });
+
+	      Workspace.prototype.list = function list(prefixes, detailed) {
+	        var ws = this;  
+	        var n = 0;    
+	        Object.keys(ws.vars).forEach(function (key) {
+	          var matched = true;
+	          if (prefixes && prefixes.length > 0) {
+	            matched = false;
+	            prefixes.forEach( function (prefix) {
+	              prefix = _.trimRight(prefix, '*');
+	              matched = matched || _.startsWith(key, prefix);
+	            });
+	          }
+	          if (matched) {
+	            if (detailed) {
+	              /* istanbul ignore else */  // Tested independently
+	              if (_.isFunction(ws.vars[key].f)) {
+	                log('   ' + key + ' = ' + ws.vars[key].f);
+	              }
+	              else {
+	                // Put quotes around currently unevaluated functions.
+	                log('   ' + key + ' = \'' + ws.vars[key].f +'\'');
+	              }
+	            }
+	            else {
+	              log('   ' + key + ' = ' + ws.vars[key].human);
+	            }
+	            n++;
+	          }
+	        });
+
+	        log('Listed', n, 'variables from workspace.');
+	        return true;
+	      }
+
+	      Workspace.prototype.clear = function clear(variables) {
+	        var ws = this;
+	        /* istanbul ignore if */  // Tested independently
+	        if (!variables || variables.length === 0) {
+	          log('Use "all" to clear all variables, otherwise name the variable.');
+	          return true;
+	        }
+	        if (variables[0] === 'all') {
+	          ws.vars = {};
+	          log('All variables cleared.');
+	          return true;
+	        }
+	        variables.forEach(function (v) {
+	          if (ws.vars[v]) {
+	            delete ws.vars[v];
+	            log('Removed variable: "'+ v + '"');
+	          }
+	          else {
+	            log('Variable "{0}" not found.', v);
+	          }
+	        });
+	        return true;
+	      }
+	        
+	      Workspace.prototype.dotCmdSet = function dotCmdSet() {
+	        var ws = this;      
+	        var cset = new CmdSet().setTitle('Workspace Control Commands');
+	        cset.cmd('big',
+	            'Use \'big\' numbers in computations')
+	            .setHandler(function setBigNumberMode() {
+	               ws.settings.numberMode = NUMBERMODE.big;
+	               log('. Big Numbers mode.');
+	               return true;
+	            });
+	        cset.cmd('num',
+	            'Use \'normal\' numbers in computations')
+	            .setHandler(function setNormalNumberMode() {
+	               ws.settings.numberMode = NUMBERMODE.num;
+	               log('. Normal numbers mode.');
+	               return true;
+	            });
+	        cset.cmd('imp',
+	            'Use \'imp\' for mMeddle implemented numbers in computations')
+	            .setHandler(function setImpNumberMode() {
+	               ws.settings.numberMode = NUMBERMODE.imp;
+	               log('. mMeddle implemented numbers mode.');
+	               return true;
+	            });
+	        cset.cmd('debug [state] [level]',
+	            'Set debugging output modes',
+	            '\'Debug on low\' selects low level debugging (verbose output)')
+	            .argEnum('state', 'on|off|true|false')
+	            .argEnum('level', 'high|low|normal')
+	            .setHandler(function setDebugMode(context, args) {
+	            /* istanbul ignore else */  // Tested independently
+	            if (args.state || args.level) { 
+	              /* istanbul ignore else */  // Tested independently
+	              if (args.state && _.includes(['on', 'true'], args.state)) {
+	                mm.loggers.debugLogger.enable();
+	                ws.settings.debugMode = true;
+	                mm.log('. Debug logging on.');
+	              }
+	              if (args.state && _.includes(['off', 'false'], args.state)) {
+	                mm.loggers.debugLogger.disable();
+	                ws.settings.debugMode = false;
+	                mm.log('. Debug logging off.');
+	              }
+	              if (args.level) {
+	                var mode = args.level.toUpperCase();
+	                var priority = Logger.Priority[mode];
+	                mm.loggers.debugLogger.allowPriority(priority);
+	                mm.loggers.rootLogger.allowPriority(priority);
+	                mm.log('. Debug logging mode is {0}.', mode);
+	              }
+	            }
+	            else {
+	              mm.loggers.debugLogger.disable();
+	              ws.settings.debugMode = false;
+	              mm.log('. Debug logging off.');
+	            }
+	            return true;
+	          });
+	        /* istanbul ignore next */  // Tested independently
+	        cset.cmd('list [obj] [spec]',
+	            'List a server object type',
+	            '\'List user\' shows information about the logged in user\n',
+	            '\'List users\' lists the currently connected users\n',
+	            '\'List ws\' lists the workspaces for this user\n',
+	            'Use [spec] to select a prefix to subset the objects to list.')
+	            .argEnum('obj', 'user|users|ws')
+	            .setHandler(function listObj(context, args) {
+	              if (args.obj === 'users') {
+	                return cs.listUserSessions()
+	                .then(function (sessionEntries) {
+	                  mm.log(sessionEntries);
+	                  return true;
+	                });
+	              }
+	              else if (args.obj === 'user') {
+	                if (args.spec) {
+	                  var userName = args.spec;
+	                  return cs.getUser(userName)
+	                  .then(function (users) {
+	                    if (users.length === 0) {
+	                      mm.log('- User matching "{0}" not found', userName);
+	                    }
+	                    else {
+	                      users.forEach(function (user) {
+	                        //mm.log('- User: ', user);
+	                        mm.log('- "{0}" is {1} {2}  email:{3}', 
+	                            user.name,
+	                            user.firstName, user.lastName, user.email);
+	                        
+	                      });
+	                    }
+	                    return true;
+	                  });
+	                }
+	                else {
+	                    mm.log('- This User: ', cs.user);
+	                    if (cs.loggedIn) {
+	                      if (cs.loggedIn.name === cs.user.name) {
+	                        mm.log('- Logged in.');
+	                      }
+	                      else {
+	                        mm.log.warn('- But logged in as :', 
+	                          cs.loggedIn.name);
+	                      }
+	                    }
+	                    else {
+	                      mm.log('- Not logged in.');
+	                    }
+	                }
+	              }
+	              else {
+	                mm.log('- List {0} * NOT IMPLEMENTED *', args.obj);
+	              }
+	              return true;
+	            });
+	        /* istanbul ignore next */  // Tested independently            
+	        cset.cmd('deleteUser',
+	            'Delete the current user')
+	            .setHandler(function delUser() {
+	              return cs.userDelete()
+	              .then(function (msg) {
+	                mm.log(msg);
+	                return true;
+	              },
+	              function (err) {
+	                mm.log(err);
+	                return true;
+	              });
+	            });
+	        /* istanbul ignore next */  // Tested independently
+	        cset.cmd('syncDbToFs [collection]',
+	            'Synchronize the database to the file system')
+	            .setAdmin()
+	            .setHandler(function syncDbToFs() {
+	               mm.log('. syncDbToFs * NOT IMPLEMENTED *');
+	               return true;
+	            });
+	        /* istanbul ignore next */  // Tested independently
+	        cset.cmd('syncFsToDb [collection]',
+	            'Synchronize the file sysem storage area to the mongo database')
+	            .setAdmin()
+	            .setHandler(function syncFsToDb() {
+	               mm.log('. syncFsToDb * NOT IMPLEMENTED *');
+	               return true;
+	            });
+	        /* istanbul ignore next */  // Tested independently
+	        cset.cmd('reconnect',
+	            'Reconnect to the server')
+	            .setHandler(function reconnect() {
+	              cs.mmc.socket_reconnect();
+	              return true;
+	            });
+	        cset.done();
+	        return cset;
+	      }
+	    } // End of constructor for access to constructor closure.
+
+	    return Workspace;
+	  }()); // Run constructor initializer for static creations.
+
+	  return Workspace;
+	}
+
+/***/ },
+/* 39 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * @fileOverview Parser text mode math parser and command handler.
+	 * @module core/Parser
+	 */ 
+	'use strict';
+	module.exports = function registerLexer(mm) {
+	  var check      = mm.check;
+	  var _          = check(mm._);
+	  var log        = check(mm.log);
+	  var dbg        = check(log.debug);
+	  var LOW = mm.check(mm.Logger.Priority.LOW);  
+
+	  // The worlds simplest mmath parser.
+	  var Parser = (function parserCtorCtor() {
+	    // Any static data for the parser goes here.
+	  
+	    var Parser = function parserCtor(cs, ws, mmath) {
+	      var self = this;
+	      self.ws = check(ws);       // Make the ws and mmath available from
+	      self.mmath = check(mmath); // outside the closure for plugins.
+	      self.cs = check(cs); 
+	      self.settings = check(ws.settings);
+	      Object.keys(ws.vars).forEach(
+	        /* istanbul ignore next */ // Tested independently.
+	        function (key) {
+	            ws.vars[key].f = evalFuncStr(ws.vars[key].f);
+	      });
+
+	      /* istanbul ignore next */ // Tested independently.
+	      function evalFuncStr(func) {
+	        // When a workspace is saved to storage all functions are converted
+	        // to strings. They are reevaluated to functions the first time
+	        // an attempt is made to use one.
+	        /* istanbul ignore else */ // Tested independently.
+	        if (!_.isFunction(func)) {
+	          func = '(' + func + ')';
+	          dbg('- Convert [{0}] to function', func, LOW);
+	          return eval(func); // jshint ignore:line 
+	        }
+	        else {
+	         return func;
+	        }
+	      }
+
+	      /* istanbul ignore next */ // Tested independently.
+	      Parser.prototype.evalBacktick = function evalBacktick(expr) {
+	        var self = this;
+	        if (self.cs.userConfig.administrator) {
+	          try {
+	            var r = eval(expr); // jshint ignore:line 
+	            mm.log('Result:', r);
+	          }
+	          catch (e) {
+	            throw new Error('Eval failed:' + e.stack);
+	          }
+	        }
+	        else {
+	          /* istanbul ignore next */ // Tested independently.
+	          throw new Error('You must be an administrator to do this.');
+	        }
+	      }
+
+	      Parser.prototype.evaluate = function evaluate(expr) {
+	        var self = this;
+	        /* istanbul ignore if */ // Tested independently.
+	        if (_.startsWith(expr, '`')) return self.evalBacktick(expr.substr(1));      
+	        var NUMBERMODE = self.settings._props.numberMode.values;
+	        var val = null;
+	        self.evalFailed = false;
+	        var assigned = '';
+	        var re = /^\s*([A-Za-z_]+[0-9A-Za-z_$]*)\s*=/;
+	        var matches = expr.match(re);
+	        var hasAssignment = matches;
+	        if (hasAssignment) {
+	          assigned = matches[1];
+	          var i = expr.indexOf('=');
+	          expr = expr.substring(i + 1);
+	          dbg('--- Assignment: ', assigned, LOW);
+	          dbg('--- Expression: ', expr, LOW);
+	        }
+	        
+	        var textExpression = _.trim(expr);
+	        var idTest = /[A-Za-z_]+[0-9A-Za-z_]*/g;
+	        var hasVariables = false;
+	        var hasUndefined = false;
+	        var undefineds = [];
+	        expr = expr.replace(idTest, function(v) {
+	          var rv = 'ws.vars["' + v + '"].f()';
+	          hasVariables = true;
+	          dbg('id:[{0}]', v, LOW);
+	          if (!ws.vars[v]) {
+	            // look for the symbol in mmath.
+	            if (self.mmath[v]) {
+	              if (self.mmath[v].f &&
+	                  self.settings.numberMode !== NUMBERMODE.num) {
+	                
+	                rv = 'mmath.' + v + '.f'; // Standard mMeddle implementation
+	                if (self.mmath[v].big &&
+	                  self.settings.numberMode === NUMBERMODE.big) {
+	                  rv = 'mmath.' + v + '.big'; // Use big when available.
+	                }
+	              }
+	              else {
+	                rv = 'Math.' + v; // Use the Math implementation
+	              }
+	            }
+	            else {
+	              hasUndefined = true;
+	              /* istanbul ignore else */ // Tested independently.
+	              if (_.indexOf(undefineds, v) < 0) undefineds.push(v);
+	              var undefinedFunc = 
+	                  '(function(){ return self.notDefined("' +
+	                  v + '") })';
+	              ws.vars[v] = {human: '*undefined*', f:
+	                  eval(undefinedFunc) }; // jshint ignore:line 
+	            }
+	          }
+	          return rv;
+	        });
+
+	        expr = '(function(){ return ' + expr + ' })';
+	        dbg('Eval: ', expr, LOW);
+	        try {
+	          // eval is the core of this for a while, so suck it up.
+	          var f = eval(expr); // jshint ignore:line 
+	          if (hasAssignment) { 
+	            ws.vars[assigned] = {human: textExpression, f: f };
+	          }
+	          if (hasUndefined) {
+	            log('- Cannot yet evaluate function: {0} {1} still undefined.',
+	              /* istanbul ignore next */ // Tested independently.
+	              undefineds.join(), undefineds.length === 1 ? 'is' : 'are');
+	          }
+	          else {
+	            val = f(); // Execute the function.
+	            /* istanbul ignore if */ // Tested independently.
+	            if (self.evalFailed) {
+	              log('*** Evaluation failed. Some values are still undefined.');
+	            }
+	            else {
+	              log('Value = {0}', val);
+	            }
+	          }
+	          return val;
+	        }
+	        catch (e) {
+	          /* istanbul ignore next */ // Tested independently.
+	          if (self.settings.debugMode) {
+	            log(e.stack);
+	          } 
+	          else {
+	            log(e);
+	          }
+	          /* istanbul ignore next */
+	          return '';
+	        }
+	      }
+	      
+	      /* istanbul ignore next */ // Tested independently.
+	      Parser.prototype.notDefined = function notDefined(v) {
+	        var self = this;  
+	        self.evalFailed = true;
+	        log('- Variable "{0}" is undefined', v);
+	        return null;
+	      }
+	    } // End of constructor for access to constructor closure.
+	    return Parser;
+	  }()); // Run constructor initializer for static creations.
+
+	  return Parser;
+	}
+
+/***/ },
+/* 40 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview ClientSession
+	 * @module core/ClientSession
+	 */ 
+	 module.exports = function(mm) {
+	  var _           = mm.check(mm._);
+	  var qq          = mm.check(mm.Q);
+	  var Config      = mm.check(mm.obj.Config);
+	  var ClientUser  = mm.check(mm.users.ClientUser);
+
+	  //--------------------------------------------------------------------------
+	  /**
+	   * @summary **client Workspace session**
+	   * @description
+	   * This provides client services for managing workspaces. These are
+	   * storage, user and server request services.  The client session is the
+	   * first major object created by a client. It is used to load the user
+	   * and workspace from browser/client localStorage if (if this browser)
+	   * has been used before. Normally the session is supplied to a MMeddleClient
+	   * which in turn connects to a MMeddleServer/WsSession over a socket.io
+	   * connection. Once a server connection is completed, the session can
+	   * handle requests such as login, saveWorkspace, etc.
+	   * 
+	   * @constructor
+	   * @param {string} clientApp optional name to use for the client application
+	   * @returns {ClientSession} the new client session
+	   */  
+	  var ClientSession = (function clientSessionCtorCreator() {
+	    var ctor = function clientSession(clientApp) {
+	      var self = this;
+	      self.ws = mm.check(new mm.core.Workspace(self));
+	      self.user = new ClientUser();
+	      self.userConfig = new Config();
+	      self.loggedIn = null; // Not currently logged in.
+	      self.mmc = false; // No MMeddleClient has been added,
+	      self.clientApp = clientApp ? clientApp : 'client';
+
+	      /* istanbul ignore next */ // tested independently
+	      self.newSessionId = function newSessionId() {
+	        return 'MMSID_' + _.now().toString() + '_' + _.random(10000).toString();
+	      }
+	    };
+	  
+	    return ctor;
+	  }());
+
+	  /**
+	   * @summary **Bind the MMeddleClient to this session**
+	   * @description
+	   * The client provides only its `rq` method, and the `socketid` to the
+	   * session, so its easy to mock if you want to.
+	   * @param {MMeddleClient} op the operation being requested.
+	   */  
+	  ClientSession.prototype.bindClient = 
+	  function bindClient(mmc) {
+	    var self = this;  
+	    self.mmc = mmc;
+	  }
+
+	  /**
+	   * @summary **Issue a server request with optional response**
+	   * @description
+	   * If the a client session is available and connected then this will
+	   * pass the request on the the MMeddleClient, otherwise it returns
+	   * false or a rejected error promise.
+	   * @param {string} op the operation being requested.
+	   * @param {bool} rsRequired true if a return promise response is needed.
+	   * @param {object} content the content for the operation.
+	   * @param {number} timeout n optional timeout in seconds.
+	   * @returns {bool|Promise} success if true or promise to response.
+	   */  
+	  ClientSession.prototype.rq =
+	  function rq(op, content, rsRequired, timeout) {
+	    var self = this;
+	    if (self.mmc && self.mmc.connected) {
+	      return self.mmc.rq(op, content, rsRequired, timeout);
+	    }
+	    /* istanbul ignore next */ // tested independently
+	    if (self.mmc) {
+	      if (rsRequired) return qq.reject(new Error('Not connected to server')); 
+	    }
+	    else {
+	      if (rsRequired) return qq.reject(new Error('No mMeddle Client exists'));
+	    }
+	    return false;
+	  }
+	  
+	  /**
+	   * @summary **Send a message to be logged on the server console**
+	   * @description
+	   * This is mostly for testing and remote activity logging.
+	   * @param {string} text the text to log.
+	   * @returns {bool} true (if connected)
+	   */
+	  ClientSession.prototype.emitLogMessage =
+	  function emitLogMessage(text) {
+	    var self = this;
+	    return self.rq('log', text);
+	  }
+
+	  return ClientSession;
+	}
+
+/***/ },
+/* 41 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview Add user requests to the ClientSession
+	 * @module core/ClientSession
+	 * 
+	 */ 
+	 module.exports = function(mm) {
+	  var qq            = mm.check(mm.Q);
+	  var Config        = mm.check(mm.obj.Config);
+	  var ClientSession = mm.check(mm.core.ClientSession);
+	  var ClientUser    = mm.check(mm.users.ClientUser);
+	  
+	  var localStorage  = new mm.storage.LocalStorage();
+	  
+	  // Approximate number of saved input lines to restore from the
+	  // locally saved user.
+	  var MAX_SAVED_INPUT_LINES = 50;
+
+	  /**
+	   * @summary **clear the current user/workspace owner**
+	   * @description 
+	   * The current user/workspace owner is reset to anonymous.
+	   * @returns {ClientSession} for chaining   
+	   */  
+	  ClientSession.prototype.clearLocalUser =
+	  function clearLocalUser() {
+	    var self = this;
+	    self.user = new ClientUser();
+	    self.userConfig = new Config();
+	    return self;    
+	  }
+
+	  /**
+	   * @summary **load the current user/workspace owner from localStorage**
+	   * @description 
+	   * The ClientUser is accessed from the cs.user field. If no user is saved
+	   * then the anonymous user in the session is available. If the mConsole
+	   * is supplied and the user's command stack was saved, then those
+	   * commands are restored.
+	   * @param {CliConsole} mConsole an optional console for command saving
+	   * @returns {ClientSession} for chaining   
+	   */  
+	  ClientSession.prototype.loadLocalUser =
+	  function loadLocalUser(mConsole) {
+	    var self = this;
+	    var userObj = localStorage.load('user');
+	    /* istanbul ignore else */ // Tested independently.
+	    if (userObj) {
+	      // If a stack saving console is present then add its saved
+	      // input lines to the current console.
+	      if (mConsole && 
+	        mConsole.savedInputLines && 
+	        userObj.savedInputLines &&
+	        userObj.savedInputLines.length > 0) 
+	      {
+	        var inLine = null;
+	        var i = 0;
+	        do {
+	          i++;
+	          inLine = userObj.savedInputLines.pop();
+	          if (inLine) mConsole.savedInputLines.unshift(inLine);
+	          if (i > MAX_SAVED_INPUT_LINES) inLine = null;
+	        } while (inLine);
+	        delete userObj.savedInputLines;
+	      }
+	      self.user.init(userObj);
+	    }
+	    return self;    
+	  }
+
+	  /**
+	   * @summary **save the user to localStorage**
+	   * @description 
+	   * The ClientUser is saved to localStorage.  If the user was logged onto
+	   * a server, then the PDK (Password Derived Key hash) is saved as well
+	   * so the user can login next time without entry of a plain text password.
+	   * @param {CliConsole} mConsole an optional console for command saving
+	   * @returns {ClientSession} for chaining   
+	   */  
+	  ClientSession.prototype.saveLocalUser =
+	  function saveLocalWorkspace(mConsole) {
+	    var self = this;
+	    /* istanbul ignore else */ // Tested independently.
+	    if (mConsole &&
+	        mConsole.savedInputLines &&
+	        mConsole.savedInputLines.length > 0) 
+	    {
+	      self.user.savedInputLines = mConsole.savedInputLines;
+	    }
+	    localStorage.store('user', self.user);
+	    return self;        
+	  }
+
+	  /**
+	   * @summary **check for logged in to server**
+	   * @returns {bool} true when logged in
+	   */  
+	  ClientSession.prototype.isLoggedIn = function isLoggedIn() {
+	    var self = this;    
+	    return self.loggedIn && self.loggedIn.name === self.user.name;
+	  }
+	  
+	  /**
+	   * @summary **Get public user information**
+	   * @description
+	   * A userName or userName pattern is sent to the server. If one or
+	   * more matching users exist then an array of sanitized public users
+	   * is returned, otherwise a null object is returned. The pattern
+	   * can end in '*' to indicate the prefix to match, otherwise only a
+	   * single user will be returned.
+	   * @param {string} userName the userName to get.
+	   * @returns {Promise} to the public user array (or a rejection).
+	   */  
+	  ClientSession.prototype.getUser =
+	  function getUser(userName) {
+	    var self = this;
+	    var user = new ClientUser(userName);
+	    return self.rq('loadUsers', user, true)
+	    .then(function (rs) {
+	      return rs.content;
+	    })
+	  }
+
+	  /**
+	   * @summary **Login to server**
+	   * @description
+	   * The user and password are sent to the server. 
+	   * If the password matches, the private user settings are
+	   * returned as the content object in the response.
+	   * The password is immediately encoded to a safety hash to make
+	   * it slightly less of a security risk. This hash remains as part
+	   * of the workspace for auto-login during later connections. The logged
+	   * in user is now the current user for the session and its workspace.
+	   * @param {string} userName the userName to login with.
+	   * @param {string} ptpwd the optional plain text password.
+	   * @param {bool} ispdk optional PDK supplied instead of plain text.
+	   * @returns {Promise} to the private user.
+	   */  
+	  ClientSession.prototype.userLogin =
+	  function userLogin(userName, ptpwd, ispdk) {
+	    var self = this;
+	    var user = new ClientUser(userName);
+	    return self.rq('loadUser', user, true)
+	    .then(function (rs) {
+	      try{    
+	        user.init(rs.content).hashP(ptpwd, ispdk);
+	        //mm.log('+++++++++++++++++++== Login with', user);
+	        // Instead of sending the PDK, we send a sha256 hash
+	        // of the PDK based on a socket id seed which is known
+	        // by both the client and server.
+	        user.hashPdk(self.mmc.socketid);
+	        var rquser = new ClientUser(userName).init(user);
+	        /* istanbul ignore else */ // Tested independently.
+	        if (rquser.pdk) delete rquser.pdk;
+	        return self.rq('loginUser', rquser, true)
+	        .then(function (rs) {
+	          user.init(rs.content);
+	          self.user = user;
+	          self.ws.owner = user.name;
+	          /* istanbul ignore if */ // Tested independently.
+	          if (rs.userConfig) {
+	            self.userConfig.init(rs.userConfig);
+	            mm.log('- User [' + user.name + '] has a personal configuration');
+	          }
+	          user.elapsed = rs.elapsed;
+	          user.ok = true;
+	          self.loggedIn = user;
+	          return user;
+	        });
+	      } catch (e) { 
+	        /* istanbul ignore next */ // Tested independently.
+	        mm.log.error('userLogin failure internal', e.stack);
+	      }      
+	    })
+	  }
+	  
+	  /**
+	   * @summary **Create new user and login to server**
+	   * @description
+	   * A locally created new user and has its plain text password hashed
+	   * and the content is sent to the server where it is written to storage.
+	   * It returns a promise to the logged-in private ClientUser.  The new
+	   * user becomes the current user for the session and its workspace.
+	   * @param {Object} newUser the new user object (not yet a ClientUser).
+	   * @param {bool} ispdk true if the passed in object is a prior user.
+	   * @returns {Promise} to the private user.
+	   */  
+	  ClientSession.prototype.userCreate =
+	  function userCreate(newUser, ispdk) {
+	    var self = this;
+	    var user;
+	    /* istanbul ignore if */ // Tested independently.
+	    if (ispdk) {
+	      user = newUser;
+	    }
+	    else {
+	      var ptpwd = newUser.ptpwd;
+	      delete newUser.ptpwd;
+	      user = new ClientUser()
+	          .init(newUser)
+	          .hashP(ptpwd);
+	    }
+	    var pdk = user.pdk;
+	    return self.rq('createUser', user, true)
+	    .then(function (rs) {
+	      user.init(rs.content);
+	      self.user = user;
+	      self.ws.owner = user.name;
+	      /* istanbul ignore if */ // Tested independently.
+	      if (rs.userConfig) {
+	        self.userConfig.init(rs.userConfig); // Add to the session.
+	        mm.log('- User [' + user.name + '] has a personal configuration');
+	      }
+	      user.elapsed = rs.elapsed;
+	      user.pdk = pdk;
+	      user.ok = true;
+	      self.loggedIn = user;
+	      return user;
+	    })
+	  }
+
+	  /**
+	   * @summary **Request a Delete of the current user**
+	   * @description
+	   * The currently logged in user is deleted. If the user is not currently
+	   * logged into the server then the delete is rejected.
+	   * @returns {Promise} to a message string.
+	   */  
+	  ClientSession.prototype.userDelete =
+	  function userDelete() {
+	    var self = this;
+	    /* istanbul ignore if */ // Tested independently.
+	    if (!self.isLoggedIn()) {
+	      var em  = '- User [' + self.user.name + '] is not logged in';
+	      return qq.reject(new Error(em));
+	    }
+	    return self.rq('deleteUser', self.user, true)
+	    .then(function (rs) {
+	      return rs.content;
+	    })
+	  }  
+
+	  /**
+	   * @summary **Request a Listing of current user sessions**
+	   * @description
+	   * The set of currently connected users is returned.
+	   * @returns {Promise} to an array of session entries.
+	   */  
+	  /* istanbul ignore next */ // Tested independently.
+	  ClientSession.prototype.listUserSessions =
+	  function listUserSessions() {
+	    var self = this;
+	    return self.rq('listUserSessions', self.user, true)
+	    .then(function (rs) {
+	      return rs.content;
+	    })
+	  }  
+	}
+
+/***/ },
+/* 42 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview Adds Workspace services to the ClientSession.
+	 * @module core/ClientSession
+	 */ 
+	 module.exports = function(mm) {
+	  var Workspace  = mm.check(mm.core.Workspace);
+	  var ClientSession = mm.check(mm.core.ClientSession);
+	  var localStorage = new mm.storage.LocalStorage();
+
+	  /**
+	   * @summary **Clear the local workspace to empty**
+	   * @description
+	   * Empties the current workspace but retains the same session id.
+	   * If this workspace is saved to the server then the contents of the
+	   * prior workspace are lost.
+	   * @returns {ClientSession} self for chaining.
+	   */  
+	  ClientSession.prototype.clearLocalWorkspace =
+	  function clearLocalWorkspace() {
+	    var self = this;
+	    var savedSessionId = self.ws.sessionId;
+	    self.ws = mm.check(new mm.core.Workspace(self));
+	    self.ws.sessionId = savedSessionId;
+	    /* istanbul ignore if */ // tested independently.
+	    if (!self.ws.sessionId) {
+	      self.ws.sessionId = self.newSessionId();
+	    }
+	    return self;
+	  }
+
+	  /**
+	   * @summary **load the workspace from localStorage**
+	   * @description
+	   * Loads a previously saved workspace from the browser/client localStorage.
+	   * If no prior workspace exists, then a new one is created an a new
+	   * MMSID is assigned to it. The MMSID is the long-term identifier used
+	   * to identify this session across multiple connections, reconnections,
+	   * and even multiple browsers and client applications.
+	   * @returns {ClientSession} for chaining
+	   */  
+	  ClientSession.prototype.loadLocalWorkspace =
+	  function loadLocalWorkspace() {
+	    var self = this;  
+	    var wsObj = localStorage.load('ws');
+	    /* istanbul  ignore else */ // tested independently.
+	    if (wsObj) {
+	      self.ws.init(wsObj);
+	    }
+	    /* istanbul ignore if */ // tested independently.
+	    if (!self.ws.sessionId) {
+	      self.ws.sessionId = self.newSessionId();
+	    }
+	    return self;
+	  }
+
+	  /**
+	   * @summary **save the workspace to localStorage**
+	   * @returns {ClientSession} for chaining   
+	   */  
+	  ClientSession.prototype.saveLocalWorkspace =
+	  function saveLocalWorkspace() {
+	    var self = this;    
+	    localStorage.store('ws', self.ws);
+	    return self;
+	  }
+	  
+	  /**
+	   * @summary **Save contents of current workspace to server**
+	   * @description
+	   * Any changes to the current workspace, including all settings and
+	   * documents are copied to the server for persistent storage.
+	   * The workspace is saved for the current authenticated user, or
+	   * under the 'anonymous' user if none has been established.
+	   * @returns {Promise} to the response (ok=true on success)
+	   */  
+	  ClientSession.prototype.saveWorkspace =
+	  function saveWorkspace() {
+	    var self = this;
+	    return self.rq('saveWorkspace', mm.util.JSONify(self.ws, 2), true);
+	  }
+	  
+	  /**
+	   * @summary **Load a workspace from the server**
+	   * @description
+	   * A new workspace is loaded from the server.
+	   * @param {string} name an optional name, otherwise loaded by current MMSID.
+	   * @returns {Promise} to the WS or a failure.
+	   */  
+	  ClientSession.prototype.loadWorkspace =
+	  function loadWorkspace(name) {
+	    var self = this;
+	    return self.rq('loadWorkspace', name, true)
+	      .then(function (rs) {
+	      var ws = new Workspace(self).init(rs.content);
+	      ws.elapsed = rs.elapsed;
+	      ws.ok = true;
+	      return ws;
+	    })
+	  }
+	}
+
+/***/ },
+/* 43 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview MMeddleClient
+	 * @module core/MMeddleClient
+	 */ 
+	 module.exports = function(mm) {
+	  var _           = mm.check(mm._);
+	  var qq          = mm.check(mm.Q);
+	  //--------------------------------------------------------------------------
+	  /**
+	   * @summary **mMeddle client services**
+	   * @description
+	   * This provides socket.io connections to a server, as well as sending
+	   * requests and receiving events.
+	   * @constructor
+	   * @param {string} host url of the MMeddleServer host
+	   * @param {ClientSession} clientSession the client services session.
+	   * @returns {MMeddleClient} the new client.
+	   */  
+	  var MMeddleClient = (function mmClientCtorCreator() {
+	    var ctor = function MMeddleClient(host, clientSession) {
+	      var self = this;
+	      self.host = host;
+	      self.connectedOnce = false;  //has connected at least once
+	      self.connected = false;      //has a valid mmc (is connected to a server)
+	      self.socket = null;          //the current socket.io socket
+	      self.rqId = 0;               //Request number tracking.
+	      self.rsPending = {};         //the set of pending responses
+	      self.defaultRqTimeout = 10;  //Timeout in seconds.
+	      self.socketid = '???';
+	      self.clientSession = clientSession;
+	    };
+	  
+	    return ctor;
+	  }());
+
+	  MMeddleClient.prototype.connectWorkspace =
+	  function connectWorkspace() {
+	    var self = this;
+	    /* istanbul ignore if */ 
+	    if (self.connectedD) {
+	      return self.connectedD.promise;
+	    }
+	    try { 
+	      // Assign this here or you may not get the mock version when
+	      // you want it since mm.socketClient.io may be assigned well
+	      // after this module is loaded.
+	      var io = mm.check(mm.socketClient.io);
+	      self.connectedD = qq.defer();
+	      //mm.log('- Connecting to: [' + self.host + ']');
+
+	      self.socket = io.connect(self.host);
+	      
+	      // Handle connection request from the MMeddleServer/SocketService.
+	      self.socket.on('mmConnectRq', function (data) {
+	        mm.log.debug('--- received mmConnectRq:', data, mm.Logger.Priority.LOW);
+	        self.socketid = data.id;
+
+	        /* istanbul ignore if */ // Tested extensively.
+	        if (self.connected) {
+	          mm.log('- Reconnected SocketId:[{0}] Session:[{1}]',
+	              self.socketid, self.clientSession.ws.sessionId);
+	        }
+	        else {
+	          mm.log.debug('- new Connection:', self.clientSession.ws.sessionId);
+	        }
+
+	        self.emit('mmConnectRs', {
+	            id: data.id,
+	            sessionId: self.clientSession.ws.sessionId,
+	            userName: self.clientSession.user.name,
+	            from: mm.envText,
+	            config: mm.config, // report what is known about the config.
+	            at: _.now()
+	        });
+
+	        self.connectedOnce = true;
+	        self.connected = true;
+	        self.connectedD.resolve(true);
+	      });
+	      
+	      // This handles any pending responses.  If the response has
+	      // ok: true then the pending promise is resolved and the
+	      // response is returned. If not the promise is rejected
+	      // with the error code in the error field.
+	      self.socket.on('mmWsRs', function (rs) {
+	        mm.log.debug('--- received mmWsRs:', rs, mm.Logger.Priority.LOW);
+	        var rqId = rs.rqId;
+	        var pending = self.rsPending[rqId];
+	        /* istanbul ignore if */   // Tested independently.
+	        if (!pending) {
+	          // Timeout has already rejected the response.
+	          mm.log.warn('Received late response to ', rqId);
+	          mm.log.debug('mmWs Late Response: ', rs);
+	        }
+	        else {
+	          if (rs.ok !== true) {
+	            var emsg = mm.util.trimPrefix(rs.error, 'Error: ');
+	            pending.rsD.reject(new Error(emsg));
+	          }
+	          else {
+	            rs.elapsed = _.now() - pending.at;
+	            //mm.log(' Received response to ', rqId);
+	            //mm.log.debug('mmWs Response: ', rs);
+	            pending.rsD.resolve(rs);
+	          }
+	        }
+	      })
+	    }
+	    catch (e) {
+	      /* istanbul ignore next */
+	      self.connectedD.reject(e); /* istanbul ignore next */
+	      mm.log.error('Socket IO failure:', e.stack);
+	    }
+
+	    return self.connectedD.promise;
+	  }
+	  
+	  /**
+	   * @summary **Request to server with optional response**
+	   * @description
+	   * This provides server connection and control for mMeddle client
+	   * applications.
+	   * @param {string} op the operation being requested.
+	   * @param {bool} rsRequired true if a return promise response is needed.
+	   * @param {object} content the content for the operation.
+	   * @param {number} timeout n optional timeout in seconds.
+	   * @returns {bool|Promise} success true or promise to response.
+	   */  
+	  MMeddleClient.prototype.rq =
+	  function rq(op, content, rsRequired, timeout) {
+	    var self = this;
+	    var rqId = op + '_' + self.rqId++;
+	    var rsD;
+	    var rsP;
+	    // Queue a promise to resolve when the correspondimg mmWsRq shows up.
+	    var rqObj = {
+	        op: op,
+	        sessionId: self.clientSession.ws.sessionId,
+	        userName: self.clientSession.user.name,
+	        rqId: rqId,
+	        at: _.now(),
+	        content: content,
+	        rsRequired: rsRequired ? true : false
+	    };
+	    var tmttext = 'Rq timeout. Removing pending operation to:' + rqId;
+	    if (rsRequired) {
+	      rsD = qq.defer();
+	      /* istanbul ignore else */ // tested independently.
+	      if (!timeout) timeout = self.defaultRqTimeout;
+	      rsP = rsD.promise.timeout(timeout * 1000, tmttext);
+	      var pending = {
+	        id: rqId,
+	        at: rqObj.at,
+	        rq: rqObj,
+	        rsD: rsD
+	      }
+	      // Queue the pending wait for the response.
+	      self.rsPending[rqId] = pending;
+	      
+	      // Handle timeouts, failures, and other completions.
+	      rsP.fin(function (r) {
+	        delete self.rsPending[rqId];
+	      });
+	    }
+	    self.emit('mmWsRq', rqObj)
+	    if (rsRequired) {
+	      return rsP;
+	    }
+	    else {
+	      return true;
+	    }
+	  }
+
+	  /**
+	   * @summary **Request a socket reconnect from the server**
+	   * @description
+	   * This server should fairly quickly return a new connection with
+	   * a new socket id. This will be mapped to the workspace session id
+	   * and all will be well.
+	   */
+	  MMeddleClient.prototype.socket_reconnect =
+	  /* istanbul ignore next */ // tested independently.  
+	  function socket_reconnect() {
+	    var self = this;
+	    if (!self.socket) {
+	      mm.log.error('No socket established. Socket.io failed.');
+	    }
+	    else {
+	      if (self.connectedOnce) {
+	        mm.log('- Socket reconnect: [' + self.host + ']');
+	        self.socket.socket.reconnect();
+	      }
+	      else {
+	        mm.log('- Socket connect: [' + self.host + ']');
+	        self.connectWorkspace();
+	      }
+	    }
+	  }
+
+	  /**
+	   * @summary **Request a socket disconnect from the server**
+	   * @description
+	   * The disconnect may be used if the client will have a long period
+	   * of either limited connectivity or no server activity. After the
+	   * disconnect, a reconnect will be required to resume communications.
+	   */
+	  /* istanbul ignore next */ // tested independently.
+	  MMeddleClient.prototype.socket_disconnect =
+	  function socket_disconnect() {
+	    var self = this;
+	    if (self.socket) {
+	      mm.log('- Socket disconnect: [' + self.host + ']');
+	      if (self.socket) self.socket.disconnect();
+	    }
+	    self.connected = false;
+	  }
+
+	  /**
+	   * @summary **Emit a message to the server**
+	   * @description
+	   * This is the only routine that outputs to the socket so its a good
+	   * place to put logging and tracing.
+	   * @param {string} rqEvent the request event name
+	   * @param {object} rqObj the request object sent to the server
+	   */
+	  MMeddleClient.prototype.emit =
+	  function emit(rqEvent, rqObj) {
+	    mm.log.debug(rqEvent, rqObj, mm.Logger.Priority.LOW); 
+	    var self = this;
+	    self.socket.emit(rqEvent, rqObj)
+	  }
+	  
+	  return MMeddleClient;
+	}
+
+/***/ },
+/* 44 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
+	/**
+	 * @fileOverview CLI command handlers
+	 * @module core/CliCommands
+	 */ 
+	module.exports = function registerCliCommands(mm) {
+	  var check      = mm.check;
+	  var _          = check(mm._);
+	  var qq         = check(mm.Q);
+	  var CmdSet     = check(mm.core.CmdSet);
+	  var MMath      = check(mm.core.MMath);
+	    
+	  var mmath = check(new MMath());
+	  
+	  /**
+	   * @summary **CLI command handlers**
+	   * @description
+	   * Provides a common interface for node client and browser based CLI
+	   * implementations.
+	   * @constructor
+	   * @param {CliConsole} mConsole the current console.
+	   * @param {ClientSession} cs the current client session.
+	   * @returns {CliCommands} the cli command handlers.
+	   */  
+	  var CliCommands = function cliCommandsCtor(mConsole, cs) {
+	    var self = this;
+	    
+	    //------------------------------------------------------------------------
+	    //                            Public Methods
+	    //------------------------------------------------------------------------
+	    
+	    /**
+	     * @summary **doUserCreate**
+	     */    
+	    self.doUserCreate = function doUserCreate(newUser, ispdk) {
+	      var start = _.now();
+	      return cs.userCreate(newUser, ispdk)
+	      .then(function (user) {
+	        mm.log('- Created new User id [{0}] at {1} in {2} mx',
+	            user.name, user.creationDate, _.now() - start);
+	        mm.log('- Welcome to mMeddle, {0} {1}.',
+	            user.firstName, user.lastName);
+	        return user;
+	      },
+	      /* istanbul ignore next */ // Tested in cli
+	      function (e) {
+	        mm.log('User creation failed: ', e)
+	        return e;
+	      });
+	    }              
+
+	    /**
+	     * @summary **fillNewUser**
+	     */    
+	    self.fillNewUser = function fillNewUser(userName, ptpwd) {
+	      var u = { name: userName };
+	      var funcs = [
+	      function(u) {
+	        return  mConsole.ask('Reenter the password: ', u, 'ptpwd', true)
+	      },
+	      function(u) {
+	        /* istanbul ignore else */ // Tested in cli
+	        if (u.ptpwd === ptpwd) return u;
+	        ptpwd = '';
+	        throw new Error('Passwords do not match. Sorry, start over.');
+	      },
+	      function(u) {
+	        return mConsole.ask('Enter your first name: ', u, 'firstName')
+	      },
+	      function(u) {
+	        return mConsole.ask('Enter your last name: ', u, 'lastName')
+	      },
+	      function(u) {
+	        return mConsole.ask('Enter your contact email address: ', u, 'email')
+	      }]
+
+	      return funcs.reduce(qq.when, qq(u));
+	    }
+	    
+	    /**
+	     * @summary **loginUser**
+	     */    
+	    self.loginUser = function loginUser(userName, ptpwd, isPdk) {
+	      var start = _.now();
+	      cs.userLogin(userName, ptpwd, isPdk)
+	      .then(function (user) {
+	        mm.log('- Welcome back to mMeddle, {0} {1}.', 
+	            user.firstName, user.lastName);
+	        //mm.log('- Logged in ({0} ms). {1:inspect}', user.elapsed, user);
+	        mm.log('- Logged in ({0} ms)', _.now() - start);
+	      },
+	      function (e) {
+	        var errString = e.toString();
+	        if (errString.indexOf('ENOENT, ') >= 0) {
+	          if (isPdk) {
+	            mm.log('- User [{0}] not found. Rebuilding deleted user.', userName);
+	            // TODO - Add password recheck.
+	            return self.doUserCreate(cs.user, isPdk);
+	          }
+	          else {
+	            mm.log('- User [{0}] not found. Creating a new user.', userName);
+	            self.fillNewUser(userName, ptpwd)
+	            .then(function (newUser) {
+	              mm.log('- Creating new user on server [{0}]...', userName);
+	              return self.doUserCreate(newUser);
+	            },
+	            function (e) {
+	              mm.log(e);
+	            });
+	          }
+	        }
+	        else {
+	          ptpwd = '';
+	          mm.log.error('*** Login failed. [{0}]', errString);
+	        }
+	      });
+	    }
+	  
+	    /**
+	     * @summary **exitCmdHandler**
+	     */    
+	    /* istanbul ignore next */ // Tested independently.     
+	    self.exitCmdHandler = function exitCmdHandler(context, args) {
+	      var wsName = cs.ws.name;
+	      var displayName = wsName ? ' [' + wsName + ']' : '';
+	      if (context.keyword !== 'abort') {
+	        cs.saveLocalUser(mConsole);
+	        mm.log('- Saved User [{0}] (local)', cs.user.name);
+	        cs.saveLocalWorkspace();
+	        mm.log('- Saved Workspace{0} (local): {1} variables',
+	            displayName, cs.ws.varsCount);
+	        if (cs.mmc.connected && cs.loggedIn) {
+	          mm.log('- Saving Workspace{0} for {1} to {2}', 
+	              displayName, cs.user.name, cs.mmc.host);
+	          cs.saveWorkspace()
+	          .then(function (rs) {
+	            mm.log('- Saved{0} in {1} ms.', displayName, rs.elapsed);
+	          });
+	        }
+	      }
+	      if (context.keyword !== 'save') {
+	        // exit application
+	        if (mm.config.inNode) {
+	          mConsole.close();
+	          process.exit();
+	        }
+	      }
+	      return true;
+	    }
+	    
+	    /**
+	     * @summary **saveCmdHandler**
+	     */    
+	    self.saveCmdHandler = function saveCmdHandler(context, args) {
+	      /* istanbul ignore if */ // Tested independently.
+	      if (!cs.loggedIn && !cs.user.isAnonymous()) {
+	        var e = new Error('Sorry, Please login before saving.');
+	        return e
+	      }
+	      var oldName = cs.ws.name;
+	      var wsName = args.name ? args.name : oldName;
+	      /* istanbul ignore next */ // Tested independently.
+	      var displayName = wsName ? ' [' + wsName + ']' : '';
+	      cs.saveLocalUser(mConsole);
+	      mm.log('- Saved User [{0}] (local)', cs.user.name);
+	      /* istanbul ignore if */ // Tested independently.
+	      if (oldName && oldName !== wsName) {
+	        mm.log('- Renamed workspace from [{0}] to{1}', oldName, displayName);
+	      }
+	      cs.ws.name = wsName;
+	      cs.saveLocalWorkspace();
+	      mm.log('- Saved Workspace{0} (local): {1} variables',
+	          displayName, cs.ws.varsCount);
+	      /* istanbul ignore else */ // Tested independently.
+	      if (cs.mmc.connected) {
+	        mm.log('- Saving Workspace{0} for {1} to {2}', 
+	            displayName, cs.user.name, cs.mmc.host);
+	        cs.saveWorkspace()
+	        .then(function (rs) {
+	          mm.log('- Saved{0} in {1} ms.', displayName, rs.elapsed);
+	        });
+	      }
+	      return true;
+	    }
+	    
+	    //------------------------------------------------------------------------    
+	    //------------------------------------------------------------------------
+	    self.loginCmdHandler = function loginCmdHandler(context, args) {
+	      var user = cs.user;
+	      var userName = user.name;
+	      if (args.userName) {
+	        var ptpwd;
+	        userName = args.userName;
+	        /* istanbul ignore else */ // Tested in cli
+	        if (args.password) {
+	          ptpwd = args.password;
+	          return self.loginUser(userName, ptpwd);
+	        }
+	        else {
+	          if (userName === user.name && user.pdk) {
+	            return self.loginUser(userName, user.pdk, true);
+	          }
+	          else {
+	            mConsole.ask('Please enter your password: ', null, null, true)
+	            .then(function (ptpwd) {
+	              return self.loginUser(userName, ptpwd);
+	            },
+	            function(e) {
+	              mm.log.error(e);
+	              return e;
+	            });
+	          }
+	        }
+	      }
+	      // If a locally saved user is available, login with that.
+	      else {
+	        if (!user.isAnonymous()) {
+	          return self.loginUser(user.name, user.pdk, true);
+	        }
+	        var e = new Error('Please login with a user name');
+	        mm.log.error(e);
+	        return e
+	      }
+	    }
+
+	    //------------------------------------------------------------------------
+	    self.clearCmdHandler = function clearCmdHandler(context, args) {
+	      return cs.ws.clear(args.variables);
+	    }
+
+	    //------------------------------------------------------------------------
+	    self.listCmdHandler = function listCmdHandler(context, args) {
+	      return cs.ws.list(args.variables, context.keyword === '??');
+	    }
+
+	    /**
+	     * auto complete console input text for command line starts
+	     * @param {string} text the input line
+	     * @return {array} completions [[matches], keyword]
+	     */
+	    /* istanbul ignore next */ // TODO: Complete this function.
+	    self.completer = function completer (text) {
+	      var keyword;
+	      var matches = [];
+	      var m = /[a-zA-Z_0-9]+$/.exec(text);
+	      if (m) {
+	        keyword = m[0];
+
+	        // commandline keywords
+	        rcs.keywords.forEach(function (cmd) {
+	          if (cmd.indexOf(keyword) === 0) {
+	            matches.push(cmd);
+	          }
+	        });
+
+	        // mmath functions and constants
+	        var ignore = ['expr', 'type'];
+	        for (var func in mmath) {
+	          if (mmath.hasOwnProperty(func)) {
+	            if (func.indexOf(keyword) === 0 && ignore.indexOf(func) === -1) {
+	              matches.push(func);
+	            }
+	          }
+	        }
+	        
+	        // remove duplicates
+	        matches = matches.filter(function(elem, pos, arr) {
+	          return arr.indexOf(elem) === pos;
+	        });
+	      }
+
+	      return [matches, keyword];
+	    }
+	  
+	    //------------------------------------------------------------------------      
+	    var rcs = new CmdSet()
+	        .setTitle('Main CLI Commands')
+	        .adminHelpFooter(
+	        '` [js] (backtick) will directly execute a javascript expression\n')
+	        .helpFooter( 
+	        '\n' +
+	        'You can enter expressions such as B=sin(PI/4) on the command line,\n' +
+	        'or just enter the variable name to show its evaluation.\n'
+	        );
+	    rcs.cmd('exit',
+	            'Save the user and workspace then exit the program')
+	       .alias('quit')
+	       .variant('abort',
+	            'Exit the program without saving the user or workspace')
+	       .setHandler(self.exitCmdHandler);
+	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	    rcs.cmd('save [name]', 
+	            'Save the user and workspace then continue',
+	            'Supply a [name] to save this workspace under a specific name',
+	            'for later recall. You can have many workspaces under different',
+	            'names, although you have only one current workspace session.')
+	       .setHandler(self.saveCmdHandler);
+	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	    rcs.cmd('login [userName] [password]',
+	            'Log in to the server with a user name and password',
+	            'The user name and password can be omitted if you have already',
+	            'logged in from this client in a previous session.')
+	       .setHandler(self.loginCmdHandler);
+	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	    rcs.cmd('clear variables()',
+	            'Clear one or more variables from the workspace',
+	            'Use "clear all" to clear the full set of variables.')
+	       .setHandler(self.clearCmdHandler);
+	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -   
+	    rcs.cmd('list [variables()]',
+	            'List some or all of the variables in the workspace',
+	            'The default is to list all variables. You can list only',
+	            'selected entries with variable names or prefixes.',
+	            'Use ?? to list the detailed functions.')
+	       .alias('?')
+	       .alias('??')
+	       .setHandler(self.listCmdHandler);
+	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+	    rcs.addSubset('.', cs.ws.dotCmdSet());
+	    //mm.log('----- cs.ws.dotCmdSet():', cs.ws.dotCmdSet());    
+	    rcs.done();
+	    //mm.log('----- RCS:', rcs);
+	    mConsole.setCompleter(self.completer);
+	    self.rootCommandSet = rcs;
+	  }
+
+	  return CliCommands;
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
+
+/***/ },
+/* 45 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview Manage server side workspace session requests.
+	 * @module server/WsSession
+	 * @description
+	 * Once a client has connected to the server, a session is established
+	 * with a persistent workspace by its session id. This id represents
+	 * a long term session lifetime (can persist forever).
+	 */ 
+	 module.exports = function(mm) {
+	   var _ = mm.check(mm._);
+	   var Config = mm.check(mm.obj.Config);
+	   var ClientUser = mm.check(mm.users.ClientUser);
+	 
+	  /**
+	   * @summary **A server side session to match one on a browser**
+	   * @description
+	   * When user connects to the mMeddle site using a browser or client
+	   * applications (such as the CLI) it immediately loads a Workspace
+	   * from local storage. The sessionId of the workspace is provides
+	   * a long term socket between client and server.
+	   * @constructor
+	   * @param {string} sessionId the MMSID 
+	   * @param {Socket} socket the initial socket.io session for this wsSession  
+	   * @param {SocketService} socketService the parent socket service 
+	   * @returns {WsSession} the workspace session.
+	   */   
+	  var WsSession = (function wsSessionCtorCreator() {
+	    var ctor = function WsSession(sessionId, socket, socketService) {
+	      var self = this;
+	      self.config = new Config();
+	      self.user = new ClientUser();
+	      self.userConfig = new Config();
+	      self.sessionId = sessionId;
+	      self.socketService = socketService;
+	      self.storageEngine = socketService.storageEngine;
+	      self.socket = socket; // Changes on reconnections from clients.
+	      self.rqCount = 0; 
+	      self.rsCount = 0; 
+	      self.lastResponseAt = 0; //changes on every response.
+	      self.serverCreatonTime = _.now();
+	      self.firstConnectionTime = 0; // Set by client - may be very old.
+	      
+	      // Each session gets its own clients for storage access.
+	      // It creates another for user specific access.
+	      self.systemStorage = new mm.storage.StorageClient({
+	        user: 'systemAdmin',
+	        engine: self.storageEngine
+	      });
+	      self.usersStorage = new mm.storage.StorageClient({
+	        user: 'userAdmin',
+	        engine: self.storageEngine
+	      });
+	    }
+
+	    return ctor;
+	  }());    
+	  
+	  /**
+	   * @summary **handle a session request from a client**
+	   * @description
+	   * Each 'mmWsRq' message recieved on a socket is vectored to the
+	   * workspace session that is handling that id.
+	   * @param {Object} rq the request object
+	   * @param {Socket} socket the (possibly) new socket.io socket
+	   */   
+	  WsSession.prototype.handleRq = 
+	  function wsHandleRq(rq, socket) {
+	    var self = this;
+	    self.socket = socket;
+	    self.rqCount++;
+	    var op = rq.op;
+	    //mm.log.debug.low.log('- WS op:', op);
+	//mm.log.debug('- WS op:', op);
+	    if (self[op]) {
+	      self[op](rq);
+	    }
+	    else {
+	      mm.log.error('- Invalid workspace session operation:', rq);
+	      if (rq.rsRequired) {
+	        self.respond(rq, '', new Error('Invalid request:' + op));
+	      }
+	    }
+	  }
+	  
+	  /**
+	   * @summary **handler: logs a console message from a client session**
+	   * @description
+	   * Good for debugging and some progress logging. Don't use it to
+	   * excess or the logs get way too cluttered.
+	   * @param {Object} rq the request object
+	   */   
+	  WsSession.prototype.log = 
+	  function wsLog(rq) {
+	    var self = this;
+	    mm.log.debug('[' + self.sessionId + ']', rq.content);
+	  }
+	  
+	  /**
+	   * @summary **send a response to a client request**
+	   * @param {Object} rq the incoming request object
+	   * @param {Object} content the 'content' field for the response
+	   * @param {string} err if present 'ok' is false and 'error' is set 
+	   * @param {Object} optional extra fields for the response. 
+	   */   
+	  WsSession.prototype.respond = 
+	  function wsRespond(rq, content, err, extra) {
+	    var self = this;
+	    try{
+	      self.rsCount++;
+	      self.lastResponseAt = _.now();
+	      var errString = err ? err.toString() : ''
+	      var rs = {
+	        op: rq.op,
+	        ok: err ? false : true,
+	        rqId: rq.rqId,
+	        sessionId: self.sessionId,
+	        userName: self.user.name,
+	        at: self.lastResponseAt,
+	        content: content ? content : '',
+	        error: errString
+	      };
+	      if (extra) {
+	        _.assign(rs, extra);
+	      }
+	      // Add a special case for the most common failure case.
+	      if (err && self.systemStorage.notFound(err)) {
+	        rs.notFound = true;
+	      }
+	      self.socket.emit('mmWsRs', rs);
+	      mm.log.debug('----------> wsRespond:', rs);
+	    }
+	    catch (e) {
+	      mm.log.error('***> wsRespond failure: ', e.stack);
+	    }
+	  }
+
+	  return WsSession;
+	}
+
+
+/***/ },
+/* 46 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview Add User Request handlers to WsSession prototype.
+	 * @module server/WsSession
+	 * @description
+	 * These are the server side handlers for user related requests such
+	 * as login, logoff, createUser, changePassword and so on.
+	 */ 
+	 module.exports = function(mm) {
+	   var _ = mm.check(mm._);
+	   var WsSession = mm.check(mm.server.WsSession);
+	   var ClientUser = mm.check(mm.users.ClientUser);
+	  
+	  /**
+	   * @summary **handler: load public info on a user**
+	   * @description
+	   * A public user looked up by name (alias) only is returned.  If the
+	   * user doesn't exist then a `notFound` field is set in the response.
+	   * A createUser request will be required.
+	   * @param {Object} rq the request object
+	   */   
+	  WsSession.prototype.loadUser = 
+	  function wsLoadUser(rq) {
+	    var self = this;
+	    var userObj = rq.content;
+	    var userName = userObj.name;
+	    mm.log('- Loading public user [' + userName + ']');
+	    self.usersStorage.load('publicUsers', userName)
+	    .then(function(publicUser) {
+	      mm.log.debug('- Loaded user', publicUser);
+	      self.respond(rq, publicUser);
+	    },
+	    function(e) {
+	      /* istanbul ignore else */ // Tested independently.
+	      if (mm.util.ENOENT(e)) {
+	        mm.log.warn('loadUser: No such user exists: [' + userName + ']');
+	      }
+	      else {
+	        mm.log.debug('loadUser: Access error: [' + userName + ']', e.stack);
+	      }
+	      self.respond(rq, '', e);
+	    })
+	  }
+
+	  /**
+	   * @summary **handler: load public info on one or more users**
+	   * @description
+	   * Public users are looked up by name (alias) or a wildcard pattern.
+	   * An array of matching users is returned in the response.  An
+	   * empty array is returned when there are no storage errors during
+	   * the lookup.
+	   * @param {Object} rq the request object
+	   */   
+	  WsSession.prototype.loadUsers = 
+	  function wsLoadUsers(rq) {
+	    var self = this;
+	    var userObj = rq.content;
+	    var userNamePattern = userObj.name;
+	    mm.log('- Loading public users [' + userNamePattern + ']');
+	    self.usersStorage.loadMultiple('publicUsers', userNamePattern)
+	    .then(function(publicUsers) {
+	      mm.log.debug('- Loaded users', publicUsers);
+	      self.respond(rq, publicUsers);
+	    },
+	      /* istanbul ignore next */ // Tested independently.
+	    function(e) {
+	      mm.log.debug('Storage error: ', e.stack)
+	      self.respond(rq, '', e);
+	    })
+	  }
+
+	  /**
+	   * @summary **handler: login a user and return private info**
+	   * @description
+	   * The public user (acquired from a loadUser request) is coupled with
+	   * the pbkdf2 hash of the user entered password to acquire the private
+	   * information about the user, and to enable private object access to
+	   * this session.
+	   * @param {Object} rq the request object
+	   */   
+	  WsSession.prototype.loginUser = 
+	  function wsLoginUser(rq) {
+	    var self = this;
+	    var publicUserObj = rq.content;
+	    mm.log.debug('- Login with public user', publicUserObj);
+	    var userName = publicUserObj.name;
+	    var user = new ClientUser(userName);
+	    user.init(publicUserObj);
+	    mm.log('- Loading private user [' + userName + ']');
+	    self.usersStorage.load('privateUsers', userName)
+	    .then(function(privateUser) {
+	//mm.log.debug('- Loaded private user', privateUser);
+	//mm.log.debug('- ************ remotehpdk:', privateUser);
+	      var remotehpdk = user.hpdk;
+	      user.init(privateUser).hashPdk(self.socket.id);
+	//mm.log.debug('- User converted to', self.socket.id, user); 
+	      //Check the password derived key for a match.
+	      //Instead of checking the PDK directly, we check the
+	      //hpdk (a sha256 hash of the PDK based on a socket id seed).
+	      /* istanbul ignore else */ // Tested independently.
+	      if (user.hpdk === remotehpdk) {
+	        user.lastLogin = _.now();
+	        user.loginCount++;
+	        self.user = user; // The session is now owned by this user.
+	        self.loggedIn = true;
+	        var rsuser = new ClientUser(userName);
+	        rsuser.init(user);
+	        // The PDK is sent on the wire only once, during the original
+	        // password setting.
+	        delete rsuser.pdk; 
+	        var userConfig = self.loadUserConfig(userName);
+	        /* istanbul ignore if */ // Tested independently.
+	        if (userConfig) {
+	          mm.log('- Logged in user [' + userName +
+	                 '] with private configuration');        
+	          self.respond(rq, rsuser, false, { userConfig: userConfig });
+	        }
+	        else {
+	          mm.log('- Logged in user [' + userName + ']');
+	          self.respond(rq, rsuser);
+	        }
+	      }
+	      else {
+	        user.failedLoginCount++;
+	        mm.log.error('Password mismatch on user [{0}]. {1} failed attempts',
+	            userName, user.failedLoginCount);
+	        var e = new Error('Password mismatch. Sorry, try again');
+	        self.respond(rq, '', e);
+	      }
+	      self.usersStorage.store('privateUsers', user)
+	    },
+	      /* istanbul ignore next */ // Tested independently.
+	    function(e) {
+	      if (mm.util.ENOENT(e)) {
+	        mm.log.warn('loginUser: No such user exists: [' + userName + ']');
+	      }
+	      else {
+	        mm.log.debug('loginUser: Access error: [' + userName + ']', e.stack);
+	      }
+	      self.respond(rq, '', e);
+	    })
+	  }
+	  
+	    /**
+	   * @summary **handler: create a user and log in**
+	   * @description
+	   * New private and public users are created. The public user contains
+	   * only the user id, and public name, while the private version also
+	   * contains the email address.
+	   * @param {Object} rq the request object
+	   */   
+	  WsSession.prototype.createUser = 
+	  function wsCreateUser(rq) {
+	    var self = this;
+	    var userObj = rq.content;
+	    var userName = userObj.name;
+	    var user = new ClientUser(userName).init(userObj);
+	    user.firstLogin = _.now();  
+	    user.lastLogin = user.firstLogin;
+	    user.loginCount = 1;
+	    user.failedLoginCount = 0;
+	    mm.log('- Created new user [' + userName + ']');
+	    mm.log.debug('createUser: storing private user', user);        
+	    self.usersStorage.store('privateUsers', user)
+	    .then(function(info) {
+	      mm.log('- Saved private user info');
+	      var publicUser = new ClientUser(userName);
+	      publicUser.firstName = user.firstName;
+	      publicUser.lastName = user.lastName;
+	      // Pass the salt. Allows the PDK to be created by the client.
+	      publicUser.pbkdf2Salt = user.pbkdf2Salt;
+	      /* istanbul ignore if */ // Inspected not tested.
+	      if (user.privateEmail !== true) {
+	        publicUser.email = user.email;
+	      }
+	      mm.log.debug('createUser: storing', publicUser);            
+	      self.usersStorage.store('publicUsers', publicUser)
+	      .then(function(info) {
+	        self.user = user; // This user is now the current user.
+	        self.loggedIn = true;
+	        var userConfig = self.loadUserConfig(userName);
+	        /* istanbul ignore if */ // Tested independently.
+	        if (userConfig) {
+	          mm.log('- Created and Logged in user [' + userName +
+	                 '] with private configuration');        
+	          self.respond(rq, user, false, { userConfig: userConfig });
+	        }
+	        else {
+	          mm.log('- Created and Logged in user [' + userName + ']');
+	          self.respond(rq, user);
+	        }
+	      },
+	      /* istanbul ignore next */ // Tested independently.
+	      function(e) { 
+	        mm.log.error('Cannot save public user: ', e.stack);
+	        self.respond(rq, '', e);
+	      });
+	    },
+	    /* istanbul ignore next */ // Tested independently.
+	    function(e) { 
+	      mm.log.error('Cannot save private user:', e.stack);
+	      self.respond(rq, '', e);
+	    });
+	  }
+	  
+	  /**
+	   * @summary **handler: delete a user and return a message**
+	   * @description
+	   * The owning user of this session is deleted (if it matches the
+	   * request). The current user reverts to anonymous.
+	   * @param {Object} rq the request object
+	   */   
+	  WsSession.prototype.deleteUser = 
+	  function wsDeleteUser(rq) {
+	    var self = this;
+	    var deleteUserObj = rq.content;
+	    mm.log.debug('- Delete user', deleteUserObj);
+	    var userName = self.user.name;
+	mm.log.debug('++++++++++++++ deleteUser', deleteUserObj);
+	    /* istanbul ignore if */ // Tested independently.
+	    if (userName !== deleteUserObj.name) {
+	      var em1 = mm.format('"{0}" is not the current user: "{1}"',
+	          deleteUserObj.name, userName);
+	      mm.log.error(em1);
+	      self.respond(rq, '', new Error(em1));
+	      return;
+	    }
+	    mm.log('- Deleting private user [' + userName + ']');
+	    self.usersStorage.remove('privateUsers', userName)
+	    .then(function(ok) {
+	      mm.log('- Deleting public user [' + userName + ']');
+	      self.usersStorage.remove('publicUsers', userName)
+	      .then(function(ok) {
+	        var rmd = mm.format('User "{0}" has been removed', userName);
+	        self.respond(rq, rmd);
+	      },
+	      /* istanbul ignore next */ // Tested independently.
+	      function(e) { 
+	        mm.log.error('Cannot remove public user: ', e.stack);
+	        self.respond(rq, '', e);
+	      });
+	    },
+	    /* istanbul ignore next */ // Tested independently.
+	    function(e) { 
+	      mm.log.error('Cannot remove private user:', e.stack);
+	      self.respond(rq, '', e);
+	    });
+	  }
+
+	  /**
+	   * @summary **handler: list user sessions**
+	   * @description
+	   * The set of client sessions currently running is returned.
+	   * @param {Object} rq the request object   */   
+	  /* istanbul ignore next */ // Tested independently.
+	  WsSession.prototype.listUserSessions = 
+	  function wsListUserSessions(rq) {
+	    var self = this;
+	    var sessions = self.socketService.sessions;
+	    var sessionInfos = [];
+	    for (var key in sessions) {
+	      var session = sessions[key];
+	      var sessionInfo = {
+	        userName: session.user.name,
+	        sessionId: session.sessionId,
+	        rqCount: session.rqCount,
+	        rsCount: session.rsCount,
+	        lastResponseAt: session.lastResponseAt,
+	        serverCreatonTime: session.serverCreatonTime,
+	        firstConnectionTime: session.firstConnectionTime
+	      };
+	      sessionInfos.push(sessionInfo);
+	    }
+
+	    mm.log('- Sending into on {0} sessions', sessionInfos.length);
+	    self.respond(rq, sessionInfos);
+	  }
+
+	  /**
+	   * @summary **load a userConfig from .config.json files**
+	   * @description
+	   * Grant special powers to users who have custom .config.json files.
+	   * @param {ClientUser} a user to look up.
+	   * @returns {Config|null} a Config for the specified user.
+	   */   
+	  WsSession.prototype.loadUserConfig = 
+	  function wsLoadUserConfig(userName) {
+	    var self = this;
+	    var config = new mm.obj.Config();
+	    /* istanbul ignore if */ // Tested independently.
+	    if (config.userLoad(userName)) {
+	      // Establish the session user config for service request validation.
+	      // This also allows a power user to logon and pass those powers on 
+	      // to another user who logs on afterwards (only in the same session).
+	      self.userConfig.init(config);
+	      mm.log('- User [' + userName + '] has a personal config.json' )
+	      return self.userConfig;
+	    }
+	    else {
+	      return false;
+	    }
+	  }
+	}
+
+
+/***/ },
+/* 47 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	/**
+	 * @fileOverview Add workspace request handlers to WsSession.
+	 * @module server/WsSession
+	 * @description
+	 * The workspace related request handlers are here.
+	 */ 
+	 module.exports = function(mm) {
+	   var WsSession = mm.check(mm.server.WsSession);   
+	  
+	  /**
+	   * @summary **handler: saves a workspace to storage**
+	   * @description
+	   * The entire text of the workspace is save to storage. Functions in the
+	   * workspace have already been converted to text strings by the client.
+	   * @param {Object} rq the request object
+	   */   
+	  WsSession.prototype.saveWorkspace = 
+	  function wsSaveWorkspace(rq) {
+	    var self = this;
+	    mm.log.debug('[' + self.sessionId + '] Saving Workspace:', rq.content);
+	    var sc = new mm.storage.StorageClient({ 
+	      user: self.user.name, 
+	      engine: self.storageEngine 
+	    });
+	    var ws = JSON.parse(rq.content);
+	    var wsSession = {
+	      name: self.sessionId,
+	      ws: ws
+	    };
+	    sc.store('wsSessions', wsSession)
+	    .then(function(r) {
+	      mm.log('- Workspace session saved', self.sessionId);
+	      // Save the named workspace.
+	      /* istanbul ignore if */ // Tested independently.
+	      if (ws.name) {
+	        sc.store('ws', ws)
+	        .then(function(r) {
+	          mm.log('- Workspace saved:', ws.name);
+	          self.respond(rq);
+	        },
+	        function(e) { 
+	          mm.log.error('Workspace save failed: ', e)
+	          self.respond(rq, '', e);
+	        })
+	      }
+	      else {
+	        // Just save the session for unnamed workspaces.
+	        self.respond(rq);
+	      }
+	    },
+	    /* istanbul ignore next */
+	    function(e) { 
+	      mm.log.error('Workspace session save failed: ', e)
+	      self.respond(rq, '', e);
+	    })
+	  }
+
+	  return WsSession;
+	}
+
+
+/***/ },
+/* 48 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
+	/**
+	 * @fileOverview Manage socket.io sessions and services
+	 * @module server/SocketService
+	 */ 
+	 module.exports = function(mm) {
+	  var _ = mm.check(mm._);
+	  
+	  //--------------------------------------------------------------------------
+	  /**
+	   * @summary **A socket.io session service**
+	   * @description
+	   * Provides connection initiation, vectoring, session assignment, and
+	   * termination for clients connection to the service via socket.io.
+	   * @constructor
+	   * @returns {SocketService} the SocketService
+	   */  
+	  var SocketService = (function socketServiceCtorCreator() {
+	    var ctor = function SocketService() {
+	      var self = this;
+	      self.sessions = {};
+	    }
+
+	    return ctor;
+	  }());    
+	 
+	  /**
+	   * @summary **Initialize the sockets.io service.**
+	   * @description
+	   * Must be called before accepting connections.
+	   * @param {MMeddleServer} mMeddleServer the MMeddleServer
+	   * @param {StorageEngine} storageEngine the StorageEngine
+	   */  
+	  SocketService.prototype.initializeService = 
+	  function initialize(mMeddleServer, storageEngine) {
+	    var self = this;  
+	    self.mmServer = mMeddleServer;
+	    self.storageEngine = storageEngine;
+	    self.server = self.mmServer.server; // the Express server.
+	    
+	    // Socket.io setup.    
+	    var socketio = mm.socketServer.io;
+	    var socketio9 = socketio.version.indexOf('0.9.') === 0;
+	    self.socketio9 = socketio9;
+	    mm.log.debug('- socket.io: version = ' + socketio.version);
+	    /* istanbul ignore else */ // Tested in real world.
+	    if (socketio9) {
+	      var io = socketio.listen(self.server); // old form 0.9.16
+	      self.io = io;
+	      io.configure(function(){
+	        mm.log.debug('- socket.io: set default config');
+	        mm.log.debug('- socket.io: origins = "*.*"');
+	        //0 - error, 1 - warn, 2 - info, 3 - debug  
+	        io.set('log level', mm.config.socketIoLogLevel);
+	        mm.log.debug('- socket.io: log level:', mm.config.socketIoLogLevel);
+	        io.set('origins', '*:*');
+	        mm.log.debug('- socket.io: transports = ["websocket"]');
+	        io.set('transports', ['websocket']);
+	        mm.log.debug('- socket.io: configured for development');
+	      });
+
+	      mm.log('- Socket.io initialized.');
+	    }
+	    else {
+	      mm.log.error('Sorry, this version of Socket.io is not supported yet.');
+	    }
+	  }
+
+	  /**
+	   * @summary **Start accepting connections from socket.io**
+	   */  
+	  SocketService.prototype.acceptConnections = 
+	  function acceptConnections() {
+	    var self = this;  
+	    /* istanbul ignore else */ // Tested independently
+	    if (self.io) {
+	      self.io.on('connection', self.newConnection.bind(self));
+	    }
+	  }
+
+	  /**
+	   * @summary **Handle a new socket connection from a client**
+	   * @description
+	   * Queries the client to determine if this is actually a new session or a 
+	   * continuation of a currently running or suspended session. Vectors to
+	   * the appropriate handlers.
+	   * @param {Socket} socket a socket connection to a (remote) client
+	   */  
+	  SocketService.prototype.newConnection = 
+	  function newConnection(socket) {
+	    var self = this;
+	    var id = socket.id;
+
+	    function slog() {
+	      var args = Array.prototype.slice.call(arguments);
+	      args.unshift('[' + id + ']');
+	      mm.loggers.infoLogger.logArray(args);
+	    }
+
+	    slog('- Client connected as socket.io id:', id);
+	    socket.on('mmConnectRs', function (rs) {
+	      var sessionId = rs.sessionId;
+	      slog('- Connecting Workspace Session as', sessionId);
+	      mm.log.debug('----- mmConnectRs:', rs);
+	      var session;
+	      /* istanbul ignore if */ // Tested independently
+	      if (self.sessions[sessionId]) {
+	        session = self.sessions[sessionId];
+	      }
+	      else {
+	        session = new mm.server.WsSession(
+	            sessionId, 
+	            socket, 
+	            self);
+	        session.firstConnectionTime = rs.at;
+	        self.sessions[sessionId] = session;
+	      }
+
+	      session.from = rs.from;
+	      session.config.init(rs.config);
+	      session.lastConnectionTime = rs.at;
+	      session.socketId = id;
+	      session.socket = socket;
+	      
+	      //slog('- Session:', session);
+	    });
+	    
+	    socket.on('mmWsRq', function (rs) {
+	      var sessionId = rs.sessionId;
+	      mm.log.debug('- Workspace Session Request', id, rs);
+	      /* istanbul ignore else */ // Tested independently
+	      if (self.sessions[sessionId]) {
+	        var session = self.sessions[sessionId];
+	        session.handleRq(rs, socket);
+	      }
+	      else {
+	        mm.log.error('Unexpected Workspace session request', rs);
+	      }
+	    });
+
+	    // This is trash for testing REMOVEME REMOVEME REMOVEME REMOVEME
+	    socket.on('my other event', function (data) {
+	      slog(mm.util.inspect(data));
+	      slog('-----Whoa baby!');
+	    });
+
+	    // This is trash for testing REMOVEME REMOVEME REMOVEME REMOVEME
+	    socket.on('request-env', function (data) {
+	      var reply = process.env;
+	      if (mm.config.openShift) {
+	        reply = {
+	          id: id,
+	          text: '* Environment variables are not available from this server *'
+	        }
+	      }
+	      socket.emit('env', reply);
+	      slog('-----Posted environment');
+	    });
+	    
+	    socket.on('disconnect', function () {
+	      slog('***** Recieved disconnect *****');
+	    });
+
+	    // This is trash for testing REMOVEME REMOVEME REMOVEME REMOVEME
+	    socket.emit('news', { 
+	        id: id,
+	        hello: 'world - mMeddle with this!',
+	        from: mm.envText,
+	        at: _.now()
+	    });
+
+	    // Connect to a MMeddleClient running in a browser or client app.
+	    socket.emit('mmConnectRq', { 
+	        id: id,
+	        please: 'tell me who you are',
+	        from: mm.envText,
+	        at: _.now()
+	    });
+	  }
+
+	  return SocketService;
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
+
+/***/ },
+/* 49 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
+	/**
+	 * @fileOverview MMeddleServer
+	 * @module server/MMeddleServer
+	 */ 
+	 module.exports = function(mm) {
+
+	  //--------------------------------------------------------------------------
+	  /**
+	   * @summary **Express Server for mMeddle applications**
+	   * @description
+	   * A service to handle mMeddle clients.
+	   * @constructor
+	   * @returns {MMeddleServer} the new server.
+	   */  
+	  var MMeddleServer = (function serverCtorCreator() {
+	    var express = __webpack_require__(73);
+	    var serveStatic = __webpack_require__(74);
+	  
+	    var ctor = function MMeddleServer(dirName) {
+	      var self = this;    
+	      self.dirName = dirName;
+	      mm.log.debug('- mMeddleServer dirName: [{0}]', dirName);
+	      var defaultPort = mm.util.mmEnvOption('PORT', 8080); 
+	      var defaultIpAddr = mm.util.mmEnvOption('IPADDR', '127.0.0.1'); 
+	      self.ipaddress = mm.util.envOption('OPENSHIFT_NODEJS_IP', defaultIpAddr);
+	      self.port      = mm.util.envOption('OPENSHIFT_NODEJS_PORT', defaultPort);
+	      /* istanbul ignore if */ // Tested in real world.
+	      if (mm.config.openShift) {
+	        mm.log('- Running on OPENSHIFT_NODEJS');
+	      }
+	      
+	      mm.log('- Starting server on {0}:{1}', self.ipaddress, self.port);
+
+	      /**
+	       * @summary **the actual termination handler**
+	       * @description
+	       * Terminate server on receipt of the specified signal.
+	       * @param {string} sig  Signal to terminate on.       
+	       */  
+	      /* istanbul ignore next */ // Tested in real world.
+	      self.terminator = function (sig) {
+	        if (typeof sig === 'string') {
+	          mm.log.debug('{0}: Received {1} - terminating mMeddle server ...',
+	            Date(Date.now()), sig);
+	          process.exit(1);
+	        }
+	        mm.log('{0}: mMeddle server stopped.', Date(Date.now()));
+	      };
+
+	      /**
+	       * @summary **setup process termination handlers**
+	       * @description
+	       * Handle wrap up on ctrl-c exit from the process.
+	       */  
+	      /* istanbul ignore next */ // Tested in real world.
+	      self.setupTerminationHandlers = function () {
+	        //  Process on exit and signals.
+	        process.on('exit', function () {
+	          mm.log.debug('- server process exit');
+	          self.terminator();
+	        });
+
+	        // Removed 'SIGPIPE' from the list - bugz 852598.
+	        ['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP', 'SIGABRT',
+	          'SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM'
+	        ].forEach(function (element, index, array) {
+	          process.on(element, function () {
+	            self.terminator(element);
+	          });
+	        });
+	      };
+
+	      // ================================================================
+	      //                     mMeddle server functions
+	      // ================================================================
+
+	      /**
+	       * @summary **create routes for page access**
+	       * @description
+	       * Create the routing table entries + handlers for the application.
+	       */  
+	      self.createRoutes = function () {
+	        self.routes = {};
+
+	        // Serve the starting index page.
+	        /* istanbul ignore next */ // Tested in real world.
+	        self.routes['/'] = function (req, res) {
+	          res.setHeader('Content-Type', 'text/html');
+	          res.send(mm.fs.readFileSync('./index.html'));
+	        };
+	      };
+
+	      /**
+	       * @summary **initialize the server**
+	       * @description
+	       * Initialize the (express) server, create the routes and register
+	       * the handlers.
+	       */  
+	      self.initializeServer = function () {
+	        self.createRoutes();
+	        // self.app = express.createServer(); // deprecated (pre 4.0)
+	        self.app = express();
+	      
+	        //  Add handlers for the app (from the routes).
+	        for (var r in self.routes) {
+	          //self.app.get(r, redirectSec, self.routes[r]);
+	          self.app.get(r, self.routes[r]);
+	        }
+
+	        var cacheControl = {
+	          maxAge: '1d',
+	          setHeaders: setCustomCacheControl
+	        };
+	        
+	        var publicDirs = ['lib', 'dist', 'test', 'api', 'css', 'images'];
+	        publicDirs.forEach(function serveStaticDir(dir) {
+	          self.app.use('/' + dir,
+	              serveStatic(self.dirName + '/' + dir,  cacheControl));
+	        });
+
+	        /* istanbul ignore next */ // Tested in real world.
+	        function setCustomCacheControl(res, path) {
+	          mm.log.debug('- static fetch: [' + path + ']');
+	          if (serveStatic.mime.lookup(path) === 'text/html') {
+	            // Custom Cache-Control for HTML files
+	            res.setHeader('Cache-Control', 'public, max-age=0')
+	          }
+	        }
+	      };
+
+	      /**
+	       * @summary **start serving html and other web content**
+	       */  
+	      self.start = function () {
+	        //self.server = require('http').Server(self.app); // pre 4.0 express.
+	        self.server = self.app.listen(self.port, self.ipaddress, function (e) {
+	          mm.log('{0}: mMeddle server started on {1}:{2} ...',
+	              mm.util.timestamp(new Date(Date.now())), self.ipaddress, self.port);
+	        });
+	      };
+	    }
+
+	    return ctor;
+	  }());
+	  
+	  return MMeddleServer;
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
+
+/***/ },
+/* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -23048,3996 +26898,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 35 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
-	/**
-	 * @fileOverview Console line input and output for mMeddle CLI
-	 * @module core/CliConsole
-	 */ 
-	module.exports = function registerCliConsole(mm) {
-	  var check      = mm.check;
-	  var _          = check(mm._);
-	  var qq         = check(mm.Q);
-	  var EggTimer   = check(mm.obj.EggTimer);
-	  var ansi = __webpack_require__(78);
-
-	  var BS    = String.fromCharCode(0x08);                   // jshint ignore:line 
-	  var CR    = String.fromCharCode(0x0D); 
-	  var LF    = String.fromCharCode(0x0A);                   // jshint ignore:line 
-	  var CRLF  = String.fromCharCode(0x0D, 0x0A);             // jshint ignore:line 
-	  var HOME  = String.fromCharCode(0x1b, 0x5b, 0x31, 0x7e); // jshint ignore:line 
-	  var UP    = String.fromCharCode(0x1b, 0x5b, 0x41);       // jshint ignore:line 
-	  var DOWN  = String.fromCharCode(0x1b, 0x5b, 0x42);       // jshint ignore:line 
-	  
-	  var KeyCodes = {
-	    null  : [0x00],
-	    ctrlA : [0x01], // A
-	    ctrlB : [0x02], // B
-	    ctrlC : [0x03], // C
-	    ctrlD : [0x03], // D
-	    ctrlE : [0x03], // E
-	    ctrlF : [0x03], // F
-	    bell  : [0x07], // G
-	    bs    : [0x08], // H
-	    tab   : [0x09], // I
-	    lf    : [0x0A], // J
-	    ff    : [0x0B], // K
-	    ctrlL : [0x0C], // L
-	    cr    : [0x0D], // M
-	    ctrlN : [0x0E], // N
-	    ctrlO : [0x0F], // O
-	    ctrlP : [0x10], // P
-	    ctrlQ : [0x11], // Q
-	    ctrlR : [0x12], // R
-	    ctrlS : [0x13], // S
-	    ctrlT : [0x14], // T
-	    ctrlU : [0x15], // U 
-	    ctrlV : [0x16], // V
-	    ctrlW : [0x17], // W
-	    ctrlX : [0x18], // X
-	    ctrlY : [0x19], // Y
-	    ctrlZ : [0x1A], // Z
-	    esc   : [0x1B],
-	    up    : [0x1b, 0x5b, 0x41],
-	    down  : [0x1b, 0x5b, 0x42],
-	    right : [0x1b, 0x5b, 0x43],
-	    left  : [0x1b, 0x5b, 0x44],
-	    ins   : [0x1b, 0x5b, 0x32, 0x7e],
-	    del   : [0x1b, 0x5b, 0x33, 0x7e],
-	    home  : [0x1b, 0x5b, 0x31, 0x7e],
-	    end   : [0x1b, 0x5b, 0x34, 0x7e],
-	    pgup  : [0x1b, 0x5b, 0x35, 0x7e],
-	    pgdn  : [0x1b, 0x5b, 0x36, 0x7e],
-	    F1    : [0x1b, 0x5b, 0x5b, 0x41],
-	    F2    : [0x1b, 0x5b, 0x5b, 0x42],
-	    F3    : [0x1b, 0x5b, 0x5b, 0x43],
-	    F4    : [0x1b, 0x5b, 0x5b, 0x44],
-	    F5    : [0x1b, 0x5b, 0x5b, 0x45],
-	    F6    : [0x1b, 0x5b, 0x31, 0x37, 0x7e],
-	    F7    : [0x1b, 0x5b, 0x31, 0x38, 0x7e],
-	    F8    : [0x1b, 0x5b, 0x31, 0x39, 0x7e],
-	    F9    : [0x1b, 0x5b, 0x32, 0x30, 0x7e],
-	    F10   : [0x1b, 0x5b, 0x32, 0x31, 0x7e],
-	    F11   : [0x1b, 0x5b, 0x32, 0x33, 0x7e],
-	    F12   : [0x1b, 0x5b, 0x32, 0x34, 0x7e],
-	  };
-	  
-	  /**
-	   * @summary **console input and output for mMeddle CLI**
-	   * @description
-	   * Handles  console input and output so interruptions from asynchronous
-	   * events don't muck up the command as its being entered. Also provides
-	   * the usual command stack, line edit and tab completion operations.
-	   * Note that as soon as the CliConsole is created process.stdin is 
-	   * switched to raw character mode.  All output to the console must use
-	   * CliConsole or it will be confused about what is on the display.
-	   *
-	   * @constructor
-	   * @returns {CliConsole} the cli client.
-	   */  
-	  var CliConsole = function cliConsoleCtor() {
-	    var self = this;
-	    self.lastLine = '';
-	    self.error = null;
-	    self.saveOnlyUnique = false;
-	    self.closeHandler = null;
-	    self.maxPasswordLength = 15;
-	    self.savedInputLines = [];
-
-	    function makeLine (text) {
-	      return {
-	        textLine: text,
-	        multiLine: false
-	      };
-	    }
-
-	    var handlers = []; // The stack of input handlers;
-	    self.handler = {
-	      func: null,     // caller must supply one.
-	      prompt: '-->',
-	      pwdMode: false  // show * during input.
-	    };
-
-	    var outStream = process.stdout;
-	    var cursor = ansi(outStream);
-	    var inStream = process.stdin;
-	    
-	    // Make sure the console is in raw character mode.
-	    inStream.setEncoding('utf8');
-	    // Raw mode reads from the console without echoing characters and
-	    // doesn't buffer up the keys.  
-	    inStream.setRawMode(true);
-	    
-	    var pendingInputs = [];
-	    var keyQueue = [];   // unhandled keystrokes/keycodes.
-	    
-	    var currentInput = makeLine('');
-	    var inputOffset = 0; //offset from beginning of currentInput.
-	    var insertMode = true;
-	    var promptVisible = false;
-	    var partialOutputLine = true; // Require a CR before prompt.
-
-	    var currentSavedInputIndex = 0;
-	    var savedInitialLine = '';
-	    var scrollingPrevious = true;
-
-	    self.displayRows = outStream.rows;
-	    self.displayCols = outStream.columns;
-	    //console.log('- screen size is: ', 
-	    //    self.displayRows + 'x' + self.displayCols);
-	    
-	    // This eggTimer is used to trigger handling of all user input.
-	    // When there other outputs from other routines going on, the
-	    // input is bufferred in the keyQueue until and the timer is 
-	    // reset until there is a chance to deal with the inputs.
-	    var timer = new EggTimer(100).start();
-
-	    // Examines a keysequence to see of it is a control char,
-	    // alt code, or control code.
-	    function getKeyCode(unicodes) {
-	      var c = [];
-	      var keyEvent = null;
-	      //var ch1 = unicodes[0];
-	      var n = unicodes.length;
-	      var ch2 = n > 1 ? unicodes[1] : '';
-	      var c1 = unicodes.charCodeAt(0);
-	      for (var i = 0; i < n; i++) {
-	        c.push(unicodes.charCodeAt(i));
-	      }
-	      
-	      function keyMatch() {
-	        for (var key in KeyCodes) {
-	          if (_.isEqual(KeyCodes[key], c)) {
-	            keyEvent = key;
-	            return true;
-	          }
-	        }
-	        return false;
-	      }
-	      
-	      if (keyMatch()) return keyEvent;
-	      if (c1 === 0x1b && c.length > 1) {
-	        c.shift();
-	        if (keyMatch()) {
-	          return 'alt' + keyEvent;
-	        }
-	        else {
-	          return 'alt' + ch2;
-	        }
-	      }
-	      return null;
-	    }
-	    
-	    function isPrintableAscii(cc) {
-	      if (cc.length === 1) {
-	        var c = cc.charCodeAt(0);
-	        return c >= 32 && c < 128;
-	      }
-	      return false;
-	    }
-
-	    function hexString(unicode) {
-	      var h = '';
-	      var sep = '';
-	      for (var i = 0; i < unicode.length; i++) {
-	        var cc = unicode.charCodeAt(i);
-	        h += sep + hexOfUnicode(cc);
-	        sep = '|';
-	      }
-	      return h;
-	    }
-	    
-	    function hexOfUnicode(cc) {
-	      var d = cc.toString(16);
-	      while (d.length < 4) d = '0' + d;
-	      return d;
-	    }
-
-	    function hexOfAscii(cc) { // jshint ignore:line 
-	      var d = cc.toString(16);
-	      return (d.length < 2) ? '0' + d : d;
-	    }
-
-	    // Replaces a character at a specific position in the string.
-	    function setChar(str, offset, ch, insert) {
-	      var n = str.length;
-	      // Pad the string with spaces.
-	      while (n < offset) { str += ' '; n++; }
-	      // Append the character.
-	      if (offset === n) {
-	        return str += ch;
-	      }
-	      var left = str.substring(0, offset);
-	      var right = str.substring(offset + (insert ? 0 : 1));
-	      return left + ch + right;
-	    }
-
-	    // Remove a character at a specific position in the string.
-	    function delChar(str, offset) {
-	      var n = str.length;
-	      // Pad the string with spaces.
-	      while (n < offset) { str += ' '; n++; }
-	      if (offset === n) {
-	        return str.substring(0, offset - 1);
-	      }
-	      var left = str.substring(0, offset);
-	      var right = str.substring(offset + 1);
-	      return left + right;
-	    }
-
-	    // Handle saving of the text line stack.
-	    function saveInput(currentInput) {
-	      // Passwords are never saved.
-	      if (self.handler.pwdMode) {
-	        return false;
-	      }
-	      currentSavedInputIndex = 0;
-	      var textLine = currentInput.textLine;
-	      // Only single lines are saved in the stack.
-	      if (currentInput.multiLine) {
-	        return false;
-	      }
-	      // Lines must be at least 2 characters long to be worth saving.
-	      if (textLine.length === 0) {
-	       return false;
-	      }
-	      // Only unique lines are saved in the stack.
-	      if (self.saveOnlyUnique) {
-	        if (_.includes(self.savedInputLines, textLine)) {
-	         return false;
-	        }
-	      }
-	      // Do not save two duplicate lines in a row.
-	      if (self.savedInputLines.length > 0 &&
-	        self.savedInputLines[0] === textLine) 
-	      {
-	        return false;
-	      }
-	      self.savedInputLines.unshift(textLine); // stick it in the stack.
-	      return true;
-	    }
-	    
-	    function fetchPendingInput() {
-	      self.lastInput = pendingInputs.shift();
-	      self.lastLine = self.lastInput.textLine;
-	      saveInput(self.lastInput);
-	    }
-
-	    function out(chars) {
-	      cursor.write(chars);
-	      return self;
-	    }
-
-	    // Zero based horizontal line cursor positioning.
-	    function setLineOffset(n) {
-	      cursor.horizontalAbsolute(n + 1);
-	    }
-
-	    // Displays the prompt, current input, and positions  the cursor.
-	    function showPrompt(reprompt) {
-	      if (!promptVisible || reprompt) {
-	        promptVisible = true;
-	        if (partialOutputLine) {
-	          out(CR); // Always goes to the next line.
-	          partialOutputLine = false;
-	        }
-	        setLineOffset(0);
-	        cursor.eraseLine();
-	        //cursor.red();
-	        out(self.handler.prompt);
-	        cursor.show();
-	        return self;
-	      }
-	    }
-	    
-	    // Displays the prompt, current input, and positions  the cursor.
-	    function showCurrentLine(reprompt) {
-	      showPrompt(reprompt);
-	      setLineOffset(self.handler.prompt.length);
-	      //cursor.green();
-	      var text = currentInput.textLine;
-	      if (self.handler.pwdMode) {
-	        text = _.repeat('*', text.length);
-	      }
-	      out(text);
-	      cursor.eraseLine();
-	      var lineOffset = self.handler.prompt.length + inputOffset;
-	      setLineOffset(lineOffset);
-	      
-	      // TODO - allow the entry to be longer than the visible line.
-	      // use:  self.displayCols and when the text is wider than available
-	      // switch to :
-	      //     'prompt>...line of text is too long.'
-	      //  or 'prompt>This line of text is too ...'
-	      return self;
-	    }
-
-	    function rightArrow() {
-	      if (inputOffset < currentInput.textLine.length) {
-	        inputOffset++;
-	      }
-	      return showCurrentLine();
-	    }
-	    
-	    function leftArrow() {
-	      if (inputOffset > 0) {
-	        inputOffset--;
-	      }
-	      return showCurrentLine();
-	    }
-	    
-	    function backSpace() {
-	      if (inputOffset > 0) {
-	        inputOffset--;
-	        currentInput.textLine = delChar(currentInput.textLine, inputOffset);
-	      }
-	      return showCurrentLine();
-	    }
-
-	    function deleteChar() {
-	      if (inputOffset < currentInput.textLine.length) {
-	        inputOffset++;
-	        return backSpace();
-	      }
-	      return showCurrentLine();
-	    }
-	    
-	    function endOfLine() {
-	      inputOffset = currentInput.textLine.length;
-	      return showCurrentLine();
-	    }
-
-	    function startOfLine() {
-	      inputOffset = 0;
-	      return showCurrentLine();
-	    }
-
-	    function clearLine() {
-	      inputOffset = 0;
-	      currentInput.textLine = '';
-	      return showCurrentLine();
-	    }
-
-	    function toggleInsertMode() {
-	      insertMode = !insertMode;
-	      return self();
-	    }
-
-	    function previousSavedLine() {
-	      if (currentInput.multiLine) {
-	        // Not Implemented.
-	      }
-	      else {
-	        promptVisible = false;
-	        if (currentSavedInputIndex === 0) {
-	          savedInitialLine = currentInput.textLine;
-	        }
-	        if (self.savedInputLines.length > currentSavedInputIndex) {
-	          if (!scrollingPrevious &&
-	            self.savedInputLines.length > currentSavedInputIndex + 1) {
-	            currentSavedInputIndex++;
-	          }
-	          currentInput = makeLine(self.savedInputLines[currentSavedInputIndex]);
-	          currentSavedInputIndex++;
-	          scrollingPrevious = true;
-	        }
-	        else {
-	          currentInput = makeLine(savedInitialLine);
-	        }
-	        return endOfLine();
-	      }  
-	    }
-
-	    function nextSavedLine() {
-	      if (currentInput.multiLine) {
-	        // Not Implemented.
-	      }
-	      else {
-	        promptVisible = false;
-	        if (currentSavedInputIndex > 0) {
-	          currentSavedInputIndex--;
-	          if (scrollingPrevious && currentSavedInputIndex > 0) {
-	            currentSavedInputIndex--;
-	          }
-	          scrollingPrevious = false;
-	          currentInput = makeLine(self.savedInputLines[currentSavedInputIndex]);
-	        }
-	        else {
-	          currentInput = makeLine(savedInitialLine);
-	        }
-	        return endOfLine();
-	      }
-	    }
-	    
-	    // Handles auto completion.
-	    function autoComplete() {
-	      if (self.completer) {
-	        currentInput.textLine += '-TAB FIXME-';
-	        return endOfLine();
-	      }
-	    }
-
-	    // Handles Enter for single line entries.
-	    function enter() {
-	      if (self.handler.pwdMode) {
-	        showPrompt(true);
-	        out(_.repeat('*', self.maxPasswordLength));
-	      }
-	      else {
-	        showCurrentLine();
-	      }
-	      out(CR);
-	      pendingInputs.push(currentInput);
-	      currentInput = makeLine('');
-	      inputOffset = 0;
-	      promptVisible = false;
-
-	      // If there's a consumer for the input, handle it.
-	      if (self.handler.func) {
-	        fetchPendingInput();
-	      }
-	      while (self.handler.func) {
-	        var response = self.handler.func(self.lastLine);
-	        // This handler no longer wants to do the job.
-	        if (response === false) {
-	          self.handler = handlers.pop();
-	          return self; // All done.
-	        }
-	        else if (response === true) {
-	          return self; // All is well, all done.
-	        }
-	        else if (_.isString(response)) {
-	          // Allow the handler to act as a translator for the input.
-	          self.handler = handlers.pop();
-	          self.lastLine = response;
-	        }
-	        else {
-	          throw new Error('Invalid line handler response');
-	        }
-	      }
-	      return self;
-	    }
-
-	    function handleKeyEvent(kc) {
-	      switch (kc) {
-	        case 'cr': return enter();
-	        case 'tab': return autoComplete();
-	        case 'bs': return backSpace();
-	        case 'del': return deleteChar();
-	        case 'esc': return clearLine();
-	        case 'ins': return toggleInsertMode();
-	        case 'right': return rightArrow();
-	        case 'left': return leftArrow();
-	        case 'home': return startOfLine();
-	        case 'end': return endOfLine();
-	        case 'up': return previousSavedLine();
-	        case 'down': return nextSavedLine();
-	      }
-	      return self;
-	    }
-
-	    function handleVisibleInputChar(ch) {
-	      currentInput.textLine = 
-	          setChar(currentInput.textLine, inputOffset, ch, insertMode);
-	      inputOffset++;
-	      return showCurrentLine();
-	    }
-
-	    //------------------------------------------------------------------------
-	    //                            Public Methods
-	    //------------------------------------------------------------------------
-
-	    /**
-	     * @summary **Define a close handler**
-	     */    
-	    self.onClose = function onClose(func) {
-	      self.closeHandler = func;
-	    }
-	    
-	    /**
-	     * @summary **Close the input stream**
-	     */    
-	    self.close = function close() {
-	      if (self.closeHandler) self.closeHandler();
-	    }
-	    
-	    /**
-	     * @summary **Clear the screen**
-	     */    
-	    self.clearScreen = function clearScreen() {
-	      var windowSize = process.stdout.getWindowSize();
-	      var linesPerScreen = windowSize[1];
-	      var lineFeeds = _.repeat('\n', linesPerScreen);
-	      cursor.write(lineFeeds);
-	      cursor.eraseData(2);
-	      cursor.goto(1, 1);
-	    }
-
-	    /**
-	     * @summary **Output some text info to the consolee**
-	     * @description
-	     * Outputs normal text to the console. The pending input line is
-	     * erased and restored later when input continues.
-	     */    
-	    self.write = function write(text) {
-	      if (promptVisible) {
-	        setLineOffset(0);
-	        cursor.eraseLine();
-	        cursor.hide();
-	      }
-	      out(text);
-	      partialOutputLine = false;
-	      if (text.length > 0) {
-	        var ch = text[text.length - 1];
-	        partialOutputLine = (ch !== '\r' && ch !== '\n');
-	      }
-	      promptVisible = false;
-	      return self;
-	    }
-	    
-	    /**
-	     * @summary **Output a text line to the consolee**
-	     * @description
-	     * Outputs a normal text line to the console.
-	     */    
-	    self.writeLine = function writeLine(textLine) {
-	      self.write(textLine);
-	      out(CR);
-	      partialOutputLine = false;
-	      return self
-	    }
-
-	    /**
-	     * @summary **Establish the line handler**
-	     * @description
-	     * There is only one line handler at a time. Each new handler
-	     * pushes the previous one on a stack. If a handler returns true,
-	     * then it will continue to accept new messages. A handler returns
-	     * false to indicate that it the previous handler should accept the
-	     * next input. Return the input string (or a different one) to pop
-	     * to the prior handler and provide it with the string.
-	     * @param {function} handler the function(text)
-	     * @param {string} prompt a new prompt to use (optional).
-	     * @param {bool} password true for password entry mode (optional)
-	     */    
-	    self.setLineHandler =
-	    function setLineHandler(handler, prompt, passwordMode) {
-	      // Use the previous prompt if one is not supplied.
-	      if (!prompt) prompt = self.handler.prompt;
-	      handlers.push(self.handler);
-	      self.handler = {
-	        func: handler,
-	        prompt: prompt,
-	        pwdMode: passwordMode
-	      };
-	      showCurrentLine(true);
-	    }
-	    
-	    /**
-	     * @summary **Establish a line completer**
-	     * @description
-	     * When present the line completer provide info for tab completion.
-	     * @param {function} completer the tab completion function
-	     */    
-	    self.setCompleter = function setCompleter(completer) {
-	      self.completer = completer;
-	    }
-
-	    /**
-	     * @summary Ask a question from the console
-	     * @description
-	     * Asks for a response from the user. If an object is supplied this
-	     * returns a promise to the object being modified, otherwise it returns
-	     * a promise to the answer string.
-	     * Blank lines return an error.
-	     * If the passed in object contains an initialized field of
-	     * then no question is asked and the promise is satisfied immediately.
-	     * @param {string} query the text question to ask.
-	     * @param {Object} obj the optional object to be modified
-	     * @param {string} field the field name in the obj to be set
-	     * @param {bool} isPwd true if password blanking is to be used.
-	     * @returns {Q} returns Promise(Object|string), the `obj` or the answer string
-	     */
-	    self.ask = function ask (query, obj, field, isPwd) {
-	      if (obj && obj.field) {
-	        return qq(obj);
-	      }
-	      var qD = qq.defer();
-	      self.setLineHandler(function(answer) {
-	        if (answer) {
-	          if (obj) {
-	            obj[field] = answer;
-	            qD.resolve(obj);
-	          }
-	          else {
-	            qD.resolve(answer);
-	          }
-	        }
-	        else {
-	          qD.reject(new Error('Blank line not allowed. Entry abandoned'));
-	        }
-	        return false; // Only ask once.
-	      }, query, isPwd === true ? true : false);
-	      return qD.promise;
-	    }
-	    
-	    //------------------------------------------------------------------------
-	    //                            Event Handlers
-	    //------------------------------------------------------------------------
-	    
-	    // This eggTimer is the core handler for interaction with the user.
-	    // Whenever output stops for a while, this timer handles any keys
-	    // that the user has managed to type in the meantime.
-	    timer.onDing(function processPendingInputs() {
-	try {
-	      var n = keyQueue.length;
-	      var keys = keyQueue;
-	      keyQueue = [];
-	      if (n > 0) {
-	        keys.forEach(function handleKey(key) {
-	          if (key.keyCode) {
-	            handleKeyEvent(key.keyCode);
-	          }
-	          else if (key.visibleChar) {
-	            handleVisibleInputChar(key.visibleChar);
-	          }
-	          else if (key.ctrlCode) {
-	console.log('********** Unhandled key code', key);                        
-	            var e = 'Unhandled key code:' + hexString(key.ctrlCode);
-	            self.error = new Error(e);
-	            keyQueue = [];
-	          }
-	          else {
-	console.log('********** Unrecognized key event', key);            
-	            var ee = 'Unrecognized key event' + JSON.stringify(key);
-	            self.error = new Error(ee);
-	            keyQueue = [];
-	          }
-	        });
-	      }
-	      else {
-	        // Prompt the user for more input.
-	        showPrompt();
-	      }
-
-	      // The keyboard is more peppy when there are pending keystrokes.
-	      timer.reset(n > 0 ? 10 : 50);
-	}
-	catch (e) {
-	  console.log('********** timer.onDing', e.stack);
-	}      
-	    });
-	    
-	    // Character input just saves the characters for later.
-	    // Control C is the only exception - by default, it will kill the
-	    // process graveyard dead.
-	    inStream.on('readable', function() {
-	      var cch = inStream.read();
-	      if (cch !== null) {
-	        var k = getKeyCode(cch);
-	        if (k) {
-	          if (k === 'ctrlC') {
-	            if (self.closeHandler) {
-	              self.closeHandler();
-	            }
-	            self.writeLine('[' + k + '] - Exit');
-	            process.exit();
-	          }
-	          keyQueue.push({ keyCode: k });
-	        }
-	        else {
-	          if (cch.length > 1) {
-	            keyQueue.push({ ctrlCode: cch });
-	          }
-	          else {
-	            if (isPrintableAscii(cch)){
-	              keyQueue.push({ visibleChar: cch });
-	            }
-	            else {
-	              keyQueue.push({ ctrlCode: cch });
-	            }
-	          }
-	        }
-	      }
-	    });
-	    
-	    inStream.on('end', function() {
-	      self.close();
-	      console.log('---- END ----');
-	      self.error = new Error('The console is now endeed');
-	    });  
-
-	    inStream.on('close', function() {
-	      self.close();
-	      console.log('---- CLOSED ----');
-	      self.error = new Error('The console is now closed');
-	    });  
-
-	    inStream.on('error', function(e) {
-	      self.close();
-	      console.log('---- ERROR:', e.stack);
-	      self.error = e;
-	    });
-
-	    //------------------------------------------------------------------------
-	    // Note that on Windows, resizing the window by dragging the size
-	    // handle around never changes the column count (since it can scroll)
-	    // but strangely does change the row count to match the number of
-	    // visible rows.
-	    outStream.on('resize', function() {
-	      console.log('- screen size has changed to ',
-	         outStream.columns + ' columns by ' + outStream.rows + ' rows.');
-	      self.displayRows = outStream.rows;
-	      self.displayCols = outStream.columns;
-	    });    
-	  }
-
-	  CliConsole.KeyCodes = KeyCodes;
-	  return CliConsole;
-	}
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
-
-/***/ },
-/* 36 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview A single commands along its handler and documentation
-	 * @module core/Cmd
-	 */ 
-	module.exports = function registerCliCommands(mm) {
-
-	  /**
-	   * @summary **A single CLI commands**
-	   * @description
-	   * Declares a command, its parameters help information and a
-	   * function for handling the command.
-	   * @constructor
-	   * @param {string} keywordFormat a command keyword followed by optional format
-	   * @param {string} desc the short (one line) command description
-	   * @param {string} help the multiline help message if available
-	   * @returns {Cmd} the command
-	   */  
-	  var Cmd = function cmdCtor(keywordFormat, desc, help) {
-	    var cmd = this;
-	    var format = keywordFormat.split(' ');
-	    var keyword = format.shift();
-	    cmd.keyword = keyword;
-	    cmd.format = format;
-	    cmd.handler = null;
-	    cmd.desc = desc;
-	    cmd.help = Array.prototype.slice.call(arguments, 2).join(' ');
-	    cmd.aliases = [];
-	    cmd.variants = [];
-	    cmd.argEnums = {};
-	    
-	    // all functions are members in the closure.
-
-	    /**
-	     * @summary **Restrict input arguments to an enum**
-	     * @description
-	     * An alias is an alternate keyword for execution of the command.
-	     * @param {string} argName keyword a command keyword
-	     * @param {string} values the set of values separated by |
-	     * @returns {Cmd} the parent command for chaining
-	     */  
-	    cmd.argEnum = function argEnum(argName, values) {
-	      cmd.argEnums[argName] = values;
-	      return cmd;
-	    }
-
-	    /**
-	     * @summary **Declare an alias to a command**
-	     * @description
-	     * An alias is an alternate keyword for execution of the command.
-	     * @param {string} keyword a command keyword
-	     * @returns {Cmd} the parent command for chaining
-	     */  
-	    cmd.alias = function alias(keyword) {
-	      cmd.aliases.push(keyword);
-	      return cmd;
-	    }
-
-	    /**
-	     * @summary **Make a command available only to administrators**
-	     * @description
-	     * An admin command is not visible, nor is it executable by a user who
-	     * is does not have 'admnistrator: true` in the cs.userConfig. This is more
-	     * about preventing stupid mistakes than security.
-	     * @returns {Cmd} the parent command for chaining
-	     */  
-	    cmd.setAdmin = function setAdmin() {
-	      cmd.adminRequired = true;
-	      return cmd;
-	    }
-
-	    /**
-	     * @summary **Set a timeout in seconds for the command**
-	     * @description
-	     * Commands will normally timeout after a time fixed by the CmdSet.
-	     * Provide a timeout only if this command should be allowed to run
-	     * longer than the usual time.
-	     * @param {number} timeoutSeconds a time in seconds
-	     * @returns {Cmd} the parent command for chaining
-	     */  
-	    cmd.setTimeout = function setTimeout(timeoutSeconds) {
-	      cmd.timeoutSec = timeoutSeconds;
-	      return cmd;
-	    }
-
-	    /**
-	     * @summary **Declare a variant to a single CLI commands**
-	     * @description
-	     * A variant has different behavior than the parent command, but uses
-	     * the same handler function. The handler function determines what to
-	     * do for the variant by checking its `context.keyword`
-	     * @param {string} keywordFormat a command keyword followed by optional format
-	     * @param {string} desc the short (one line) command description
-	     * @param {string} help the multiline help message if available
-	     * @returns {Cmd} the parent command for chaining
-	     */  
-	    cmd.variant = function variant(keywordFormat, desc, help) {
-	      var fullhelp = Array.prototype.slice.call(arguments, 2).join(' ');
-	      var newcmd = new Cmd(keywordFormat, desc, fullhelp);
-	      cmd.variants.push(newcmd);
-	      return cmd;
-	    }
-
-	    /**
-	     * @summary **Define the handler for a command**
-	     * @description
-	     * The handler is called when a matching text command has been supplied 
-	     * to the owning `CmdSet` via console entry or other source.
-	     * The handler is supplied a `context` object. 
-	     * Handlers can be immediate or promise based async.  If immediate, the
-	     * handler should return a truthy value reqardess of whether it 
-	     * succeeds or not. Return a new Error on false.
-	     * When async, return a promise to the result. Handlers are always
-	     * evaluated in execution order, so when a promise is returned, all other
-	     * command evaluations will be queued until the command has completed.
-	     * @param {function(context)} handler the handler function
-	     * @returns {Cmd} the command for chaining.
-	     */  
-	    cmd.setHandler = function setHandler(handler) {
-	      cmd.handler = handler;
-	      return cmd;
-	    }
-	  }
-
-	  return Cmd;
-	}
-
-
-/***/ },
-/* 37 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview A set of commands along with handlers and documentation
-	 * @module core/CmdSet
-	 */ 
-	module.exports = function registerCliCommands(mm) {
-	  var check = mm.check;
-	  var _     = check(mm._);
-	  var qq    = check(mm.Q);
-	  var Cmd   = check(mm.core.Cmd);
-
-	  /**
-	   * @summary **A set of CLI commands**
-	   * @description
-	   * Declares command keywords, parameters, help information and a
-	   * function for handling the command.
-	   * @constructor
-	   * @returns {CmdSet} the set of commands.
-	   */  
-	  var CmdSet = function cmdSetCtor() {
-	    var self = this;
-	    self.initialized = false;
-	    self.basecmds = [];
-	    self.subsets = {};
-	    self.keywords = [];
-	    self.cmds = {};
-	    self.timeoutSec = 30;
-	    self.helpPrefix = '';
-	    return self;
-	  }
-
-	  /**
-	   * @summary **set the title for the set**
-	   * @description
-	   * A title is used in help messages.
-	   * @param {string} title text to add to start of the help summary
-	   * @returns {CmdSet} the CmdSet for chaining.
-	   */    
-	  CmdSet.prototype.setTitle = function setTitle(title) {
-	    var self = this;
-	    self.title = title;
-	    return self;
-	  }
-
-	  /**
-	   * @summary **add a footer to the help summary**
-	   * @param {string} footer the text to add to the end of the help summary
-	   * @returns {CmdSet} the CmdSet for chaining.
-	   */    
-	  CmdSet.prototype.helpFooter = function helpFooter(footer) {
-	    var self = this;
-	    self.footer = footer;
-	    return self;
-	  }
-
-	  /**
-	   * @summary **add a special footer to the help summary**
-	   * @description
-	   * Declares a footer for the help summary that is only shown when logged
-	   * in as an administrator.
-	   * @param {string} footer the text to add to the end of the help summary
-	   * @returns {CmdSet} the CmdSet for chaining.
-	   */    
-	  CmdSet.prototype.adminHelpFooter = function adminHelpFooter(footer) {
-	    var self = this;
-	    self.adminFooter = footer;
-	    return self;
-	  }
-
-	  /**
-	   * @summary **initialize the command set**
-	   * @returns {CmdSet} the CmdSet.
-	   */    
-	  CmdSet.prototype.done = function initialize() {
-	    var self = this;
-	    function setCmd(keyword, base) {
-	      var word = keyword.toLowerCase();
-	      self.keywords.push(word);
-	      self.cmds[word] = base;
-	    }
-	    
-	    function registerCmd(cmd, base) {
-	      setCmd(cmd.keyword, base);
-	      cmd.aliases.forEach(function(alias) { setCmd(alias, base); });
-	      cmd.variants.forEach(function(variant) {
-	        registerCmd(variant, base);
-	      });
-	    }
-	    if (!self.initialized) {
-	      self.basecmds.forEach(function(basecmd) {
-	        registerCmd(basecmd, basecmd);
-	      });
-	    }
-	    self.initialized = true;
-	    if (!self.cmds.help) {
-	      self.registerHelpCmd();
-	    }
-	    return self;
-	  }
-	  
-	  /**
-	   * @summary **add a `help` command to the set**
-	   * @description
-	   * If there is no `help` command declared before the set initialization
-	   * is done, then this creates a default version of one.
-	   * @returns {CmdSet} the CmdSet for chaining.
-	   */    
-	  CmdSet.prototype.registerHelpCmd = function registerHelpCmd() {
-	    var self = this;
-	    function helpCmdHandler(context, args) {
-	      try { 
-	        if (args.commandName) return self.helpCmdDetail(context, args);
-	        return self.helpCmdSummary(context, args);
-	      } catch (e) { mm.log.error('helpCmdHandler', e.stack); }
-	    }
-
-	    var helpCmd = new Cmd('help [commandName]',
-	        'Display available commands')
-	       .setHandler(helpCmdHandler);
-	    self.cmds.help = helpCmd;
-	    return self;
-	  }
-
-	  // List all of the available commands in this set.  
-	  CmdSet.prototype.helpCmdSummary = function helpCmdSummary(context, args) {
-	    var self = context.set;
-	    var isAdmin = context.cs.userConfig.administrator;
-	    var prefix = self.helpPrefix;
-	    if (_.isString(self.title)) {
-	      mm.log('-----', self.title, '-----');
-	      mm.log();
-	    }
-	    var sortedCmds = [];
-	    self.basecmds.forEach(function(basecmd) {
-	      // Show admin commands only to an administrator.
-	      if ((!basecmd.adminRequired) || isAdmin) {
-	        sortedCmds.push(basecmd);
-	        basecmd.variants.forEach(function(variant) {
-	          sortedCmds.push(variant);
-	        });
-	      }
-	    });
-	    sortedCmds = _.sortBy(sortedCmds, 'keyword');
-	    sortedCmds.forEach(function (cmd) {
-	      var cmdName = prefix + cmd.keyword;
-	      var helpLine = _.padRight(cmdName, 9) + ': ' + cmd.desc;
-	      mm.log(helpLine);
-	    });
-	    if (_.size(self.subsets) > 0) {
-	      mm.log();
-	      _.forEach(self.subsets, function (subset, key) {
-	        var sp = key.length > 1 ? ' ' : '';
-	        mm.log(key + sp + '[command] : ' + subset.title);
-	      });
-	    }
-	    
-	    if (self.adminFooter && isAdmin) {
-	      mm.log(self.adminFooter);
-	    }
-	    if (self.footer) {
-	      mm.log(self.footer);
-	    }
-	    return true;
-	  }
-
-	  CmdSet.prototype.helpCmdDetail = function helpCmdDetail(context, args) {
-	    var self = context.set;
-	    var prefix = self.helpPrefix;
-	    var cmdName = args.commandName.toLowerCase();
-	    var cmd = self.cmds[cmdName];
-	    if (!cmd && prefix && _.startsWith(cmdName, prefix)) {
-	      cmdName = cmdName.substr(prefix.length);
-	      cmd = self.cmds[cmdName];
-	    }
-	    if (cmd) {
-	      cmdName = prefix + cmd.keyword;
-	      var format = cmd.format.join(' ');
-	      mm.log('Command:', cmdName, format, ':', cmd.desc);
-	      // Show the acceptable enumerated argument values.
-	      if (_.size(cmd.argEnums) > 0) {
-	        _.forEach(cmd.argEnums, function (values, key) {
-	          mm.log('   Argument "' + key + '" are in [' + values + ']');
-	        });
-	      }
-	      if (cmd.aliases.length > 0) {
-	        var aliasText = '   Alias' + (cmd.aliases.length > 1 ? 'es' : '');
-	        aliasText = aliasText + ': ' + cmd.aliases.join(', ');
-	        mm.log(aliasText);
-	      }
-	      if (cmd.help) {
-	        mm.log('  ', cmd.help);
-	      }
-	      return true;    
-	    }
-	    else {
-	      var e = new Error('No such command: "' + args.commandName + '"'); 
-	      mm.log.error(e);
-	      return true; // The help command has succeeded.
-	    }
-	  }
-	  
-	  /**
-	   * @summary **add a command subset to the set**
-	   * @description
-	   * A command subset is a set of commands that require a prefix on
-	   * the command line. If the prefix is a single character then no
-	   * space is required between it and the sub-command keyword.
-	   * Subsets are displayed with their own help (i.e. [prefix] help [cmd]).
-	   * @param {string} prefix prefix to select the subset.
-	   * @param {CmdSet} cmdSet command subset to add to this set.
-	   * @returns {CmdSet} the current CmdSet being added to.
-	   */    
-	  CmdSet.prototype.addSubset = function addSubset(prefix, cmdSet) {
-	    var self = this;
-	    self.subsets[prefix] = cmdSet;
-	    cmdSet.helpPrefix = prefix + (prefix.length > 1 ? ' ' : '');
-	    return self;
-	  }
-
-	  /**
-	   * @summary **set the default handler**
-	   * @description
-	   * The default handler is called when the command does not otherwise
-	   * match any commands in the set or its subsets. The context is passed
-	   * (which contains the exact `text` for the text that did not match.
-	   * @param {function} handler the command handler.
-	   * @returns {CmdSet} the current CmdSet being added to.
-	   */    
-	  CmdSet.prototype.defaultHandler = function defaultHandler(handler) {
-	    var self = this;
-	    self.defaultHandler = handler;
-	    return self;
-	  }
-
-	  /**
-	   * @summary **add an existing command to the set**
-	   * @param {Cmd} cmd existing cmd to add to this set.
-	   * @returns {Cmd} the Cmd being added.
-	   */    
-	  CmdSet.prototype.add = function addCommand(cmd) {
-	    var self = this;
-	    self.basecmds.push(cmd);
-	    return cmd;
-	  }
-
-	  /**
-	   * @summary **create a new command and add it to the set**
-	   * @description
-	   * A helper method for `cmd=new Cmd(), cmdSet.add(cmd)`.
-	   * @param {string} keywordFormat a command keyword followed by optional format
-	   * @param {string} desc the short (one line) command description
-	   * @param {string} help the multiline help message if available
-	   * @returns {Cmd} the command
-	   */    
-	  CmdSet.prototype.cmd = function newCommand(keywordFormat, desc, help) {
-	    var self = this;
-	    var helpArg = Array.prototype.slice.call(arguments, 2).join(' ');
-	    var cmd = new Cmd(keywordFormat, desc, helpArg);
-	    self.add(cmd);
-	    return cmd;
-	  }
-
-	  /**
-	   * @summary **do a command in this set**
-	   * @description
-	   * A command line is parsed and used to populate the context for a 
-	   * matching keyword.
-	   * @param {string} the single or multiline command
-	   * @param {ClientSession} the current client session
-	   * @returns {Q(result)} Promise to the result of the handler or Q(false).
-	   */    
-	  CmdSet.prototype.doCmd = function doCmd(cmdText, cs) {
-	    var self = this;
-	    if (!self.initialized) self.done();
-	    var args = mm.util.removeWhitespace(cmdText).split(' ');
-	    var keyword = args[0].toLowerCase();
-	    var cmd = self.cmds[keyword];
-	    var arg1 = args.length > 1 ? args[1] : '';
-	    var arg2 = args.length > 2 ? args[2] : '';
-	    var arg3 = args.length > 3 ? args[3] : '';
-	    
-	    // Check for a matching command subset prefix.
-	    if (!cmd && _.size(self.subsets) > 0) {
-	      for (var prefix in self.subsets) {
-	        if (_.startsWith(keyword, prefix)) {
-	          var subset = self.subsets[prefix];
-	          var subCmdText = cmdText.substr(prefix.length);
-	          // Handle special subcmd help command format: "[prefix]? [command]"
-	          if (_.startsWith(subCmdText, '?')) {
-	            subCmdText = 'help ' + subCmdText.substring(1);
-	          }
-	          return subset.doCmd(subCmdText, cs);
-	        }
-	      }
-	    }
-
-	    // Handle special help command format: "[command] -h / -?"
-	    if (arg1 === '-h' || arg1 === '-?' ) {
-	      cmdText = 'help ' + keyword;
-	      args = cmdText.split(' ');
-	      arg1 = keyword;
-	      keyword = 'help';
-	      cmd = self.cmds[keyword];
-	    }
-	    
-	    // Put QQ pending handling here xxxxxxxxxxxx
-	    // Sequence the commands.
-
-	    var handler = self.defaultHandler;
-	    var timeout = self.timeoutSec * 1000;
-	    if (!cmd && !handler) {
-	      return qq(false);
-	    }
-
-	    var context = {
-	      keyword: keyword,
-	      args: args,
-	      arg1: arg1,
-	      arg2: arg2,
-	      arg3: arg3,
-	      text: cmdText,
-	      set: self,
-	      cs: cs
-	    }
-
-	    if (cmd) {
-	      if (cmd.adminRequired) {
-	        if (!cs.userConfig.administrator) {
-	          var ea = 'You must be an administrator to do this.';
-	          return qq.reject(new Error(ea));
-	        }
-	      }
-	      timeout = (cmd.timeoutSec ? cmd.timeoutSec * 1000 : timeout);
-	      // When a format is supplied, check the arguments against it and
-	      // build a populated args object.
-	      var oargs = {};
-	      var remainderIsArray = false;
-	      if (cmd.format.length > 0) {
-	        var i = 0;
-	        var fargs = cmd.format;
-	        for (var fargi in fargs) {
-	          i++;
-	          var farg = fargs[fargi];
-	          if (remainderIsArray) return;
-	          var arg = args[i];
-	          var optional = _.startsWith(farg, '['); 
-	          if (optional) farg = farg.substring(1, farg.length - 1);
-	          var array = _.endsWith(farg, '()');
-	          if (array) {
-	            remainderIsArray = true;
-	            farg = farg.substring(0, farg.length - 2);
-	            var arrayArg = _.slice(args, i);
-	            oargs[farg] = arrayArg;
-	            if (!optional && arrayArg.length === 0) {
-	              var e1 = cmd.keyword + ' requires at least one "' +
-	                      farg + '" argument';
-	              return qq.reject(new Error(e1));
-	            }
-	          }
-	          else {
-	            oargs[farg] = ''; // Create blanks for each argument.
-	            if (!optional && !arg) {
-	              var e2 = cmd.keyword + ' requires a "' + farg + '" argument';
-	              return qq.reject(new Error(e2));
-	            }
-	            var argEnum = cmd.argEnums[farg];
-	            if (argEnum) {
-	              var allowedVals = argEnum.split('|');
-	              if (!_.contains(allowedVals, arg)) {
-	                var e3 = 'Argument "' + farg + '" must be in' + allowedVals;
-	                return qq.reject(new Error(e3));
-	              }
-	            }
-	            oargs[farg] = arg; // Add to the object.
-	          }
-	        } // next arg
-	        //mm.log('-------- Arguments:', oargs);      
-	      }
-	      
-	      handler = cmd.handler.bind(cmd, context, oargs);
-	    }
-	    else {
-	      handler = self.defaultHandler.bind(self, context);
-	    }
-
-	    var result = qq.fcall(handler);
-	    return result.timeout(timeout, 'The command timed out');
-	      // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx QQ pending .... stuff
-	      // xxxxxxxxxxxxxxx Command Timeout ...stuff
-	  }
-
-	  CmdSet.Cmd = Cmd;
-	  return CmdSet;
-	}
-
-
-/***/ },
-/* 38 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * @fileOverview Lexer math text lexical analyser.
-	 * @module core/Lexer
-	 */ 
-	'use strict';
-	module.exports = function registerLexer(mm) {
-	  var _ = mm._;
-
-	  /**
-	   * @summary The worlds simplest lexical parser.
-	   * @constructor
-	   * @return {Lexer} a lexer to parse and manage a set of tokens.
-	   * @example
-	   *   // Tokens can contain one or more properties:
-	   *   {
-	   *      char: 'x',        // a symbol character
-	   *      id: 'id_12',      // an identifier
-	   *      lcid: 'name',     // the `id` in lower case
-	   *      number: '1.1e24', // a number string
-	   *      pos: 3241,        // character offset in input string.
-	   *   }
-	   */  
-	  var Lexer = (function lexerCtorCtor() {
-	    return function LexerCtor() {
-	      var self = this;
-	      self.tokens = [];
-	      self.inx = 0;
-	    }
-	  }());
-
-	  /**
-	   * @summary Determine if the token list is exhausted.
-	   * @return {bool} true if there are no more tokens.
-	   */  
-	  Lexer.prototype.done = function done() {
-	    var self = this;
-	    return (self.inx >= self.tokens.length);
-	  }
-
-	  /**
-	   * @summary Get the current token without advancing in the list.
-	   * @return {Token} the current token or an empty object.
-	   */  
-	  Lexer.prototype.token = function token() {
-	    var self = this;
-	    return (self.inx < self.tokens.length) ? self.tokens[self.inx] : {};
-	  }
-	  
-	  /**
-	   * @summary Get and remove the next token.
-	   * @return {Token} the next token from the list or an empty object.
-	   */  
-	  Lexer.prototype.next = function next(s) {
-	    var self = this;
-	    return (self.inx < self.tokens.length) ? self.tokens[self.inx++] : {};
-	  }
-
-	 /**
-	  * @summary Expand all arguments containing | into array.
-	  * @static
-	  * @param {Array} array an array of strings, some containing |
-	  * @return {Array} a bigger array with all | split out.
-	  */  
-	  Lexer.expandBar = function expandBar(array) {
-	    var r = [];
-	    array.forEach(function(a) {
-	      var s = a.split('|');
-	      s.forEach(function(v) { r.push(v) });
-	    });
-	    return r;
-	  }
-
-	  /**
-	   * @summary Determine if current token is a command token.
-	   * @description
-	   * The input is a list of lower case words which are matched in a case
-	   * insensitive way against an id token.
-	   * @param {...*} command words to match 
-	   * @return {bool} true if one of the inputs matches.
-	   */  
-	  Lexer.prototype.isCmd = function isCmd() {
-	    var self = this;
-	    var token = self.token();
-	    var args = Lexer.expandBar(Array.prototype.slice.call(arguments));
-	    for (var i = 0; i < args.length; i++) {
-	      var arg = args[i];
-	      if (token.lcid === arg) return true;
-	      // Allow single character symbols to be used as commands.
-	      if (arg.length === 1 && token.char === arg) return true;
-	    }
-	    return false;
-	  }
-
-	  /**
-	   * @suummary Parse a string into a set of tokens.
-	   * @description
-	   * The input string (or array of strings) is parsed into an
-	   * array of token objects.
-	   * @param {String|Array} text 
-	   * @return {Array} an array of lex tokens.
-	   */
-	  Lexer.prototype.parse = function parse(s) {
-	    var self = this;
-	    self.tokens = [];
-	    self.inx = 0;
-	    if (_.isArray(s)) s = s.join(' ');
-	    self.text = s;
-	    var token; 
-	    //var reWhitespace = /^\s/;
-	    var reIdentifier = /^[A-Za-z_]+[0-9A-Za-z_$]*/;
-	    var reNumber = /^(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+\-]?\d+)?/
-	    var charPos = 0;
-
-	    function prune(sym) {
-	      var n = sym.length;
-	      s = s.substring(n);
-	      charPos += n;
-	    }
-
-	    function tryMatch(prop, re) {
-	      var v = s.match(re);
-	      if (!v) return false;
-	      token.pos = charPos;
-	      var sym = v[0];
-	      prune(sym);
-	      token[prop] = v[0];
-	      return true;
-	    }
-
-	    function whitespace(s) {
-	      var spaces = '';
-	      var v;
-	      do {
-	        v = s.match(/^\s/);
-	        if (v) {
-	          spaces += v[0];
-	          s = s.substring(1);
-	        }
-	      } while (v);
-	      return spaces;
-	    }
-
-	    function nextToken() {
-	      token = {};
-	      var ws = whitespace(s);
-	      if (ws) {
-	        prune(ws);
-	        token.whitespace = ws;
-	      }
-	      if (tryMatch('id', reIdentifier)) {
-	        token.lcid = token.id.toLowerCase();
-	        return;
-	      }
-	      if (tryMatch('number', reNumber)) return;
-	      if (s.length > 0) {
-	        token.char = s[0];
-	        token.pos = charPos++;
-	        s = s.substring(1);
-	      }
-	    }
-
-	    while(s) {
-	      nextToken();
-	      self.tokens.push(token);
-	    }
-
-	    return self.tokens;
-	  }
-
-	  return Lexer;
-	}
-
-
-/***/ },
-/* 39 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * @fileOverview mmath math function evaluator.
-	 * @module core/mmath
-	 * @description
-	 * mmath wrappers the mathjs package to provide mmeddle specific
-	 *  typing, to return symbolic expressions whenever an function is not yet
-	 *  resolved to a constant value and to perform unit conversions.
-	 * @credits
-	 * mmath makes extensive use of the truly excellent mathjs package by 
-	 *   Jos de Jong <wjosdejong@gmail.com> (https://github.com/josdejong) for 
-	 *   numerical evaluation, and significant code and ideas from mathjs have
-	 *    been hacked into mmeddle.
-	 */ 
-	'use strict';
-	module.exports = function registerMmath(mm) {
-	  var math = __webpack_require__(73);
-	  var BigNumber = math.bignumber;
-	  var log = mm.check(mm.log);  
-	  var dbg = mm.check(log.debug);
-	  var LOW = mm.check(mm.Logger.Priority.LOW);  
-
-	  math.config({
-	    number: 'bignumber', // Default type of number: 'number' (default) or 'bignumber'
-	    precision: 64        // Number of significant digits for BigNumbers
-	  });  
-
-	  var MMath = (function mMathCtorCtor() {
-	    // Any static data for all mMath goes here.
-	  
-	    var MMath = function mMathCtor() {
-	      var mmath = this;
-	      mmath.E       = { constant: Math.E, 
-	              desc: 'The mathematical constant e. This is Euler\'s number,' +
-	                    'the base of natural logarithms.' };
-	      mmath.LN2     = { constant: Math.LN2, 
-	              desc: 'The natural logarithm of 2' };
-	      mmath.LN10    = { constant: Math.LN10, 
-	              desc: 'The natural logarithm of 10' };
-	      mmath.LOG2E   = { constant: Math.LOG2E, 
-	              desc: 'The base-2 logarithm of e' };
-	      mmath.LOG10E  = { constant: Math.LOG10E, 
-	              desc: 'The base-10 logarithm of e' };
-	      mmath.PI      = { constant: Math.PI, 
-	              desc: 'Pi. This is the ratio of the circumference of a circle ' + 
-	                    'to its diameter' };
-	      mmath.SQRT1_2 = { constant: Math.SQRT1_2, 
-	              desc: 'The square root of 0.5, or, equivalently, one divided by ' +
-	                    'the square root of 2' };
-	      mmath.SQRT2   = { constant: Math.SQRT2, 
-	              desc: 'The square root of 2' };
-	      mmath.abs     = { func: Math.abs, 
-	              desc: 'Returns the absolute value of a number.' };
-	      mmath.acos    = { func: Math.acos, 
-	              desc: 'Returns the arccosine of a number.' };
-	      mmath.asin    = { func: Math.asin, 
-	              desc: 'Returns the arcsine of a number.' };
-	      mmath.atan    = { func: Math.atan, 
-	              desc: 'Returns the arctangent of a number.' };
-	      mmath.atan2   = { func: Math.atan2, 
-	              desc: 'Returns the angle (in radians) from the X axis to a point ' +
-	                    'represented by the supplied y and x coordinates.' }; 
-	      mmath.ceil    = { func: Math.ceil, 
-	              desc: 'Returns the smallest integer that ' +
-	                    'is greater than or equal to the supplied numeric expression.' };
-	      mmath.cos     = { func: Math.cos, 
-	              desc: 'Returns the cosine of a number.' };
-	      mmath.exp     = { func: Math.exp, 
-	              desc: 'Returns e (the base of natural logarithms) raised to a power.' };
-	      mmath.floor   = { func: Math.floor, 
-	              desc: 'Returns the greatest integer that is less than or equal to ' +
-	                    'the supplied numeric expression.' };
-	      mmath.log     = { func: Math.log, 
-	              desc: 'Returns the natural logarithm of a number.' };
-	      mmath.max     = { func: Math.max, 
-	              desc: 'Returns the greater of two supplied numeric expressions.' };
-	      mmath.min     = { func: Math.min, 
-	              desc: 'Returns the lesser of two supplied numbers.' };
-	      mmath.pow     = { func: Math.pow, 
-	              desc: 'Returns the value of a base expression raised to a ' + 
-	                    'specified power.' };
-	      mmath.random  = { func: Math.random, 
-	              desc: 'Returns a pseudorandom number between 0 and 1.' };
-	      mmath.round   = { func: Math.round, 
-	              desc: 'Returns a specified numeric expression rounded to ' + 
-	                    'the nearest integer.' };
-	      mmath.sin     = { func: Math.sin,
-	              desc: 'Returns the sine of a number.' };
-	      mmath.sqrt    = { func: Math.sqrt, 
-	              desc: 'Returns the square root of a number.' };
-	      mmath.tan     = { func: Math.tan, 
-	              desc: 'Returns the tangent of a number.' };
-
-	      // Memoized big number factorial.
-	      var factorial = (function factorialCtor() {
-	        var f = [1, 1];
-	        var i = 2;
-	        return function _factorial (n) {
-	          if (f[n] > 0) return f[n];
-	          var result = f[i-1]; // get the highest memoized result.
-	          for (; i <= n; i++) f[i] = result = result * i;
-	          return result;
-	        }
-	      }())
-
-	      // Memoized simple number factorial.
-	      var bnFactorial = (function bnFactorialCtor() {
-	        var f = [new BigNumber('1'), new BigNumber('1')];
-	        var i = 2;
-	        return function bn_factorial(n)
-	        {
-	          if (typeof f[n] !== 'undefined') return f[n];
-	          var result = f[i-1];
-	          for (; i <= n; i++) f[i] = result = math.multiply(result, i);
-	          return result;
-	        }
-	      }())
-	      
-	      // Takes about 8 iterations to converge on the same result as Math.sin
-	      // with a typical delta under 3E-16.  Note this is a direct implementation
-	      // of the taylor series without optimization.  An intelligent version
-	      // would take advantage of the work done in the prior iteration. Even
-	      // the factorial can be avoided that way.
-	      // sin(x) = x - x^3/3! + x^5/5! - x^7/7! + x^9/9! - ...
-	      mmath.sin.real = function sin(x) {
-	        dbg('- Taylor series version of sine function for (', x, ')', LOW);
-	        function nodd(n) { return (n % 2 === 0) ? 1 : -1 }
-	        function t(x, n) { return Math.pow(x, n) / factorial(n) }
-	        function s(n) { return nodd((n - 1) / 2) }
-	        var result = x;
-	        var lastResult = x;
-	        var n = 1;
-	        var i = 0;
-	        var unchanged = false;
-	        do {
-	          lastResult = result;
-	          n += 2;
-	          i++;
-	          var tn = t(x, n);
-	          result += s(n) * tn;
-	          dbg('--- sin(', x, ') i=', i, 'tn=', tn,
-	              'lastr=', lastResult, 'r=', result, LOW);
-	          unchanged = result === lastResult;
-	        } while (!unchanged);
-	        var msin = Math.sin(x);
-	        dbg('- real.sin(', result, ') Math.sin=', msin,
-	            'delta=', Math.abs(result - msin), LOW);
-	        return result;    
-	      }
-	      
-	      // Takes about 23 iterations to converge on the same result as Math.sin.
-	      // Since decimal inputs are limited to 15 significant digits, the delta
-	      // is less than 10e-14.
-	      // Note this is a direct implementation of the taylor series without
-	      //  optimization.  An intelligent version would take advantage of the 
-	      // work done in the prior iteration. Even the factorial can be avoided.  
-	      // sin(x) = x - x^3/3! + x^5/5! - x^7/7! + x^9/9! - ...
-	      mmath.sin.big = function bn_sin(xin) {
-	        var x = new BigNumber(xin.toString().substring(0, 15));
-	        dbg(
-	            '- Taylor series version of BigNumber sine function for ({0})',
-	            x, LOW);
-	        function nodd(n) { return (n % 2 === 0) ? 1 : -1 }
-	        function s(n) { return nodd((n - 1) / 2) }
-	        function t(x, n) { 
-	          return math.divide(math.pow(x, n), bnFactorial(n));
-	        }
-	        
-	        var result = x;
-	        var lastResult;
-	        var n = 1;
-	        var i = 0;
-	        var unchanged = false;
-	        do {
-	          n += 2;
-	          i++;
-	          lastResult = result;    
-	          var tn = t(x, n);
-	          dbg('--- sin({0}) i={1} tn={2} lastr={3} r={4}',
-	              x, i, tn, lastResult, result, LOW);
-	          if (s(n) < 0) result = math.subtract(result, tn)
-	                   else result = math.add(result, tn);
-	          unchanged = result.equals(lastResult);        
-	        } while (!unchanged);
-	        var msin = Math.sin(xin);
-	        dbg('- big.sin({0}) Math.sin={1} delta={2}', 
-	           result, msin, math.abs(math.subtract(result, msin)),
-	           LOW);
-	        return result;    
-	      }
-	      
-	      mmath.sin.f = mmath.sin.real; // default implementation for real values.
-
-	    } // End of constructor for access to constructor closure.
-
-	    return MMath;
-	  }()); // Run constructor initializer for static creations.
-
-	  return MMath;
-	}  
-
-
-/***/ },
-/* 40 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * @fileOverview Workspace manages the objects available to a session.
-	 * @module core/Workspace
-	 */ 
-	'use strict';
-	module.exports = function registerWorkspace(mm) {
-	  var check       = mm.check;
-	  var _           = mm.check(mm._);
-	  var Enum        = check(mm.obj.Enum);
-	  var log         = check(mm.log);
-	  var Logger      = check(mm.Logger);
-	  var CmdSet      = check(mm.core.CmdSet);
-	  
-	  // fixme - get the settings from mm.
-	  var settings = {}
-	  settings._props = {
-	    numberMode: {
-	      values: new Enum('num|big|imp')
-	    }
-	  };
-	  
-	  var NUMBERMODE = settings._props.numberMode.values;
-	  settings.numberMode = NUMBERMODE.num;
-	  settings.debugMode = false;
-	  settings.glorm = 'fuzzle';
-
-	  /**
-	   * @summary **Create a persistent workspace**
-	   * @description
-	   * A workspace manages the persistent information about what a user is
-	   * working on. It is saved to both browser/client localStorage and to
-	   * server storage when online.
-	   * @constructor
-	   * @param {ClientSession} cs the current client session 
-	   * @returns {Workspacee} the SocketService
-	   */   
-	  var Workspace = (function workspaceCtorCtor() {
-	    // Any static data for all workspaces goes here.
-	  
-	    var Workspace = function workspaceCtor(cs) {
-	      var ws = this;
-	      ws.name = '';
-	      ws.vars = {};
-	      ws.settings = settings;
-	if (!cs) mm.log.error('?????????????????', new Error('xxx').stack);
-	      /**
-	       * @summary Initialize a ws from a saved JSON object.
-	       * @description
-	       * All fields of the existing ws are replaced by those in the source
-	       * object. Any fields NOT in the source object remain in the ws.
-	       */      
-	      Workspace.prototype.init = function init(wsObj) {
-	        var ws = this;  
-	        _.assign(ws, wsObj);
-	      }
-
-	      Object.defineProperty(ws, 'varsCount', {
-	        get: function () { return _.keys(this.vars).length; },
-	        enumerable: true,
-	        configurable: true
-	      });
-
-	      Workspace.prototype.list = function list(prefixes, detailed) {
-	        var ws = this;  
-	        var n = 0;    
-	        Object.keys(ws.vars).forEach(function (key) {
-	          var matched = true;
-	          if (prefixes && prefixes.length > 0) {
-	            matched = false;
-	            prefixes.forEach( function (prefix) {
-	              prefix = _.trimRight(prefix, '*');
-	              matched = matched || _.startsWith(key, prefix);
-	            });
-	          }
-	          if (matched) {
-	            if (detailed) {
-	              if (_.isFunction(ws.vars[key].f)) {
-	                log('   ' + key + ' = ' + ws.vars[key].f);
-	              }
-	              else {
-	                // Put quotes around currently unevaluated functions.
-	                log('   ' + key + ' = \'' + ws.vars[key].f +'\'');
-	              }
-	            }
-	            else {
-	              log('   ' + key + ' = ' + ws.vars[key].human);
-	            }
-	            n++;
-	          }
-	        });
-
-	        log('Listed', n, 'variables from workspace.');
-	        return true;
-	      }
-
-	      Workspace.prototype.clear = function clear(variables) {
-	        var ws = this;
-	        if (!variables || variables.length === 0) {
-	          log('Use "all" to clear all variables, otherwise name the variable.');
-	          return true;
-	        }
-	        if (variables[0] === 'all') {
-	          ws.vars = {};
-	          log('All variables cleared.');
-	          return true;
-	        }
-	        variables.forEach(function (v) {
-	          if (ws.vars[v]) {
-	            delete ws.vars[v];
-	            log('Removed variable: "'+ v + '"');
-	          }
-	          else {
-	            log('Variable "{0}" not found.', v);
-	          }
-	        });
-	        return true;
-	      }
-	        
-	      Workspace.prototype.dotCmdSet = function dotCmdSet() {
-	        var ws = this;      
-	        var cset = new CmdSet().setTitle('Workspace Control Commands');
-	        cset.cmd('big',
-	            'Use \'big\' numbers in computations')
-	            .setHandler(function setBigNumberMode() {
-	               ws.settings.numberMode = NUMBERMODE.big;
-	               log('. Big Numbers mode.');
-	               return true;
-	            });
-	        cset.cmd('num',
-	            'Use \'normal\' numbers in computations')
-	            .setHandler(function setNormalNumberMode() {
-	               ws.settings.numberMode = NUMBERMODE.num;
-	               log('. Normal numbers mode.');
-	               return true;
-	            });
-	        cset.cmd('imp',
-	            'Use \'imp\' for mMeddle implemented numbers in computations')
-	            .setHandler(function setImpNumberMode() {
-	               ws.settings.numberMode = NUMBERMODE.imp;
-	               log('. mMeddle implemented numbers mode.');
-	               return true;
-	            });
-	        cset.cmd('debug [state] [level]',
-	            'Set debugging output modes',
-	            '\'Debug on low\' selects low level debugging (verbose output)')
-	            .argEnum('level', 'high|low|norm')
-	            .argEnum('state', 'on|off|true|false')
-	            .setHandler(function setDebugMode(context, args) {
-	            if (args.state || args.level) {
-	              if (args.state && _.includes(['on', 'true'], args.state)) {
-	                mm.loggers.debugLogger.enable();
-	                ws.settings.debugMode = true;
-	                mm.log('. Debug logging on.');
-	              }
-	              if (args.state && _.includes(['off', 'false'], args.state)) {
-	                mm.loggers.debugLogger.disable();
-	                ws.settings.debugMode = false;
-	                mm.log('. Debug logging off.');
-	              }
-	              if (args.level) {
-	                var mode = args.level.toUpperCase();
-	                var priority = Logger.Priority[mode];
-	                mm.loggers.debugLogger.allowPriority(priority);
-	                mm.loggers.rootLogger.allowPriority(priority);
-	                mm.log('. Debug logging mode is {0}.', mode);
-	              }
-	            }
-	            else {
-	              mm.loggers.debugLogger.disable();
-	              ws.settings.debugMode = false;
-	              mm.log('. Debug logging off.');
-	            }
-	            return true;
-	          });
-	        cset.cmd('list [obj] [spec]',
-	            'List a server object type',
-	            '\'List user\' shows information about the logged in user\n',
-	            '\'List users\' lists the currently connected users\n',
-	            '\'List ws\' lists the workspaces for this user\n',
-	            'Use [spec] to select a prefix to subset the objects to list.')
-	            .argEnum('obj', 'user|users|ws')
-	            .setHandler(function listObj(context, args) {
-	              if (args.obj === 'users') {
-	                return cs.listUserSessions()
-	                .then(function (sessionEntries) {
-	                  mm.log(sessionEntries);
-	                  return true;
-	                });
-	              }
-	              else if (args.obj === 'user') {
-	                if (args.spec) {
-	                  var userName = args.spec;
-	                  return cs.getUser(userName)
-	                  .then(function (users) {
-	                    if (users.length === 0) {
-	                      mm.log('- User matching "{0}" not found', userName);
-	                    }
-	                    else {
-	                      users.forEach(function (user) {
-	                        //mm.log('- User: ', user);
-	                        mm.log('- "{0}" is {1} {2}  email:{3}', 
-	                            user.name,
-	                            user.firstName, user.lastName, user.email);
-	                        
-	                      });
-	                    }
-	                    return true;
-	                  });
-	                }
-	                else {
-	                    mm.log('- This User: ', cs.user);
-	                    if (cs.loggedIn) {
-	                      if (cs.loggedIn.name === cs.user.name) {
-	                        mm.log('- Logged in.');
-	                      }
-	                      else {
-	                        mm.log.warn('- But logged in as :', 
-	                          cs.loggedIn.name);
-	                      }
-	                    }
-	                    else {
-	                      mm.log('- Not logged in.');
-	                    }
-	                }
-	              }
-	              else {
-	                mm.log('- List {0} * NOT IMPLEMENTED *', args.obj);
-	              }
-	              return true;
-	            });
-	        cset.cmd('deleteUser',
-	            'Delete the current user')
-	            .setHandler(function delUser() {
-	              return cs.userDelete()
-	              .then(function (msg) {
-	                mm.log(msg);
-	                return true;
-	              },
-	              function (err) {
-	                mm.log(err);
-	                return true;
-	              });
-	            });
-	        cset.cmd('syncDbToFs [collection]',
-	            'Synchronize the database to the file system')
-	            .setAdmin()
-	            .setHandler(function syncDbToFs() {
-	               mm.log('. syncDbToFs * NOT IMPLEMENTED *');
-	               return true;
-	            });
-	        cset.cmd('syncFsToDb [collection]',
-	            'Synchronize the file sysem storage area to the mongo database')
-	            .setAdmin()
-	            .setHandler(function syncFsToDb() {
-	               mm.log('. syncFsToDb * NOT IMPLEMENTED *');
-	               return true;
-	            });
-	        cset.cmd('reconnect',
-	            'Reconnect to the server')
-	            .setHandler(function reconnect() {
-	              cs.mmc.socket_reconnect();
-	              return true;
-	            });
-	        cset.done();
-	        return cset;
-	      }
-	    } // End of constructor for access to constructor closure.
-
-	    return Workspace;
-	  }()); // Run constructor initializer for static creations.
-
-	  return Workspace;
-	}
-
-/***/ },
-/* 41 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * @fileOverview Parser text mode math parser and command handler.
-	 * @module core/Parser
-	 */ 
-	'use strict';
-	module.exports = function registerLexer(mm) {
-	  var check      = mm.check;
-	  var _          = check(mm._);
-	  var log        = check(mm.log);
-	  var dbg        = check(log.debug);
-	  var LOW = mm.check(mm.Logger.Priority.LOW);  
-
-	  // The worlds simplest mmath parser.
-	  var Parser = (function parserCtorCtor() {
-	    // Any static data for the parser goes here.
-	  
-	    var Parser = function parserCtor(cs, ws, mmath) {
-	      var self = this;
-	      self.ws = check(ws);       // Make the ws and mmath available from
-	      self.mmath = check(mmath); // outside the closure for plugins.
-	      self.cs = check(cs); 
-	      self.settings = check(ws.settings);
-	      Object.keys(ws.vars).forEach(function (key) {
-	        ws.vars[key].f = evalFuncStr(ws.vars[key].f);
-	      });
-
-	      function evalFuncStr(func) {
-	        // When a workspace is saved to storage all functions are converted
-	        // to strings. They are reevaluated to functions the first time
-	        // an attempt is made to use one.
-	        if (!_.isFunction(func)) {
-	          func = '(' + func + ')';
-	          dbg('- Convert [{0}] to function', func, LOW);
-	          return eval(func); // jshint ignore:line 
-	        }
-	        else {
-	         return func;
-	        }
-	      }
-
-	      Parser.prototype.evalBacktick = function evalBacktick(expr) {
-	        var self = this;
-	        if (self.cs.userConfig.administrator) {
-	          try {
-	            var r = eval(expr); // jshint ignore:line 
-	            mm.log('Result:', r);
-	          }
-	          catch (e) {
-	            throw new Error('Eval failed:' + e.stack);
-	          }
-	        }
-	        else {
-	          throw new Error('You must be an administrator to do this.');
-	        }
-	      }
-
-	      Parser.prototype.evaluate = function evaluate(expr) {
-	        var self = this;
-	        if (_.startsWith(expr, '`')) return self.evalBacktick(expr.substr(1));      
-	        var NUMBERMODE = self.settings._props.numberMode.values;
-	        var val = null;
-	        self.evalFailed = false;
-	        var assigned = '';
-	        var re = /^\s*([A-Za-z_]+[0-9A-Za-z_$]*)\s*=/;
-	        var matches = expr.match(re);
-	        var hasAssignment = matches;
-	        if (hasAssignment) {
-	          assigned = matches[1];
-	          var i = expr.indexOf('=');
-	          expr = expr.substring(i + 1);
-	          dbg('--- Assignment: ', assigned, LOW);
-	          dbg('--- Expression: ', expr, LOW);
-	        }
-	        
-	        var textExpression = _.trim(expr);
-	        var idTest = /[A-Za-z_]+[0-9A-Za-z_]*/g;
-	        var hasVariables = false;
-	        var hasUndefined = false;
-	        var undefineds = [];
-	        expr = expr.replace(idTest, function(v) {
-	          var rv = 'ws.vars["' + v + '"].f()';
-	          hasVariables = true;
-	          dbg('id:[{0}]', v, LOW);
-	          if (!ws.vars[v]) {
-	            // look for the symbol in mmath.
-	            if (self.mmath[v]) {
-	              if (self.mmath[v].f &&
-	                  self.settings.numberMode !== NUMBERMODE.num) {
-	                
-	                rv = 'mmath.' + v + '.f'; // Standard mMeddle implementation
-	                if (self.mmath[v].big &&
-	                  self.settings.numberMode === NUMBERMODE.big) {
-	                  rv = 'mmath.' + v + '.big'; // Use big when available.
-	                }
-	              }
-	              else {
-	                rv = 'Math.' + v; // Use the Math implementation
-	              }
-	            }
-	            else {
-	              hasUndefined = true;
-	              if (_.indexOf(undefineds, v) < 0) undefineds.push(v);
-	              var undefinedFunc = 
-	                  '(function(){ return self.notDefined("' +
-	                  v + '") })';
-	              ws.vars[v] = {human: '*undefined*', f:
-	                  eval(undefinedFunc) }; // jshint ignore:line 
-	            }
-	          }
-	          return rv;
-	        });
-
-	        expr = '(function(){ return ' + expr + ' })';
-	        dbg('Eval: ', expr, LOW);
-	        try {
-	          // eval is the core of this for a while, so suck it up.
-	          var f = eval(expr); // jshint ignore:line 
-	          if (hasAssignment) { 
-	            ws.vars[assigned] = {human: textExpression, f: f };
-	          }
-	          if (hasUndefined) {
-	            log('- Cannot yet evaluate function: {0} {1} still undefined.',
-	              undefineds.join(), undefineds.length === 1 ? 'is' : 'are');
-	          }
-	          else {
-	            val = f(); // Execute the function.
-	            if (self.evalFailed) {
-	              log('*** Evaluation failed. Some values are still undefined.');
-	            }
-	            else {
-	              log('Value = {0}', val);
-	            }
-	          }
-	          return val;
-	        }
-	        catch (e) {
-	          if (self.settings.debugMode) {
-	            log(e.stack);
-	          } 
-	          else {
-	            log(e);
-	          }
-	          return '';
-	        }
-	      }
-	      
-	      Parser.prototype.notDefined = function notDefined(v) {
-	        var self = this;  
-	        self.evalFailed = true;
-	        log('- Variable "{0}" is undefined', v);
-	        return null;
-	      }
-	    } // End of constructor for access to constructor closure.
-	    return Parser;
-	  }()); // Run constructor initializer for static creations.
-
-	  return Parser;
-	}
-
-/***/ },
-/* 42 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview ClientSession
-	 * @module core/ClientSession
-	 */ 
-	 module.exports = function(mm) {
-	  var _           = mm.check(mm._);
-	  var qq          = mm.check(mm.Q);
-	  var Config      = mm.check(mm.obj.Config);
-	  var ClientUser  = mm.check(mm.users.ClientUser);
-
-	  //--------------------------------------------------------------------------
-	  /**
-	   * @summary **client Workspace session**
-	   * @description
-	   * This provides client services for managing workspaces. These are
-	   * storage, user and server request services.  The client session is the
-	   * first major object created by a client. It is used to load the user
-	   * and workspace from browser/client localStorage if (if this browser)
-	   * has been used before. Normally the session is supplied to a MMeddleClient
-	   * which in turn connects to a MMeddleServer/WsSession over a socket.io
-	   * connection. Once a server connection is completed, the session can
-	   * handle requests such as login, saveWorkspace, etc.
-	   * @constructor
-	   * @param {string} logPrefix the text to put on the front of log messages
-	   * @returns {ClientSession} the new client session
-	   */  
-	  var ClientSession = (function clientSessionCtorCreator() {
-	    var ctor = function clientSession(logPrefix) {
-	      var self = this;
-	      self.ws = mm.check(new mm.core.Workspace(self));
-	      self.user = new ClientUser('anonymous');
-	      self.userConfig = new Config();
-	      self.loggedIn = null; // Not currently logged in.
-	      self.mmc = false; // No MMeddleClient has been added,
-	      
-	      self.log = function log() {
-	        var args = Array.prototype.slice.call(arguments);
-	        args[0] =  logPrefix + args[0];
-	        mm.log.apply(null, args);
-	      };
-
-	      self.log.error = function logError() {
-	        var args = Array.prototype.slice.call(arguments);
-	        args[0] =  logPrefix + args[0];
-	        mm.log.error.apply(null, args);
-	      };
-
-	      self.newSessionId = function newSessionId() {
-	        return 'MMSID_' + _.now().toString() + '_' + _.random(10000).toString();
-	      }
-	    };
-	  
-	    return ctor;
-	  }());
-
-	  /**
-	   * @summary **Bind the MMeddleClient to this session**
-	   * @description
-	   * The client provides only its `rq` method, and the `socketid` to the
-	   * session, so its easy to mock if you want to.
-	   * @param {MMeddleClient} op the operation being requested.
-	   */  
-	  ClientSession.prototype.bindClient = 
-	  function bindClient(mmc) {
-	    var self = this;  
-	    self.mmc = mmc;
-	  }
-
-	  /**
-	   * @summary **Issue a server request with optional response**
-	   * @description
-	   * If the a client session is available and connected then this will
-	   * pass the request on the the MMeddleClient, otherwise it returns
-	   * false or a rejected error promise.
-	   * @param {string} op the operation being requested.
-	   * @param {bool} rsRequired true if a return promise response is needed.
-	   * @param {object} content the content for the operation.
-	   * @param {number} timeout n optional timeout in seconds.
-	   * @returns {bool|Promise} success if true or promise to response.
-	   */  
-	  ClientSession.prototype.rq =
-	  function rq(op, content, rsRequired, timeout) {
-	    var self = this;
-	    if (self.mmc && self.mmc.connected) {
-	      return self.mmc.rq(op, content, rsRequired, timeout);
-	    }
-	    if (self.mmc) {
-	      if (rsRequired) return qq.reject(new Error('Not connected to server')); 
-	    }
-	    else {
-	      if (rsRequired) return qq.reject(new Error('No mMeddle Client exists'));
-	    }
-	    return false;
-	  }
-	  
-	  /**
-	   * @summary **Send a message to be logged on the server console**
-	   * @description
-	   * This is mostly for testing and remote activity logging.
-	   * @param {string} text the text to log.
-	   * @returns {bool} true (if connected)
-	   */
-	  ClientSession.prototype.emitLogMessage =
-	  function emitLogMessage(text) {
-	    var self = this;
-	    return self.rq('log', text);
-	  }
-
-	  return ClientSession;
-	}
-
-/***/ },
-/* 43 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview Add user requests to the ClientSession
-	 * @module core/ClientSession
-	 * 
-	 */ 
-	 module.exports = function(mm) {
-	  var qq            = mm.check(mm.Q);
-	  var ClientSession = mm.check(mm.core.ClientSession);
-	  var ClientUser    = mm.check(mm.users.ClientUser);
-	  var localStorage  = new mm.storage.LocalStorage();
-	  
-	  // Approximate number of saved input lines to restore from the
-	  // locally saved user.
-	  var MAX_SAVED_INPUT_LINES = 50;
-
-	  /**
-	   * @summary **clear the current user/workspace owner**
-	   * @description 
-	   * The current user/workspace owner is reset to anonymous.
-	   * @returns {ClientSession} for chaining   
-	   */  
-	  ClientSession.prototype.clearLocalUser =
-	  function clearLocalUser() {
-	    var self = this;
-	    self.user = new ClientUser('anonymous');
-	    self.userConfig = new Config();
-	    return self;    
-	  }
-
-	  /**
-	   * @summary **load the current user/workspace owner from localStorage**
-	   * @description 
-	   * The ClientUser is accessed from the cs.user field. If no user is saved
-	   * then the anonymous user in the session is available. If the mConsole
-	   * is supplied and the user's command stack was saved, then those
-	   * commands are restored.
-	   * @param {CliConsole} mConsole an optional console for command saving
-	   * @returns {ClientSession} for chaining   
-	   */  
-	  ClientSession.prototype.loadLocalUser =
-	  function loadLocalUser(mConsole) {
-	    var self = this;
-	    var userObj = localStorage.load('user');
-	    if (userObj) {
-	      // If a stack saving console is present then add its saved
-	      // input lines to the current console.
-	      if (mConsole && 
-	        mConsole.savedInputLines && 
-	        userObj.savedInputLines &&
-	        userObj.savedInputLines.length > 0) 
-	      {
-	        var inLine;
-	        var i = 0;
-	        do {
-	          i++;
-	          inLine = userObj.savedInputLines.pop();
-	          if (inLine) mConsole.savedInputLines.unshift(inLine);
-	          if (i > MAX_SAVED_INPUT_LINES) inline = null;
-	        } while (inLine);
-	        delete userObj.savedInputLines;
-	      }
-	      self.user.init(userObj);
-	    }
-	    return self;    
-	  }
-
-	  /**
-	   * @summary **save the user to localStorage**
-	   * @description 
-	   * The ClientUser is saved to localStorage.  If the user was logged onto
-	   * a server, then the PDK (Password Derived Key hash) is saved as well
-	   * so the user can login next time without entry of a plain text password.
-	   * @param {CliConsole} mConsole an optional console for command saving
-	   * @returns {ClientSession} for chaining   
-	   */  
-	  ClientSession.prototype.saveLocalUser =
-	  function saveLocalWorkspace(mConsole) {
-	    var self = this;
-	    if (mConsole &&
-	        mConsole.savedInputLines &&
-	        mConsole.savedInputLines.length > 0) 
-	    {
-	      self.user.savedInputLines = mConsole.savedInputLines;
-	    }
-	    localStorage.store('user', self.user);
-	    return self;        
-	  }
-
-	  /**
-	   * @summary **check for logged in to server**
-	   * @returns {bool} true when logged in
-	   */  
-	  ClientSession.prototype.isLoggedIn = function isLoggedIn() {
-	    var self = this;    
-	    return self.loggedIn && self.loggedIn.name === self.user.name;
-	  }
-	  
-	  /**
-	   * @summary **Get public user information**
-	   * @description
-	   * A userName or userName pattern is sent to the server. If one or
-	   * more matching users exist then an array of sanitized public users
-	   * is returned, otherwise a null object is returned. The pattern
-	   * can end in '*' to indicate the prefix to match, otherwise only a
-	   * single user will be returned.
-	   * @param {string} userName the userName to get.
-	   * @returns {Promise} to the public user array (or a rejection).
-	   */  
-	  ClientSession.prototype.getUser =
-	  function getUser(userName) {
-	    var self = this;
-	    var user = new ClientUser(userName);
-	    return self.rq('loadUsers', user, true)
-	    .then(function (rs) {
-	      return rs.content;
-	    })
-	  }
-
-	  /**
-	   * @summary **Login to server**
-	   * @description
-	   * The user and password are sent to the server. 
-	   * If the password matches, the private user settings are
-	   * returned as the content object in the response.
-	   * The password is immediately encoded to a safety hash to make
-	   * it slightly less of a security risk. This hash remains as part
-	   * of the workspace for auto-login during later connections. The logged
-	   * in user is now the current user for the session and its workspace.
-	   * @param {string} userName the userName to login with.
-	   * @param {string} ptpwd the optional plain text password.
-	   * @param {bool} ispdk optional PDK supplied instead of plain text.
-	   * @returns {Promise} to the private user.
-	   */  
-	  ClientSession.prototype.userLogin =
-	  function userLogin(userName, ptpwd, ispdk) {
-	    var self = this;
-	    var user = new ClientUser(userName);
-	    return self.rq('loadUser', user, true)
-	    .then(function (rs) {
-	try{    
-	      user.init(rs.content).hashP(ptpwd, ispdk);
-	      //mm.log('+++++++++++++++++++== Login with', user);
-	      // Instead of sending the PDK, we send a sha256 hash
-	      // of the PDK based on a socket id seed which is known
-	      // by both the client and server.
-	      user.hashPdk(self.mmc.socketid);
-	//mm.log('xxxxxuser.hashPdk(self.socket.id)', self.socketid, user);
-	      var rquser = new ClientUser(userName).init(user);
-	//mm.log('xxxxxuser.rquser', rquser);      
-	      if (rquser.pdk) delete rquser.pdk;
-	      return self.rq('loginUser', rquser, true)
-	      .then(function (rs) {
-	        user.init(rs.content);
-	        self.user = user;
-	        self.ws.owner = user.name;
-	        if (rs.userConfig) {
-	          self.userConfig.init(rs.userConfig);
-	          mm.log('- User [' + user.name + '] has a personal configuration');
-	        }
-	        user.elapsed = rs.elapsed;
-	        user.ok = true;
-	        self.loggedIn = user;
-	        return user;
-	      });
-	} catch (e) { mm.log.error('userLogin failure internal', e.stack); }      
-	    })
-	  }
-	  
-	  /**
-	   * @summary **Create new user and login to server**
-	   * @description
-	   * A locally created new user and has its plain text password hashed
-	   * and the content is sent to the server where it is written to storage.
-	   * It returns a promise to the logged-in private ClientUser.  The new
-	   * user becomes the current user for the session and its workspace.
-	   * @param {Object} newUser the new user object (not yet a ClientUser).
-	   * @param {bool} ispdk true if the passed in object is a prior user.
-	   * @returns {Promise} to the private user.
-	   */  
-	  ClientSession.prototype.userCreate =
-	  function userCreate(newUser, ispdk) {
-	    var self = this;
-	    var user;
-	    if (ispdk) {
-	      user = newUser;
-	    }
-	    else {
-	      var ptpwd = newUser.ptpwd;
-	      delete newUser.ptpwd;
-	      user = new ClientUser()
-	          .init(newUser)
-	          .hashP(ptpwd);
-	    }
-	    var pdk = user.pdk;
-	    return self.rq('createUser', user, true)
-	    .then(function (rs) {
-	      user.init(rs.content);
-	      self.user = user;
-	      self.ws.owner = user.name;
-	      if (rs.userConfig) {
-	        self.userConfig.init(rs.userConfig); // Add to the session.
-	        mm.log('- User [' + user.name + '] has a personal configuration');
-	      }
-	      user.elapsed = rs.elapsed;
-	      user.pdk = pdk;
-	      user.ok = true;
-	      self.loggedIn = user;
-	      return user;
-	    })
-	  }
-
-	  /**
-	   * @summary **Request a Delete of the current user**
-	   * @description
-	   * The currently logged in user is deleted. If the user is not currently
-	   * logged into the server then the delete is rejected.
-	   * @returns {Promise} to a message string.
-	   */  
-	  ClientSession.prototype.userDelete =
-	  function userDelete() {
-	    var self = this;
-	    if (!self.isLoggedIn()) {
-	      var em  = '- User [' + self.user.name + '] is not logged in';
-	      return qq.reject(new Error(em));
-	    }
-	    return self.rq('deleteUser', self.user, true)
-	    .then(function (rs) {
-	      return rs.content;
-	    })
-	  }  
-
-	  /**
-	   * @summary **Request a Listing of current user sessions**
-	   * @description
-	   * The set of currently connected users is returned.
-	   * @returns {Promise} to an array of session entries.
-	   */  
-	  ClientSession.prototype.listUserSessions =
-	  function listUserSessions() {
-	    var self = this;
-	    return self.rq('listUserSessions', self.user, true)
-	    .then(function (rs) {
-	      return rs.content;
-	    })
-	  }  
-	}
-
-/***/ },
-/* 44 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview Adds Workspace services to the ClientSession.
-	 * @module core/ClientSession
-	 */ 
-	 module.exports = function(mm) {
-	  var Workspace  = mm.check(mm.core.Workspace);
-	  var ClientSession = mm.check(mm.core.ClientSession);
-	  var localStorage = new mm.storage.LocalStorage();
-
-	  /**
-	   * @summary **Clear the local workspace to empty**
-	   * @description
-	   * Empties the current workspace but retains the same session id.
-	   * If this workspace is saved to the server then the contents of the
-	   * prior workspace are lost.
-	   * @returns {ClientSession} self for chaining.
-	   */  
-	  ClientSession.prototype.clearLocalWorkspace =
-	  function clearLocalWorkspace() {
-	    var self = this;
-	    var savedSessionId = self.ws.sessionId;
-	    self.ws = mm.check(new mm.core.Workspace(self));
-	    self.ws.sessionId = savedSessionId;
-	    if (!self.ws.sessionId) {
-	      self.ws.sessionId = self.newSessionId();
-	    }
-	    return self;
-	  }
-
-	  /**
-	   * @summary **load the workspace from localStorage**
-	   * @description
-	   * Loads a previously saved workspace from the browser/client localStorage.
-	   * If no prior workspace exists, then a new one is created an a new
-	   * MMSID is assigned to it. The MMSID is the long-term identifier used
-	   * to identify this session across multiple connections, reconnections,
-	   * and even multiple browsers and client applications.
-	   * @returns {ClientSession} for chaining
-	   */  
-	  ClientSession.prototype.loadLocalWorkspace =
-	  function loadLocalWorkspace() {
-	    var self = this;  
-	    var wsObj = localStorage.load('ws');
-	    if (wsObj) {
-	      self.ws.init(wsObj);
-	    }
-	    if (!self.ws.sessionId) {
-	      self.ws.sessionId = self.newSessionId();
-	    }
-	    return self;
-	  }
-
-	  /**
-	   * @summary **save the workspace to localStorage**
-	   * @returns {ClientSession} for chaining   
-	   */  
-	  ClientSession.prototype.saveLocalWorkspace =
-	  function saveLocalWorkspace() {
-	    var self = this;    
-	    localStorage.store('ws', self.ws);
-	    return self;
-	  }
-	  
-	  /**
-	   * @summary **Save contents of current workspace to server**
-	   * @description
-	   * Any changes to the current workspace, including all settings and
-	   * documents are copied to the server for persistent storage.
-	   * The workspace is saved for the current authenticated user, or
-	   * under the 'anonymous' user if none has been established.
-	   * @returns {Promise} to the response (ok=true on success)
-	   */  
-	  ClientSession.prototype.saveWorkspace =
-	  function saveWorkspace() {
-	    var self = this;
-	    return self.rq('saveWorkspace', mm.util.JSONify(self.ws, 2), true);
-	  }
-	  
-	  /**
-	   * @summary **Load a workspace from the server**
-	   * @description
-	   * A new workspace is loaded from the server.
-	   * @param {string} name an optional name, otherwise loaded by current MMSID.
-	   * @returns {Promise} to the WS or a failure.
-	   */  
-	  ClientSession.prototype.loadWorkspace =
-	  function loadWorkspace(name) {
-	    var self = this;
-	    return self.rq('loadWorkspace', name, true)
-	      .then(function (rs) {
-	      var ws = new Workspace(self).init(rs.content);
-	      ws.elapsed = rs.elapsed;
-	      ws.ok = true;
-	      return ws;
-	    })
-	  }
-	}
-
-/***/ },
-/* 45 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview MMeddleClient
-	 * @module core/MMeddleClient
-	 */ 
-	 module.exports = function(mm) {
-	  var _           = mm.check(mm._);
-	  var qq          = mm.check(mm.Q);
-	  //--------------------------------------------------------------------------
-	  /**
-	   * @summary **mMeddle client services**
-	   * @description
-	   * This provides socket.io connections to a server, as well as sending
-	   * requests and receiving events.
-	   * @constructor
-	   * @param {string} host url of the MMeddleServer host
-	   * @param {ClientSession} clientSession the client services session.
-	   * @returns {MMeddleClient} the new client.
-	   */  
-	  var MMeddleClient = (function mmClientCtorCreator() {
-	    var ctor = function MMeddleClient(host, clientSession) {
-	      var self = this;
-	      self.host = host;
-	      self.connectedOnce = false;  //has connected at least once
-	      self.connected = false;      //has a valid mmc (is connected to a server)
-	      self.socket = null;          //the current socket.io socket
-	      self.rqId = 0;               //Request number tracking.
-	      self.rsPending = {};         //the set of pending responses
-	      self.defaultRqTimeout = 10;  //Timeout in seconds.
-	      self.socketid = '???';
-	      self.clientSession = clientSession;
-	      self.log = clientSession.log; // Use the function, and its closure.
-	      self.log.error = clientSession.log.error;
-	    };
-	  
-	    return ctor;
-	  }());
-
-	  MMeddleClient.prototype.connectWorkspace =
-	  function connectWorkspace() {
-	    var self = this;  
-	    try { 
-	      // Assign this here or you may not get the mock version when
-	      // you want it since mm.socketClient.io may be assigned well
-	      // after this module is loaded.
-	      var io = mm.check(mm.socketClient.io);
-	      self.connectedD = qq.defer();
-	      //self.log('- Connecting to: [' + self.host + ']');
-
-	      self.socket = io.connect(self.host);
-	      
-	      // Handle connection request from the MMeddleServer/SocketService.
-	      self.socket.on('mmConnectRq', function (data) {
-	        mm.log.debug('--- received mmConnectRq:', data, mm.Logger.Priority.LOW);
-	        self.socketid = data.id;
-
-	        if (self.connected) {
-	          self.log('- Reconnected SocketId:[{0}] Session:[{1}]',
-	              self.socketid, self.clientSession.ws.sessionId);
-	        }
-	        else {
-	          mm.log.debug('- new Connection:', self.clientSession.ws.sessionId);
-	        }
-
-	        self.emit('mmConnectRs', {
-	            id: data.id,
-	            sessionId: self.clientSession.ws.sessionId,
-	            userName: self.clientSession.user.name,
-	            from: mm.envText,
-	            config: mm.config, // report what is known about the config.
-	            at: _.now()
-	        });
-
-	        self.connectedOnce = true;
-	        self.connected = true;
-	        self.connectedD.resolve(true);
-	      });
-	      
-	      // This handles any pending responses.  If the response has
-	      // ok: true then the pending promise is resolved and the
-	      // response is returned. If not the promise is rejected
-	      // with the error code in the error field.
-	      self.socket.on('mmWsRs', function (rs) {
-	        mm.log.debug('--- received mmWsRs:', rs, mm.Logger.Priority.LOW);
-	        var rqId = rs.rqId;
-	        var pending = self.rsPending[rqId];
-	        /* istanbul ignore if */   // Tested independently.
-	        if (!pending) {
-	          // Timeout has already rejected the response.
-	          self.log.error(' Received late response to ', rqId);
-	          mm.log('mmWs Late Response: ', rs);
-	        }
-	        else {
-	          if (rs.ok !== true) {
-	            var emsg = mm.util.trimPrefix(rs.error, 'Error: ');
-	            pending.rsD.reject(new Error(emsg));
-	          }
-	          else {
-	            rs.elapsed = _.now() - pending.at;
-	            //self.log(' Received response to ', rqId);
-	            //mm.log('mmWs Response: ', rs);
-	            pending.rsD.resolve(rs);
-	          }
-	        }
-	      })
-
-	      // If a user confiuration is available, it is sent as an unsolicited
-	      // asynchronous event.
-	      self.socket.on('mmConfig', function (rs) {
-	        mm.log.debug('--- received mmConfig:', rs, mm.Logger.Priority.LOW);
-	        var rqId = rs.rqId;
-	        var pending = self.rsPending[rqId];
-	        /* istanbul ignore if */   // Tested independently.
-	        if (!pending) {
-	          // Timeout has already rejected the response.
-	          self.log.error(' Received late response to ', rqId);
-	          mm.log('mmWs Late Response: ', rs);
-	        }
-	        else {
-	          if (rs.ok !== true) {
-	            var emsg = mm.util.trimPrefix(rs.error, 'Error: ');
-	            pending.rsD.reject(new Error(emsg));
-	          }
-	          else {
-	            rs.elapsed = _.now() - pending.at;
-	            //self.log(' Received response to ', rqId);
-	            //mm.log('mmWs Response: ', rs);
-	            pending.rsD.resolve(rs);
-	          }
-	        }
-	      })
-	    }
-	    catch (e) {
-	      self.connectedD.reject(e);
-	      self.log.error('Socket IO failure:', e);
-	    }
-
-	    return self.connectedD.promise;
-	  }
-	  
-	  /**
-	   * @summary **Request to server with optional response**
-	   * @description
-	   * This provides server connection and control for mMeddle client
-	   * applications.
-	   * @param {string} op the operation being requested.
-	   * @param {bool} rsRequired true if a return promise response is needed.
-	   * @param {object} content the content for the operation.
-	   * @param {number} timeout n optional timeout in seconds.
-	   * @returns {bool|Promise} success true or promise to response.
-	   */  
-	  MMeddleClient.prototype.rq =
-	  function rq(op, content, rsRequired, timeout) {
-	    var self = this;
-	    var rqId = op + '_' + self.rqId++;
-	    var rsD;
-	    var rsP;
-	    // Queue a promise to resolve when the correspondimg mmWsRq shows up.
-	    var rqObj = {
-	        op: op,
-	        sessionId: self.clientSession.ws.sessionId,
-	        userName: self.clientSession.user.name,
-	        rqId: rqId,
-	        at: _.now(),
-	        content: content,
-	        rsRequired: rsRequired ? true : false
-	    };
-	    var tmttext = 'Rq timeout. Removing pending operation to:' + rqId;
-	    if (rsRequired) {
-	      rsD = qq.defer();
-	      if (!timeout) timeout = self.defaultRqTimeout;
-	      rsP = rsD.promise.timeout(timeout * 1000, tmttext);
-	      var pending = {
-	        id: rqId,
-	        at: rqObj.at,
-	        rq: rqObj,
-	        rsD: rsD
-	      }
-	      // Queue the pending wait for the response.
-	      self.rsPending[rqId] = pending;
-	      
-	      // Handle timeouts, failures, and other completions.
-	      rsP.fin(function (r) {
-	        delete self.rsPending[rqId];
-	      });
-	    }
-	    self.emit('mmWsRq', rqObj)
-	    if (rsRequired) {
-	      return rsP;
-	    }
-	    else {
-	      return true;
-	    }
-	  }
-
-	  /**
-	   * @summary **Request a socket reconnect from the server**
-	   * @description
-	   * This server should fairly quickly return a new connection with
-	   * a new socket id. This will be mapped to the workspace session id
-	   * and all will be well.
-	   */
-	  MMeddleClient.prototype.socket_reconnect =
-	  function socket_reconnect() {
-	    var self = this;
-	    if (!self.socket) {
-	      mm.log.error('No socket established. Socket.io failed.');
-	    }
-	    else {
-	      if (self.connectedOnce) {
-	        self.log('- Socket reconnect: [' + self.host + ']');
-	        self.socket.socket.reconnect();
-	      }
-	      else {
-	        self.log('- Socket connect: [' + self.host + ']');
-	        self.connectWorkspace();
-	      }
-	    }
-	  }
-
-	  /**
-	   * @summary **Request a socket disconnect from the server**
-	   * @description
-	   * The disconnect may be used if the client will have a long period
-	   * of either limited connectivity or no server activity. After the
-	   * disconnect, a reconnect will be required to resume communications.
-	   */
-	  MMeddleClient.prototype.socket_disconnect =
-	  function socket_disconnect() {
-	    var self = this;
-	    if (self.socket) {
-	      self.log('- Socket disconnect: [' + self.host + ']');
-	      if (self.socket) self.socket.disconnect();
-	    }
-	    self.connected = false;
-	  }
-
-	  /**
-	   * @summary **Emit a message to the server**
-	   * @description
-	   * This is the only routine that outputs to the socket so its a good
-	   * place to put logging and tracing.
-	   * @param {string} rqEvent the request event name
-	   * @param {object} rqObj the request object sent to the server
-	   */
-	  MMeddleClient.prototype.emit =
-	  function emit(rqEvent, rqObj) {
-	    mm.log.debug(rqEvent, rqObj, mm.Logger.Priority.LOW); 
-	    var self = this;
-	    self.socket.emit(rqEvent, rqObj)
-	  }
-	  
-	  return MMeddleClient;
-	}
-
-/***/ },
-/* 46 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
-	/**
-	 * @fileOverview CLI command handlers
-	 * @module core/CliCommands
-	 */ 
-	module.exports = function registerCliCommands(mm) {
-	  var check      = mm.check;
-	  var _          = check(mm._);
-	  var qq         = check(mm.Q);
-	  var CmdSet     = check(mm.core.CmdSet);
-	  var MMath      = check(mm.core.MMath);
-	  var ClientUser = check(mm.users.ClientUser);
-	    
-	  var mmath = check(new MMath());
-	  
-	  /**
-	   * @summary **CLI command handlers**
-	   * @description
-	   * Provides a common interface for node client and browser based CLI
-	   * implementations.
-	   * @constructor
-	   * @param {CliConsole} mConsole the current console.
-	   * @param {ClientSession} cs the current client session.
-	   * @returns {CliCommands} the cli command handlers.
-	   */  
-	  var CliCommands = function cliCommandsCtor(mConsole, cs) {
-	    var self = this;
-	    
-	    //------------------------------------------------------------------------
-	    //                            Public Methods
-	    //------------------------------------------------------------------------
-	    
-	    /**
-	     * @summary **doUserCreate**
-	     */    
-	    self.doUserCreate = function doUserCreate(newUser, ispdk) {
-	      var start = _.now();
-	      return cs.userCreate(newUser, ispdk)
-	      .then(function (user) {
-	        mm.log('- Created new User id [{0}] at {1} in {2} mx',
-	            user.name, user.creationDate, _.now() - start);
-	        mm.log('- Welcome to mMeddle, {0} {1}.',
-	            user.firstName, user.lastName);
-	        return user;
-	      },
-	      function (e) {
-	        mm.log('User creation failed: ', e)
-	        return e;
-	      });
-	    }              
-
-	    /**
-	     * @summary **fillNewUser**
-	     */    
-	    self.fillNewUser = function fillNewUser(userName, ptpwd) {
-	      var u = { name: userName };
-	      var funcs = [
-	      function(u) {
-	        return  mConsole.ask('Reenter the password: ', u, 'ptpwd', true)
-	      },
-	      function(u) {
-	        if (u.ptpwd === ptpwd) return u;
-	        ptpwd = '';
-	        throw new Error('Passwords do not match. Sorry, start over.');
-	      },
-	      function(u) {
-	        return mConsole.ask('Enter your first name: ', u, 'firstName')
-	      },
-	      function(u) {
-	        return mConsole.ask('Enter your last name: ', u, 'lastName')
-	      },
-	      function(u) {
-	        return mConsole.ask('Enter your contact email address: ', u, 'email')
-	      }]
-
-	      return funcs.reduce(qq.when, qq(u));
-	    }
-	    
-	    /**
-	     * @summary **loginUser**
-	     */    
-	    self.loginUser = function loginUser(userName, ptpwd, isPdk) {
-	      var start = _.now();
-	      cs.userLogin(userName, ptpwd, isPdk)
-	      .then(function (user) {
-	        mm.log('- Welcome back to mMeddle, {0} {1}.', 
-	            user.firstName, user.lastName);
-	        //mm.log('- Logged in ({0} ms). {1:inspect}', user.elapsed, user);
-	        mm.log('- Logged in ({0} ms)', _.now() - start);
-	      },
-	      function (e) {
-	        var errString = e.toString();
-	        if (errString.indexOf('ENOENT, ') >= 0) {
-	          if (isPdk) {
-	            mm.log('- User [{0}] not found. Rebuilding deleted user.', userName);
-	            // TODO - Add password recheck.
-	            return self.doUserCreate(cs.user, isPdk);
-	          }
-	          else {
-	            mm.log('- User [{0}] not found. Creating a new user.', userName);
-	            self.fillNewUser(userName, ptpwd)
-	            .then(function (newUser) {
-	              mm.log('- Creating new user on server [{0}]...', userName);
-	              return self.doUserCreate(newUser);
-	            },
-	            function (e) {
-	              mm.log(e);
-	            });
-	          }
-	        }
-	        else {
-	          ptpwd = '';
-	          mm.log.error('*** Login failed. [{0}]', errString);
-	        }
-	      });
-	    }
-	  
-	    /**
-	     * @summary **exitCmdHandler**
-	     */    
-	    self.exitCmdHandler = function exitCmdHandler(context, args) {
-	      var wsName = cs.ws.name;
-	      var displayName = wsName ? ' [' + wsName + ']' : '';
-	      if (context.keyword !== 'abort') {
-	        cs.saveLocalUser(mConsole);
-	        mm.log('- Saved User [{0}] (local)', cs.user.name);
-	        cs.saveLocalWorkspace();
-	        mm.log('- Saved Workspace{0} (local): {1} variables',
-	            displayName, cs.ws.varsCount);
-	        if (cs.mmc.connected && cs.loggedIn) {
-	          mm.log('- Saving Workspace{0} for {1} to {2}', 
-	              displayName, cs.user.name, cs.mmc.host);
-	          cs.saveWorkspace()
-	          .then(function (rs) {
-	            mm.log('- Saved{0} in {1} ms.', displayName, rs.elapsed);
-	          });
-	        }
-	      }
-	      if (context.keyword !== 'save') {
-	        // exit application
-	        if (mm.config.inNode) {
-	          mConsole.close();
-	          process.exit();
-	        }
-	      }
-	      return true;
-	    }
-	    
-	    /**
-	     * @summary **saveCmdHandler**
-	     */    
-	    self.saveCmdHandler = function saveCmdHandler(context, args) {
-	      if (!cs.loggedIn && !cs.user.isAnonymous()) {
-	        var e = new Error('Sorry, Please login before saving.');
-	        return e
-	      }
-	      var oldName = cs.ws.name;
-	      var wsName = args.name ? args.name : oldName;
-	      var displayName = wsName ? ' [' + wsName + ']' : '';
-	      cs.saveLocalUser(mConsole);
-	      mm.log('- Saved User [{0}] (local)', cs.user.name);
-	      if (oldName && oldName !== wsName) {
-	        mm.log('- Renamed workspace from [{0}] to{1}', oldName, displayName);
-	      }
-	      cs.ws.name = wsName;
-	      cs.saveLocalWorkspace();
-	      mm.log('- Saved Workspace{0} (local): {1} variables',
-	          displayName, cs.ws.varsCount);
-	      if (cs.mmc.connected) {
-	        mm.log('- Saving Workspace{0} for {1} to {2}', 
-	            displayName, cs.user.name, cs.mmc.host);
-	        cs.saveWorkspace()
-	        .then(function (rs) {
-	          mm.log('- Saved{0} in {1} ms.', displayName, rs.elapsed);
-	        });
-	      }
-	      return true;
-	    }
-	    
-	    //------------------------------------------------------------------------    
-	    //------------------------------------------------------------------------
-	    self.loginCmdHandler = function loginCmdHandler(context, args) {
-	      var user = cs.user;
-	      var userName = user.name;
-	      if (args.userName) {
-	        var ptpwd;
-	        userName = args.userName;
-	        if (args.password) {
-	          ptpwd = args.password;
-	          return self.loginUser(userName, ptpwd);
-	        }
-	        else {
-	          if (userName === user.name && user.pdk) {
-	            return self.loginUser(userName, user.pdk, true);
-	          }
-	          else {
-	            mConsole.ask('Please enter your password: ', null, null, true)
-	            .then(function (ptpwd) {
-	              return self.loginUser(userName, ptpwd);
-	            },
-	            function(e) {
-	              mm.log.error(e);
-	              return e;
-	            });
-	          }
-	        }
-	        ptpwd = '';
-	      }
-	      // If a locally saved user is available, login with that.
-	      else {
-	        if (!user.isAnonymous()) {
-	          return self.loginUser(user.name, user.pdk, true);
-	        }
-	        var e = new Error('Please login with a user name');
-	        mm.log.error(e);
-	        return e
-	      }
-	    }
-
-	    //------------------------------------------------------------------------
-	    self.clearCmdHandler = function clearCmdHandler(context, args) {
-	      return cs.ws.clear(args.variables);
-	    }
-
-	    //------------------------------------------------------------------------
-	    self.listCmdHandler = function listCmdHandler(context, args) {
-	      return cs.ws.list(args.variables, context.keyword === '??');
-	    }
-
-	    /**
-	     * auto complete console input text for command line starts
-	     * @param {string} text the input line
-	     * @return {array} completions [[matches], keyword]
-	     */
-	    self.completer = function completer (text) {
-	      var keyword;
-	      var matches = [];
-	      var m = /[a-zA-Z_0-9]+$/.exec(text);
-	      if (m) {
-	        keyword = m[0];
-
-	        // commandline keywords
-	        rcs.keywords.forEach(function (cmd) {
-	          if (cmd.indexOf(keyword) === 0) {
-	            matches.push(cmd);
-	          }
-	        });
-
-	        // mmath functions and constants
-	        var ignore = ['expr', 'type'];
-	        for (var func in mmath) {
-	          if (mmath.hasOwnProperty(func)) {
-	            if (func.indexOf(keyword) === 0 && ignore.indexOf(func) === -1) {
-	              matches.push(func);
-	            }
-	          }
-	        }
-	        
-	        // remove duplicates
-	        matches = matches.filter(function(elem, pos, arr) {
-	          return arr.indexOf(elem) === pos;
-	        });
-	      }
-
-	      return [matches, keyword];
-	    }
-	  
-	    //------------------------------------------------------------------------      
-	    var rcs = new CmdSet()
-	        .setTitle('Main CLI Commands')
-	        .adminHelpFooter(
-	        '` [js] (backtick) will directly execute a javascript expression\n')
-	        .helpFooter( 
-	        '\n' +
-	        'You can enter expressions such as B=sin(PI/4) on the command line,\n' +
-	        'or just enter the variable name to show its evaluation.\n'
-	        );
-	    rcs.cmd('exit',
-	            'Save the user and workspace then exit the program')
-	       .alias('quit')
-	       .variant('abort',
-	            'Exit the program without saving the user or workspace')
-	       .setHandler(self.exitCmdHandler);
-	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	    rcs.cmd('save [name]', 
-	            'Save the user and workspace then continue',
-	            'Supply a [name] to save this workspace under a specific name',
-	            'for later recall. You can have many workspaces under different',
-	            'names, although you have only one current workspace session.')
-	       .setHandler(self.saveCmdHandler);
-	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	    rcs.cmd('login [userName] [password]',
-	            'Log in to the server with a user name and password',
-	            'The user name and password can be omitted if you have already',
-	            'logged in from this client in a previous session.')
-	       .setHandler(self.loginCmdHandler);
-	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	    rcs.cmd('clear variables()',
-	            'Clear one or more variables from the workspace',
-	            'Use "clear all" to clear the full set of variables.')
-	       .setHandler(self.clearCmdHandler);
-	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -   
-	    rcs.cmd('list [variables()]',
-	            'List some or all of the variables in the workspace',
-	            'The default is to list all variables. You can list only',
-	            'selected entries with variable names or prefixes.',
-	            'Use ?? to list the detailed functions.')
-	       .alias('?')
-	       .alias('??')
-	       .setHandler(self.listCmdHandler);
-	    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-	    rcs.addSubset('.', cs.ws.dotCmdSet());
-	    //mm.log('----- cs.ws.dotCmdSet():', cs.ws.dotCmdSet());    
-	    rcs.done();
-	    //mm.log('----- RCS:', rcs);
-	    mConsole.setCompleter(self.completer);
-	    self.rootCommandSet = rcs;
-	  }
-
-	  return CliCommands;
-	}
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
-
-/***/ },
-/* 47 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview Manage server side workspace session requests.
-	 * @module server/WsSession
-	 * @description
-	 * Once a client has connected to the server, a session is established
-	 * with a persistent workspace by its session id. This id represents
-	 * a long term session lifetime (can persist forever).
-	 */ 
-	 module.exports = function(mm) {
-	   var _ = mm.check(mm._);
-	   var Config = mm.check(mm.obj.Config);
-	   var ClientUser = mm.check(mm.users.ClientUser);
-	 
-	  /**
-	   * @summary **A server side session to match one on a browser**
-	   * @description
-	   * When user connects to the mMeddle site using a browser or client
-	   * applications (such as the CLI) it immediately loads a Workspace
-	   * from local storage. The sessionId of the workspace is provides
-	   * a long term socket between client and server.
-	   * @constructor
-	   * @param {string} sessionId the MMSID 
-	   * @param {Socket} socket the initial socket.io session for this wsSession  
-	   * @param {SocketService} socketService the parent socket service 
-	   * @returns {WsSession} the workspace session.
-	   */   
-	  var WsSession = (function wsSessionCtorCreator() {
-	    var ctor = function WsSession(sessionId, socket, socketService) {
-	      var self = this;
-	      self.config = new Config();
-	      self.user = new ClientUser('anonymous');
-	      self.userConfig = new Config();
-	      self.sessionId = sessionId;
-	      self.socketService = socketService;
-	      self.storageEngine = socketService.storageEngine;
-	      self.socket = socket; // Changes on reconnections from clients.
-	      self.rqCount = 0; 
-	      self.rsCount = 0; 
-	      self.lastResponseAt = 0; //changes on every response.
-	      self.serverCreatonTime = _.now();
-	      self.firstConnectionTime = 0; // Set by client - may be very old.
-	      
-	      // Each session gets its own clients for storage access.
-	      // It creates another for user specific access.
-	      self.systemStorage = new mm.storage.StorageClient({
-	        user: 'systemAdmin',
-	        engine: self.storageEngine
-	      });
-	      self.usersStorage = new mm.storage.StorageClient({
-	        user: 'userAdmin',
-	        engine: self.storageEngine
-	      });
-	    }
-
-	    return ctor;
-	  }());    
-	  
-	  /**
-	   * @summary **handle a session request from a client**
-	   * @description
-	   * Each 'mmWsRq' message recieved on a socket is vectored to the
-	   * workspace session that is handling that id.
-	   * @param {Object} rq the request object
-	   * @param {Socket} socket the (possibly) new socket.io socket
-	   */   
-	  WsSession.prototype.handleRq = 
-	  function wsHandleRq(rq, socket) {
-	    var self = this;
-	    self.socket = socket;
-	    self.rqCount++;
-	    var op = rq.op;
-	    //mm.log.debug.low.log('- WS op:', op);
-	//mm.log.debug('- WS op:', op);
-	    if (self[op]) {
-	      self[op](rq);
-	    }
-	    else {
-	      mm.log.error('- Invalid workspace session operation:', rq);
-	      if (rq.rsRequired) {
-	        self.respond(rq, '', new Error('Invalid request:' + op));
-	      }
-	    }
-	  }
-	  
-	  /**
-	   * @summary **handler: logs a console message from a client session**
-	   * @description
-	   * Good for debugging and some progress logging. Don't use it to
-	   * excess or the logs get way too cluttered.
-	   * @param {Object} rq the request object
-	   */   
-	  WsSession.prototype.log = 
-	  function wsLog(rq) {
-	    var self = this;
-	    mm.log.debug('[' + self.sessionId + ']', rq.content);
-	  }
-	  
-	  /**
-	   * @summary **send a response to a client request**
-	   * @param {Object} rq the incoming request object
-	   * @param {Object} content the 'content' field for the response
-	   * @param {string} err if present 'ok' is false and 'error' is set 
-	   * @param {Object} optional extra fields for the response. 
-	   */   
-	  WsSession.prototype.respond = 
-	  function wsRespond(rq, content, err, extra) {
-	    var self = this;
-	    try{
-	      self.rsCount++;
-	      self.lastResponseAt = _.now();
-	      var errString = err ? err.toString() : ''
-	      var rs = {
-	        op: rq.op,
-	        ok: err ? false : true,
-	        rqId: rq.rqId,
-	        sessionId: self.sessionId,
-	        userName: self.user.name,
-	        at: self.lastResponseAt,
-	        content: content ? content : '',
-	        error: errString
-	      };
-	      if (extra) {
-	        _.assign(rs, extra);
-	      }
-	      // Add a special case for the most common failure case.
-	      if (err && self.systemStorage.notFound(err)) {
-	        rs.notFound = true;
-	      }
-	      self.socket.emit('mmWsRs', rs);
-	      mm.log.debug('----------> wsRespond:', rs);
-	    }
-	    catch (e) {
-	      mm.log.error('***> wsRespond failure: ', e.stack);
-	    }
-	  }
-
-	  return WsSession;
-	}
-
-
-/***/ },
-/* 48 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview Add User Request handlers to WsSession prototype.
-	 * @module server/WsSession
-	 * @description
-	 * These are the server side handlers for user related requests such
-	 * as login, logoff, createUser, changePassword and so on.
-	 */ 
-	 module.exports = function(mm) {
-	   var _ = mm.check(mm._);
-	   var WsSession = mm.check(mm.server.WsSession);
-	   var ClientUser = mm.check(mm.users.ClientUser);
-	  
-	  /**
-	   * @summary **handler: load public info on a user**
-	   * @description
-	   * A public user looked up by name (alias) only is returned.  If the
-	   * user doesn't exist then a `notFound` field is set in the response.
-	   * A createUser request will be required.
-	   * @param {Object} rq the request object
-	   */   
-	  WsSession.prototype.loadUser = 
-	  function wsLoadUser(rq) {
-	    var self = this;
-	    var userObj = rq.content;
-	    var userName = userObj.name;
-	    mm.log('- Loading public user [' + userName + ']');
-	    self.usersStorage.load('publicUsers', userName)
-	    .then(function(publicUser) {
-	      mm.log.debug('- Loaded user', publicUser);
-	      self.respond(rq, publicUser);
-	    },
-	    function(e) {
-	      mm.log.error('No such user exists: ', e)
-	      self.respond(rq, '', e);
-	    })
-	  }
-
-	  /**
-	   * @summary **handler: load public info on one or more users**
-	   * @description
-	   * Public users are looked up by name (alias) or a wildcard pattern.
-	   * An array of matching users is returned in the response.  An
-	   * empty array is returned when there are no storage errors during
-	   * the lookup.
-	   * @param {Object} rq the request object
-	   */   
-	  WsSession.prototype.loadUsers = 
-	  function wsLoadUsers(rq) {
-	    var self = this;
-	    var userObj = rq.content;
-	    var userNamePattern = userObj.name;
-	    mm.log('- Loading public users [' + userNamePattern + ']');
-	    self.usersStorage.loadMultiple('publicUsers', userNamePattern)
-	    .then(function(publicUsers) {
-	      mm.log.debug('- Loaded users', publicUsers);
-	      self.respond(rq, publicUsers);
-	    },
-	    function(e) {
-	      mm.log.error('Storage error: ', e)
-	      self.respond(rq, '', e);
-	    })
-	  }
-
-	  /**
-	   * @summary **handler: login a user and return private info**
-	   * @description
-	   * The public user (acquired from a loadUser request) is coupled with
-	   * the pbkdf2 hash of the user entered password to acquire the private
-	   * information about the user, and to enable private object access to
-	   * this session.
-	   * @param {Object} rq the request object
-	   */   
-	  WsSession.prototype.loginUser = 
-	  function wsLoginUser(rq) {
-	    var self = this;
-	    var publicUserObj = rq.content;
-	    mm.log.debug('- Login with public user', publicUserObj);
-	    var userName = publicUserObj.name;
-	    var user = new ClientUser(userName);
-	    user.init(publicUserObj);
-	    mm.log('- Loading private user [' + userName + ']');
-	    self.usersStorage.load('privateUsers', userName)
-	    .then(function(privateUser) {
-	//mm.log.debug('- Loaded private user', privateUser);
-	//mm.log.debug('- ************ remotehpdk:', privateUser);
-	      var remotehpdk = user.hpdk;
-	      user.init(privateUser).hashPdk(self.socket.id);
-	//mm.log.debug('- User converted to', self.socket.id, user); 
-	      //Check the password derived key for a match.
-	      //Instead of checking the PDK directly, we check the
-	      //hpdk (a sha256 hash of the PDK based on a socket id seed).
-	      if (user.hpdk === remotehpdk) {
-	        user.lastLogin = _.now();
-	        user.loginCount++;
-	        self.user = user; // The session is now owned by this user.
-	        self.loggedIn = true;
-	        var rsuser = new ClientUser(userName);
-	        rsuser.init(user);
-	        // The PDK is sent on the wire only once, during the original
-	        // password setting.
-	        delete rsuser.pdk; 
-	        var userConfig = self.loadUserConfig(userName);
-	        if (userConfig) {
-	          self.respond(rq, rsuser, false, { userConfig: userConfig });
-	        }
-	        else {
-	          self.respond(rq, rsuser);
-	        }
-	      }
-	      else {
-	        user.failedLoginCount++;
-	        mm.log.error('Password mismatch on user [{0}]. {1} failed attempts',
-	            userName, user.failedLoginCount);
-	        var e = new Error('Password mismatch. Sorry, try again');
-	        self.respond(rq, '', e);
-	      }
-	      self.usersStorage.store('privateUsers', user)
-	    },
-	    function(e) {
-	      mm.log.error('No such user exists: ', e)
-	      self.respond(rq, '', e);
-	    })
-	  }
-	  
-	    /**
-	   * @summary **handler: create a user and log in**
-	   * @description
-	   * New private and public users are created. The public user contains
-	   * only the user id, and public name, while the private version also
-	   * contains the email address.
-	   * @param {Object} rq the request object
-	   */   
-	  WsSession.prototype.createUser = 
-	  function wsCreateUser(rq) {
-	    var self = this;
-	    var userObj = rq.content;
-	    var userName = userObj.name;
-	    var user = new ClientUser(userName).init(userObj);
-	    user.firstLogin = _.now();  
-	    user.lastLogin = user.firstLogin;
-	    user.loginCount = 1;
-	    user.failedLoginCount = 0;
-	    mm.log('- Created new user [' + userName + ']');
-	mm.log.debug('++++++++++++++ storing private user', user);        
-	    self.usersStorage.store('privateUsers', user)
-	    .then(function(info) {
-	      mm.log('- Saved private user info');
-	      var publicUser = new ClientUser(userName);
-	      publicUser.firstName = user.firstName;
-	      publicUser.lastName = user.lastName;
-	      // Pass the salt. Allows the PDK to be created by the client.
-	      publicUser.pbkdf2Salt = user.pbkdf2Salt;
-	      if (user.privateEmail !== true) {
-	        publicUser.email = user.email;
-	      }
-	mm.log.debug('++++++++++++++ storing', publicUser);            
-	      self.usersStorage.store('publicUsers', publicUser)
-	      .then(function(info) {
-	        self.user = user; // This user is now the current user.
-	        self.loggedIn = true;
-	        var userConfig = self.loadUserConfig(userName);
-	        if (userConfig) {
-	          self.respond(rq, user, false, { userConfig: userConfig });
-	        }
-	        else {
-	          self.respond(rq, user);
-	        }
-	      },
-	      function(e) { 
-	        mm.log.error('Cannot save public user: ', e.stack);
-	        self.respond(rq, '', e);
-	      });
-	    },
-	    function(e) { 
-	      mm.log.error('Cannot save private user:', e.stack);
-	      self.respond(rq, '', e);
-	    });
-	  }
-	  
-	  /**
-	   * @summary **handler: delete a user and return a message**
-	   * @description
-	   * The owning user of this session is deleted (if it matches the
-	   * request). The current user reverts to anonymous.
-	   * @param {Object} rq the request object
-	   */   
-	  WsSession.prototype.deleteUser = 
-	  function wsDeleteUser(rq) {
-	    var self = this;
-	    var deleteUserObj = rq.content;
-	    mm.log.debug('- Delete user', deleteUserObj);
-	    var userName = self.user.name;
-	    if (userName !== deleteUserObj.name) {
-	      var em1 = mm.format('"{0}" is not the current user: "{1}"',
-	          deleteUserObj.name, userName);
-	      mm.log.error(em1);
-	      self.respond(rq, '', new Error(em1));
-	    }
-	    mm.log('- Deleteing private user [' + userName + ']');
-	    self.usersStorage.remove('privateUsers', userName)
-	    .then(function(ok) {
-	      mm.log('- Deleteing public user [' + userName + ']');
-	      self.usersStorage.remove('publicUsers', userName)
-	      .then(function(ok) {
-	        var rmd = mm.format('User "{0}" has been removed', userName);
-	        self.respond(rq, rmd);
-	      },
-	      function(e) { 
-	        mm.log.error('Cannot remove public user: ', e.stack);
-	        self.respond(rq, '', e);
-	      });
-	    },
-	    function(e) { 
-	      mm.log.error('Cannot remove private user:', e.stack);
-	      self.respond(rq, '', e);
-	    });
-	  }
-
-	  /**
-	   * @summary **handler: list user sessions**
-	   * @description
-	   * The set of client sessions currently running is returned.
-	   * @param {Object} rq the request object   */   
-	  WsSession.prototype.listUserSessions = 
-	  function wsListUserSessions(rq) {
-	    var self = this;
-	    var sessions = self.socketService.sessions;
-	    var sessionInfos = [];
-	    for (var key in sessions) {
-	      var session = sessions[key];
-	      var sessionInfo = {
-	        userName: session.user.name,
-	        sessionId: session.sessionId,
-	        rqCount: session.rqCount,
-	        rsCount: session.rsCount,
-	        lastResponseAt: session.lastResponseAt,
-	        serverCreatonTime: session.serverCreatonTime,
-	        firstConnectionTime: session.firstConnectionTime
-	      };
-	      sessionInfos.push(sessionInfo);
-	    };
-
-	    mm.log('- Sending into on {0} sessions', sessionInfos.length);
-	    self.respond(rq, sessionInfos);
-	  }
-
-	  /**
-	   * @summary **load a userConfig from .config.json files**
-	   * @description
-	   * Grant special powers to users who have custom .config.json files.
-	   * @param {ClientUser} a user to look up.
-	   * @returns {Config|null} a Config for the specified user.
-	   */   
-	  WsSession.prototype.loadUserConfig = 
-	  function wsLoadUserConfig(userName) {
-	    var self = this;
-	    var config = new mm.obj.Config();
-	    if (config.userLoad(userName)) {
-	      // Establish the session user config for service request validation.
-	      // This also allows a power user to logon and pass those powers on 
-	      // to another user who logs on afterwards (only in the same session).
-	      self.userConfig.init(config);
-	      mm.log('- User [' + userName + '] has a personal config.json' )
-	      return self.userConfig;
-	    }
-	    else {
-	      return false;
-	    }
-	  }
-	}
-
-
-/***/ },
-/* 49 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	/**
-	 * @fileOverview Add workspace request handlers to WsSession.
-	 * @module server/WsSession
-	 * @description
-	 * The workspace related request handlers are here.
-	 */ 
-	 module.exports = function(mm) {
-	   var WsSession = mm.check(mm.server.WsSession);   
-	  
-	  /**
-	   * @summary **handler: saves a workspace to storage**
-	   * @description
-	   * The entire text of the workspace is save to storage. Functions in the
-	   * workspace have already been converted to text strings by the client.
-	   * @param {Object} rq the request object
-	   */   
-	  WsSession.prototype.saveWorkspace = 
-	  function wsSaveWorkspace(rq) {
-	    var self = this;
-	    mm.log.debug('[' + self.sessionId + '] Saving Workspace:', rq.content);
-	    var sc = new mm.storage.StorageClient({ 
-	      user: self.user.name, 
-	      engine: self.storageEngine 
-	    });
-	    var ws = JSON.parse(rq.content);
-	    var wsSession = {
-	      name: self.sessionId,
-	      ws: ws
-	    };
-	    sc.store('wsSessions', wsSession)
-	    .then(function(r) {
-	      mm.log('- Workspace session saved', self.sessionId);
-	      // Save the named workspace.
-	      if (ws.name) {
-	        sc.store('ws', ws)
-	        .then(function(r) {
-	          mm.log('- Workspace saved:', ws.name);
-	          self.respond(rq);
-	        },
-	        function(e) { 
-	          mm.log.error('Workspace save failed: ', e)
-	          self.respond(rq, '', e);
-	        })
-	      }
-	      else {
-	        // Just save the session for unnamed workspaces.
-	        self.respond(rq);
-	      }
-	    },
-	    function(e) { 
-	      mm.log.error('Workspace session save failed: ', e)
-	      self.respond(rq, '', e);
-	    })
-	  }
-
-	  return WsSession;
-	}
-
-
-/***/ },
-/* 50 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
-	/**
-	 * @fileOverview Manage socket.io sessions and services
-	 * @module server/SocketService
-	 */ 
-	 module.exports = function(mm) {
-	  var _ = mm.check(mm._);
-	  
-	  //--------------------------------------------------------------------------
-	  /**
-	   * @summary **A socket.io session service**
-	   * @description
-	   * Provides connection initiation, vectoring, session assignment, and
-	   * termination for clients connection to the service via socket.io.
-	   * @constructor
-	   * @returns {SocketService} the SocketService
-	   */  
-	  var SocketService = (function socketServiceCtorCreator() {
-	    var ctor = function SocketService() {
-	      var self = this;
-	      self.sessions = {};
-	    }
-
-	    return ctor;
-	  }());    
-	 
-	  /**
-	   * @summary **Initialize the sockets.io service.**
-	   * @description
-	   * Must be called before accepting connections.
-	   * @param {MMeddleServer} mMeddleServer the MMeddleServer
-	   * @param {StorageEngine} storageEngine the StorageEngine
-	   */  
-	  SocketService.prototype.initializeService = 
-	  function initialize(mMeddleServer, storageEngine) {
-	    var self = this;  
-	    self.mmServer = mMeddleServer;
-	    self.storageEngine = storageEngine;
-	    self.server = self.mmServer.server; // the Express server.
-	    
-	    // Socket.io setup.    
-	    var socketio = mm.socketServer.io;
-	    var socketio9 = socketio.version.indexOf('0.9.') === 0;
-	    self.socketio9 = socketio9;
-	    mm.log.debug('- socket.io: version = ' + socketio.version);
-	    if (socketio9) {
-	      var io = socketio.listen(self.server); // old form 0.9.16
-	      self.io = io;
-	      io.configure(function(){
-	        mm.log.debug('- socket.io: set default config');
-	        mm.log.debug('- socket.io: origins = "*.*"');
-	        //0 - error, 1 - warn, 2 - info, 3 - debug  
-	        io.set('log level', 2);
-	        io.set('origins', '*:*');
-	        mm.log.debug('- socket.io: transports = ["websocket"]');
-	        io.set('transports', ['websocket']);
-	        mm.log.debug('- socket.io: configured for development');
-	      });
-
-	      mm.log('- Socket.io initialized.');
-	    }
-	    else {
-	      mm.log.error('Sorry, this version of Socket.io is not supported yet.');
-	    }
-	  }
-
-	  /**
-	   * @summary **Start accepting connections from socket.io**
-	   */  
-	  SocketService.prototype.acceptConnections = 
-	  function acceptConnections() {
-	    var self = this;  
-	    if (self.io) {
-	      self.io.on('connection', self.newConnection.bind(self));
-	    }
-	  }
-
-	  /**
-	   * @summary **Handle a new socket connection from a client**
-	   * @description
-	   * Queries the client to determine if this is actually a new session or a 
-	   * continuation of a currently running or suspended session. Vectors to
-	   * the appropriate handlers.
-	   * @param {Socket} socket a socket connection to a (remote) client
-	   */  
-	  SocketService.prototype.newConnection = 
-	  function newConnection(socket) {
-	    var self = this;
-	    var id = socket.id;
-
-	    function slog() {
-	      var args = Array.prototype.slice.call(arguments);
-	      args.unshift('[' + id + ']');
-	      mm.loggers.infoLogger.logArray(args);
-	    }
-
-	    slog('- Client connected as socket.io id:', id);
-	    socket.on('mmConnectRs', function (rs) {
-	      var sessionId = rs.sessionId;
-	      slog('- Connecting Workspace Session as', sessionId);
-	      mm.log.debug('----- mmConnectRs:', rs);
-	      var session;
-	      if (self.sessions[sessionId]) {
-	        session = self.sessions[sessionId];
-	      }
-	      else {
-	        session = new mm.server.WsSession(
-	            sessionId, 
-	            socket, 
-	            self);
-	        session.firstConnectionTime = rs.at;
-	        self.sessions[sessionId] = session;
-	      }
-
-	      session.from = rs.from;
-	      session.config.init(rs.config);
-	      session.lastConnectionTime = rs.at;
-	      session.socketId = id;
-	      session.socket = socket;
-	      
-	      //slog('- Session:', session);
-	    });
-	    
-	    socket.on('mmWsRq', function (rs) {
-	      var sessionId = rs.sessionId;
-	      mm.log.debug('- Workspace Session Request', id, rs);
-	      if (self.sessions[sessionId]) {
-	        var session = self.sessions[sessionId];
-	        session.handleRq(rs, socket);
-	      }
-	      else {
-	        mm.log.error('Unexpected Workspace session request', rs);
-	      }
-	    });
-
-	    // This is trash for testing REMOVEME REMOVEME REMOVEME REMOVEME
-	    socket.on('my other event', function (data) {
-	      slog(mm.util.inspect(data));
-	      slog('-----Whoa baby!');
-	    });
-
-	    // This is trash for testing REMOVEME REMOVEME REMOVEME REMOVEME
-	    socket.on('request-env', function (data) {
-	      var reply = process.env;
-	      if (mm.config.openShift) {
-	        reply = {
-	          id: id,
-	          text: '* Environment variables are not available from this server *'
-	        }
-	      }
-	      socket.emit('env', reply);
-	      slog('-----Posted environment');
-	    });
-	    
-	    socket.on('disconnect', function () {
-	      slog('***** Recieved disconnect *****');
-	    });
-
-	    // This is trash for testing REMOVEME REMOVEME REMOVEME REMOVEME
-	    socket.emit('news', { 
-	        id: id,
-	        hello: 'world - mMeddle with this!',
-	        from: mm.envText,
-	        at: _.now()
-	    });
-
-	    // Connect to a MMeddleClient running in a browser or client app.
-	    socket.emit('mmConnectRq', { 
-	        id: id,
-	        please: 'tell me who you are',
-	        from: mm.envText,
-	        at: _.now()
-	    });
-	  }
-
-	  return SocketService;
-	}
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
-
-/***/ },
 /* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
-	/**
-	 * @fileOverview MMeddleServer
-	 * @module server/MMeddleServer
-	 */ 
-	 module.exports = function(mm) {
-
-	  //--------------------------------------------------------------------------
-	  /**
-	   * @summary **Express Server for mMeddle applications**
-	   * @description
-	   * A service to handle mMeddle clients.
-	   * @constructor
-	   * @returns {MMeddleServer} the new server.
-	   */  
-	  var MMeddleServer = (function serverCtorCreator() {
-	    var express = __webpack_require__(74);
-	    var serveStatic = __webpack_require__(75);
-	  
-	    var ctor = function MMeddleServer(dirName) {
-	      var self = this;    
-	      self.dirName = dirName;
-	      mm.log.debug('- mMeddleServer dirName: [{0}]', dirName);
-	      var defaultPort = mm.util.mmEnvOption('PORT', 8080); 
-	      var defaultIpAddr = mm.util.mmEnvOption('IPADDR', '127.0.0.1'); 
-	      self.ipaddress = mm.util.envOption('OPENSHIFT_NODEJS_IP', defaultIpAddr);
-	      self.port      = mm.util.envOption('OPENSHIFT_NODEJS_PORT', defaultPort);
-	      if (mm.config.openShift) {
-	        mm.log('- Running on OPENSHIFT_NODEJS');
-	      }
-	      
-	      mm.log('- Starting server on {0}:{1}', self.ipaddress, self.port);
-
-	      /**
-	       * @summary **the actual termination handler**
-	       * @description
-	       * Terminate server on receipt of the specified signal.
-	       * @param {string} sig  Signal to terminate on.       
-	       */  
-	      self.terminator = function (sig) {
-	        if (typeof sig === 'string') {
-	          mm.log.debug('{0}: Received {1} - terminating mMeddle server ...',
-	            Date(Date.now()), sig);
-	          process.exit(1);
-	        }
-	        mm.log('{0}: mMeddle server stopped.', Date(Date.now()));
-	      };
-
-	      /**
-	       * @summary **setup process termination handlers**
-	       * @description
-	       * Handle wrap up on ctrl-c exit from the process.
-	       */  
-	      self.setupTerminationHandlers = function () {
-	        //  Process on exit and signals.
-	        process.on('exit', function () {
-	          mm.log.debug('- server process exit');
-	          self.terminator();
-	        });
-
-	        // Removed 'SIGPIPE' from the list - bugz 852598.
-	        ['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP', 'SIGABRT',
-	          'SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM'
-	        ].forEach(function (element, index, array) {
-	          process.on(element, function () {
-	            self.terminator(element);
-	          });
-	        });
-	      };
-
-	      // ================================================================
-	      //                     mMeddle server functions
-	      // ================================================================
-
-	      /**
-	       * @summary **create routes for page access**
-	       * @description
-	       * Create the routing table entries + handlers for the application.
-	       */  
-	      self.createRoutes = function () {
-	        self.routes = {};
-
-	        // Serve the starting index page.
-	        self.routes['/'] = function (req, res) {
-	          res.setHeader('Content-Type', 'text/html');
-	          res.send(mm.fs.readFileSync('./index.html'));
-	        };
-	      };
-
-	      /**
-	       * @summary **initialize the server**
-	       * @description
-	       * Initialize the (express) server, create the routes and register
-	       * the handlers.
-	       */  
-	      self.initializeServer = function () {
-	        self.createRoutes();
-	        // self.app = express.createServer(); // deprecated (pre 4.0)
-	        self.app = express();
-	      
-	        //  Add handlers for the app (from the routes).
-	        for (var r in self.routes) {
-	          //self.app.get(r, redirectSec, self.routes[r]);
-	          self.app.get(r, self.routes[r]);
-	        }
-
-	        var cacheControl = {
-	          maxAge: '1d',
-	          setHeaders: setCustomCacheControl
-	        };
-	        
-	        var publicDirs = ['lib', 'dist', 'test', 'api', 'css', 'images'];
-	        publicDirs.forEach(function serveStaticDir(dir) {
-	          self.app.use('/' + dir,
-	              serveStatic(self.dirName + '/' + dir,  cacheControl));
-	        });
-
-	        function setCustomCacheControl(res, path) {
-	          mm.log.debug('- static fetch: [' + path + ']');
-	          if (serveStatic.mime.lookup(path) === 'text/html') {
-	            // Custom Cache-Control for HTML files
-	            res.setHeader('Cache-Control', 'public, max-age=0')
-	          }
-	        }
-	      };
-
-	      /**
-	       * @summary **start serving html and other web content**
-	       */  
-	      self.start = function () {
-	        //self.server = require('http').Server(self.app); // pre 4.0 express.
-	        self.server = self.app.listen(self.port, self.ipaddress, function (e) {
-	          mm.log('{0}: mMeddle server started on {1}:{2} ...',
-	              mm.util.timestamp(new Date(Date.now())), self.ipaddress, self.port);
-	        });
-	      };
-	    }
-
-	    return ctor;
-	  }());
-	  
-	  return MMeddleServer;
-	}
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
-
-/***/ },
-/* 52 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
+	'use strict';
 	/**
 	 * @fileOverview Routines to improve client server testing.
 	 * @module test/testClientSupport
@@ -27048,9 +26912,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */ 
 	module.exports = function setupClientTestSupport(mm) {
 	  var check         = mm.check;
-	  var _             = check(mm._);
-	  var qq            = check(mm.Q);
+	  var _             = check(mm._);          // jshint ignore:line 
+	  var qq            = check(mm.Q);          // jshint ignore:line 
 	  var EggTimer      = check(mm.obj.EggTimer);
+	  var CliConsole    = check(mm.core.CliConsole);
 	  var ClientSession = check(mm.core.ClientSession);
 	  var MMeddleClient = check(mm.core.MMeddleClient);
 	  var CliCommands   = check(mm.core.CliCommands);
@@ -27059,116 +26924,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var connectedTimer;
 	  var MAX_TEST_TIMEOUT_SEC = 10;
 	    
-	  //------------------------------------------------------------------------
-	  // A very simple mConsole compatible console for use by test routines
-	  function MockConsole() {
-	    var self = this;
-	    self.outputLines = [];
-	    self.inputLines = [];
-	    self.lastLine = '';
-	    self.closeHandler = null;
-
-	    self.handlers = []; // The stack of input handlers;
-	    self.handler = {
-	      func: null,     // caller must supply one.
-	      prompt: 'Cmd:',
-	      pwdMode: false  // show * during input.
-	    };
-
-	    self.writeLine = function writeLine(text) {
-	      console.log(text);
-	      self.outputLines.push(text);
-	    }
-
-	    self.setLineHandler = 
-	    function setLineHandler(handler, prompt, passwordMode) {
-	      // Use the previous prompt if one is not supplied.
-	      if (!prompt) prompt = self.handler.prompt;
-	      self.handlers.push(self.handler);
-	      self.handler = {
-	        func: handler,
-	        prompt: prompt,
-	        pwdMode: passwordMode
-	      };
-	    }
-	    
-	    self.clearScreen = function clearScreen() {
-	    }
-
-	    self.onClose = function onClose(func) {
-	      self.closeHandler = func;
-	    }
-	    
-	    self.close = function close() {
-	      if (self.closeHandler) self.closeHandler();
-	    }
-	    
-	    self.setCompleter = function setCompleter(func) {
-	    }
-	    
-	    // Returns all lines produced by execution of the routines.
-	    // The current line set is cleared.
-	    self.getOutputLines = function getOutputLines() {
-	      var lines = self.outputLines;
-	      self.outputLines = [];
-	      return lines;
-	    }
-
-	    // Supplies lines to the 'console' and waits for them to be consumed.
-	    self.setInputLines = function setInputLines(lines) {
-	      self.outputLines = [];
-	      lines.forEach(self.enter);
-	    }
-
-	    self.ask = function ask (query, obj, field, isPwd) {
-	      if (obj && obj.field) {
-	        return qq(obj);
-	      }
-	      var qD = qq.defer();
-	      self.setLineHandler(function(answer) {
-	        if (answer) {
-	          if (obj) {
-	            obj[field] = answer;
-	            qD.resolve(obj);
-	          }
-	          else {
-	            qD.resolve(answer);
-	          }
-	        }
-	        else {
-	          qD.reject(new Error('Blank line not allowed. Entry abandoned'));
-	        }
-	        return false; // Only ask once.
-	      }, query, isPwd === true ? true : false);
-	      return qD.promise;
-	    }
-
-	    // Handles Enter for single line entries.
-	    self.enter = function enter(textLine) {
-	      self.lastLine = textLine;
-	      while (self.handler.func) {
-	        // Execute the current command line handler.
-	        var response = self.handler.func(self.lastLine);
-	        // This handler no longer wants to do the job.
-	        if (response === false) {
-	          self.handler = self.handlers.pop();
-	          return; // All done.
-	        }
-	        else if (response === true) {
-	          return; // All is well, all done.
-	        }
-	        else if (_.isString(response)) {
-	          // Allow the handler to act as a translator for the input.
-	          self.handler = self.handlers.pop();
-	          self.lastLine = response;
-	        }
-	        else {
-	          throw new Error('Invalid line handler response');
-	        }
-	      }
-	    }
-	  } //MockConsole
-	  
 	  /**
 	   * @summary **Start an in-process version of the server**
 	   * @description
@@ -27182,7 +26937,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	  function mockMeddleServer() {
 	    try {
 	      var appName = 'mockServer';
-	      var path = mm.check(mm.path);
 	      mm.log.setupAppDebugLog(appName);
 	      mm.config = mm.config.appLoad(appName);
 	      mm.log.debug('----- Server Configuration -----\n', mm.config);
@@ -27212,6 +26966,59 @@ return /******/ (function(modules) { // webpackBootstrap
 	      mm.log.error('- Mock mMeddle Server failure:', e.stack);
 	    }
 	  }
+	  
+	  /**
+	   * @summary **Establish a local workspace for test clients**
+	   * @description
+	   * This sets up a local workspace for test clients named 'mochatests',
+	   * and populates mm with the most useful objects to do client testing.
+	   * This can be used by 'base' tests since it does not require the meddle
+	   * server.
+	   * @example:
+	   *     before(mochaTestWorkspace()); // populates
+	   *     mm.test.client.mmc      // the current MMeddleClient
+	   *     mm.test.client.mConsole // the current console (Mock)
+	   *     mm.test.client.cmds     // the current CliCommands
+	   * @returns a promise that resolves when connected.
+	   * @alias module:test/testClientSupport.mochaTestConnect
+	   */
+	  function mochaTestWorkspace() {
+	    try {
+	      if (mm.test.client.mmc) {
+	        return;
+	      }
+
+	      var mConsole;
+	      if (mm.config.inNode) {
+	        mConsole = new CliConsole();
+	      }
+	      else {
+	        mConsole = new CliConsole('cliInText', 'inTextPrompt', 'consolediv');
+	      }
+
+	      mm.mConsole = mConsole;
+	      mm.test.client.mConsole = mConsole;
+	      mm.log.setCliConsole(mConsole);
+	      mm.log.debug('----- MochaTests Configuration -----\n', mm.config);
+	      
+	      var clientName = 'MochaTests';
+	      var cs = new ClientSession(clientName);
+
+	      var host = mm.config.localUrl;
+	      var mmc = new MMeddleClient(host, cs);
+	      mm.test.client.cs = cs;
+	      mm.test.client.mmc = mmc;
+
+	      var cliCmds = new CliCommands(mConsole, cs);
+	      mm.test.client.cmds = cliCmds;
+	      cs.bindClient(mmc);
+	      cs.loadLocalWorkspace();
+	      cs.loadLocalUser();
+	    }
+	    catch (e) {
+	        mm.log.error('Test Client Setup failed.', e.stack);
+	    }
+	  }
 
 	  /**
 	   * @summary **Connects to a mMeddle server as a mochatests client**
@@ -27230,6 +27037,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	   */
 	  function mochaTestConnect() {
 	    try {
+	      mochaTestWorkspace();
+
 	      // Once the connection has succeeded or failed, we never need to
 	      // look at it again.
 	      if (connectedP) {
@@ -27241,21 +27050,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	      connectedTimer.onDing(function () {
 	        if (mm.config.inNode) {
 	          mm.log('----- Shutdown server connection for tests.');      
-	          mConsole.close();
-	          process.exit();
+	          mm.test.client.mConsole.close();
+	          //process.exit();
 	        }
 	      });
 	      
 	      mm.log('- Connect to the test Server');
-	      mm.test.filename = 'mochatests';
 	      mm.test.debugon = true;
-	      var mConsole = new MockConsole();
-	      mm.test.client.mConsole = mConsole;
-	      mm.log.setCliConsole(mConsole);
-	      mm.log.setupAppDebugLog(mm.test.filename);
-	      mm.config = mm.config.appLoad(mm.test.filename);
-	      mm.log.debug('----- MochaTests Configuration -----\n', mm.config);
-	      var host = mm.config.localUrl;
 	      
 	      var mockSock = mm.util.ifEnvOption('MOCKSOCK') || mm.config.mocksock;
 	      if (mockSock) {
@@ -27263,26 +27064,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	        mm.socketClient.io = new mm.mockSock.Client(mm.socketServer.io);
 	        mockMeddleServer();
 	      }
-
-	      var cs = new ClientSession('MochaTests:');
-	      var mmc = new MMeddleClient(host, cs);
-	      mm.test.client.cs = cs;
-	      mm.test.client.mmc = mmc;
-	      var cliCmds = new CliCommands(mConsole, cs);
-	      mm.test.client.cmds = cliCmds;
-	      cs.bindClient(mmc);
-	      cs.loadLocalWorkspace();
-	      cs.loadLocalUser();
-	      
-	      if (cs.user.lastName) {
-	        mm.log('- Hello {0} {1}.', cs.user.firstName, cs.user.lastName);    
-	      }
 	      
 	      // Do the actual connection.
-	      connectedP = mmc.connectWorkspace('local')
+	      connectedP = mm.test.client.mmc.connectWorkspace('local')
 	      .then(function() {
-	        mm.log('- Connected to server {0}', host);
-	        cs.emitLogMessage(mm.test.filename + ' connected!');
+	        mm.log('- Connected to server {0}', mm.test.client.mmc.host);
+	        mm.test.client.cs.emitLogMessage(
+	            mm.test.client.cs.appName + ' connected!');
 	      });
 	      
 	      return connectedP;
@@ -27292,14 +27080,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }
 
+	  mm.test.mochaTestWorkspace = mochaTestWorkspace;
 	  mm.test.mochaTestConnect = mochaTestConnect;
 	}
 
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 53 */
+/* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global, process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -27827,7 +27615,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	exports.isPrimitive = isPrimitive;
 
-	exports.isBuffer = __webpack_require__(76);
+	exports.isBuffer = __webpack_require__(75);
 
 	function objectToString(o) {
 	  return Object.prototype.toString.call(o);
@@ -27871,7 +27659,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 *     prototype.
 	 * @param {function} superCtor Constructor function to inherit prototype from.
 	 */
-	exports.inherits = __webpack_require__(83);
+	exports.inherits = __webpack_require__(82);
 
 	exports._extend = function(origin, add) {
 	  // Don't do anything if add isn't an object
@@ -27892,7 +27680,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(9)))
 
 /***/ },
-/* 54 */
+/* 53 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {/*!
@@ -27902,9 +27690,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @license  MIT
 	 */
 
-	var base64 = __webpack_require__(84)
-	var ieee754 = __webpack_require__(81)
-	var isArray = __webpack_require__(82)
+	var base64 = __webpack_require__(83)
+	var ieee754 = __webpack_require__(80)
+	var isArray = __webpack_require__(81)
 
 	exports.Buffer = Buffer
 	exports.SlowBuffer = SlowBuffer
@@ -29227,10 +29015,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 55 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -29244,7 +29032,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var client = __webpack_require__(85);
+	var client = __webpack_require__(84);
 
 	/**
 	 * Version.
@@ -29296,9 +29084,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var port = server;
 
 	    if (options && options.key)
-	      server = __webpack_require__(79).createServer(options);
+	      server = __webpack_require__(78).createServer(options);
 	    else
-	      server = __webpack_require__(80).createServer();
+	      server = __webpack_require__(79).createServer();
 
 	    // default response
 	    server.on('request', function (req, res) {
@@ -29319,7 +29107,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @api public
 	 */
 
-	exports.Manager = __webpack_require__(64);
+	exports.Manager = __webpack_require__(63);
 
 	/**
 	 * Transport constructor.
@@ -29327,7 +29115,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @api public
 	 */
 
-	exports.Transport = __webpack_require__(65);
+	exports.Transport = __webpack_require__(64);
 
 	/**
 	 * Socket constructor.
@@ -29335,7 +29123,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @api public
 	 */
 
-	exports.Socket = __webpack_require__(66);
+	exports.Socket = __webpack_require__(65);
 
 	/**
 	 * Static constructor.
@@ -29343,7 +29131,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @api public
 	 */
 
-	exports.Static = __webpack_require__(67);
+	exports.Static = __webpack_require__(66);
 
 	/**
 	 * Store constructor.
@@ -29351,7 +29139,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @api public
 	 */
 
-	exports.Store = __webpack_require__(68);
+	exports.Store = __webpack_require__(67);
 
 	/**
 	 * Memory Store constructor.
@@ -29359,7 +29147,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @api public
 	 */
 
-	exports.MemoryStore = __webpack_require__(69);
+	exports.MemoryStore = __webpack_require__(68);
 
 	/**
 	 * Redis Store constructor.
@@ -29367,7 +29155,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @api public
 	 */
 
-	exports.RedisStore = __webpack_require__(70);
+	exports.RedisStore = __webpack_require__(69);
 
 	/**
 	 * Parser.
@@ -29375,11 +29163,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @api public
 	 */
 
-	exports.parser = __webpack_require__(71);
+	exports.parser = __webpack_require__(70);
 
 
 /***/ },
-/* 56 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = function(module) {
@@ -29395,14 +29183,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 57 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var union = __webpack_require__(102);
-	var assign = __webpack_require__(61);
-	var async = __webpack_require__(107);
-	var glob = __webpack_require__(114);
+	var union = __webpack_require__(101);
+	var assign = __webpack_require__(60);
+	var async = __webpack_require__(106);
+	var glob = __webpack_require__(113);
 
 	function arrayify(arr) {
 		return Array.isArray(arr) ? arr : [arr];
@@ -29489,12 +29277,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 58 */
+/* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var onetime = __webpack_require__(103);
-	var setImmediateShim = __webpack_require__(104);
+	var onetime = __webpack_require__(102);
+	var setImmediateShim = __webpack_require__(103);
 
 	module.exports = function (arr, next, cb) {
 		var failed = false;
@@ -29541,7 +29329,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 59 */
+/* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
@@ -29554,11 +29342,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 60 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {'use strict';
-	var isPathInside = __webpack_require__(105);
+	var isPathInside = __webpack_require__(104);
 
 	module.exports = function (str) {
 		return isPathInside(str, process.cwd());
@@ -29567,7 +29355,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 61 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -29599,7 +29387,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 62 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(setImmediate, clearImmediate) {var nextTick = __webpack_require__(9).nextTick;
@@ -29678,19 +29466,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate : function(id) {
 	  delete immediateIds[id];
 	};
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(62).setImmediate, __webpack_require__(62).clearImmediate))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(61).setImmediate, __webpack_require__(61).clearImmediate))
 
 /***/ },
-/* 63 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {module.exports = rimraf
 	rimraf.sync = rimrafSync
 
-	var assert = __webpack_require__(108)
+	var assert = __webpack_require__(107)
 	var path = __webpack_require__(8)
 	var fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
-	var glob = __webpack_require__(120)
+	var glob = __webpack_require__(119)
 
 	var globOpts = {
 	  nosort: true,
@@ -30017,7 +29805,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 64 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process, module, Buffer) {/*!
@@ -30031,18 +29819,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	var fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
-	  , url = __webpack_require__(110)
-	  , tty = __webpack_require__(111)
-	  , crypto = __webpack_require__(112)
-	  , util = __webpack_require__(86)
-	  , store = __webpack_require__(68)
-	  , client = __webpack_require__(85)
-	  , transports = __webpack_require__(101)
-	  , Logger = __webpack_require__(87)
-	  , Socket = __webpack_require__(66)
-	  , MemoryStore = __webpack_require__(69)
-	  , SocketNamespace = __webpack_require__(88)
-	  , Static = __webpack_require__(67)
+	  , url = __webpack_require__(109)
+	  , tty = __webpack_require__(108)
+	  , crypto = __webpack_require__(110)
+	  , util = __webpack_require__(85)
+	  , store = __webpack_require__(67)
+	  , client = __webpack_require__(84)
+	  , transports = __webpack_require__(100)
+	  , Logger = __webpack_require__(86)
+	  , Socket = __webpack_require__(65)
+	  , MemoryStore = __webpack_require__(68)
+	  , SocketNamespace = __webpack_require__(87)
+	  , Static = __webpack_require__(66)
 	  , EventEmitter = process.EventEmitter;
 
 	/**
@@ -31063,10 +30851,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(56)(module), __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(55)(module), __webpack_require__(53).Buffer))
 
 /***/ },
-/* 65 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -31080,7 +30868,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var parser = __webpack_require__(71);
+	var parser = __webpack_require__(70);
 
 	/**
 	 * Expose the constructor.
@@ -31588,7 +31376,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 66 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {
@@ -31602,8 +31390,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var parser = __webpack_require__(71)
-	  , util = __webpack_require__(86)
+	var parser = __webpack_require__(70)
+	  , util = __webpack_require__(85)
 	  , EventEmitter = process.EventEmitter
 
 	/**
@@ -31964,7 +31752,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 67 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {
@@ -31978,10 +31766,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var client = __webpack_require__(85)
+	var client = __webpack_require__(84)
 	  , cp = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"child_process\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
 	  , fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
-	  , util = __webpack_require__(86);
+	  , util = __webpack_require__(85);
 
 	/**
 	 * File type details.
@@ -32363,10 +32151,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 68 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {
@@ -32471,7 +32259,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 69 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -32485,8 +32273,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var crypto = __webpack_require__(112)
-	  , Store = __webpack_require__(68);
+	var crypto = __webpack_require__(110)
+	  , Store = __webpack_require__(67);
 
 	/**
 	 * Exports the constructor.
@@ -32620,7 +32408,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 70 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -32634,9 +32422,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var crypto = __webpack_require__(112)
-	  , Store = __webpack_require__(68)
-	  , assert = __webpack_require__(108);
+	var crypto = __webpack_require__(110)
+	  , Store = __webpack_require__(67)
+	  , assert = __webpack_require__(107);
 
 	/**
 	 * Exports the constructor.
@@ -32685,7 +32473,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }
 
-	  var redis = opts.redis || __webpack_require__(113)
+	  var redis = opts.redis || __webpack_require__(112)
 	    , RedisClient = redis.RedisClient;
 
 	  // initialize a pubsub client and a regular client
@@ -32895,7 +32683,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 71 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -33150,30 +32938,30 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 72 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Core module
-	var core = __webpack_require__(115);
+	var core = __webpack_require__(114);
 
 	// Set up the connect function
-	var connect = __webpack_require__(89).connect;
+	var connect = __webpack_require__(88).connect;
 
 	// Expose error class
 	connect.MongoError = core.MongoError;
 
 	// Actual driver classes exported
-	connect.MongoClient = __webpack_require__(89);
-	connect.Db = __webpack_require__(90);
-	connect.Collection = __webpack_require__(91);
-	connect.Server = __webpack_require__(92);
-	connect.ReplSet = __webpack_require__(93);
-	connect.Mongos = __webpack_require__(94);
-	connect.ReadPreference = __webpack_require__(95);
-	connect.GridStore = __webpack_require__(96);
-	connect.Chunk = __webpack_require__(97);
+	connect.MongoClient = __webpack_require__(88);
+	connect.Db = __webpack_require__(89);
+	connect.Collection = __webpack_require__(90);
+	connect.Server = __webpack_require__(91);
+	connect.ReplSet = __webpack_require__(92);
+	connect.Mongos = __webpack_require__(93);
+	connect.ReadPreference = __webpack_require__(94);
+	connect.GridStore = __webpack_require__(95);
+	connect.Chunk = __webpack_require__(96);
 	connect.Logger = core.Logger;
-	connect.Cursor = __webpack_require__(98);
+	connect.Cursor = __webpack_require__(97);
 
 	// BSON types exported
 	connect.Binary = core.BSON.Binary;
@@ -33194,22 +32982,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = connect;
 
 /***/ },
+/* 72 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(98);
+
+
+/***/ },
 /* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
+	
 	module.exports = __webpack_require__(99);
 
 
 /***/ },
 /* 74 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	module.exports = __webpack_require__(100);
-
-
-/***/ },
-/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -33224,12 +33012,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var escapeHtml = __webpack_require__(116);
-	var merge = __webpack_require__(117);
-	var parseurl = __webpack_require__(118);
+	var escapeHtml = __webpack_require__(115);
+	var merge = __webpack_require__(116);
+	var parseurl = __webpack_require__(117);
 	var resolve = __webpack_require__(8).resolve;
-	var send = __webpack_require__(119);
-	var url = __webpack_require__(110);
+	var send = __webpack_require__(118);
+	var url = __webpack_require__(109);
 
 	/**
 	 * @param {String} root
@@ -33353,7 +33141,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 76 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = function isBuffer(arg) {
@@ -33364,7 +33152,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 77 */
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -33641,7 +33429,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 78 */
+/* 77 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -33657,7 +33445,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var emitNewlineEvents = __webpack_require__(106)
+	var emitNewlineEvents = __webpack_require__(105)
 	  , prefix = '\x1b[' // For all escape codes
 	  , suffix = 'm'     // Only for color codes
 
@@ -34052,10 +33840,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 79 */
+/* 78 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var http = __webpack_require__(80);
+	var http = __webpack_require__(79);
 
 	var https = module.exports;
 
@@ -34071,13 +33859,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 80 */
+/* 79 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var http = module.exports;
-	var EventEmitter = __webpack_require__(121).EventEmitter;
-	var Request = __webpack_require__(109);
-	var url = __webpack_require__(110)
+	var EventEmitter = __webpack_require__(120).EventEmitter;
+	var Request = __webpack_require__(111);
+	var url = __webpack_require__(109)
 
 	http.request = function (params, cb) {
 	    if (typeof params === 'string') {
@@ -34221,7 +34009,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 81 */
+/* 80 */
 /***/ function(module, exports, __webpack_require__) {
 
 	exports.read = function(buffer, offset, isLE, mLen, nBytes) {
@@ -34311,7 +34099,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 82 */
+/* 81 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -34350,7 +34138,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 83 */
+/* 82 */
 /***/ function(module, exports, __webpack_require__) {
 
 	if (typeof Object.create === 'function') {
@@ -34379,7 +34167,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 84 */
+/* 83 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -34509,7 +34297,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 85 */
+/* 84 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module) {/*! Socket.IO.js build:0.9.16, development. Copyright(c) 2011 LearnBoost <dev@learnboost.com> MIT Licensed */
@@ -38385,10 +38173,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function () { return io; }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 	}
 	})();
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(56)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(55)(module)))
 
 /***/ },
-/* 86 */
+/* 85 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -38444,7 +38232,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 87 */
+/* 86 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -38458,7 +38246,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var util = __webpack_require__(86)
+	var util = __webpack_require__(85)
 	  , toArray = util.toArray;
 
 	/**
@@ -38547,17 +38335,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 88 */
+/* 87 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {/**
 	 * Module dependencies.
 	 */
 
-	var Socket = __webpack_require__(66)
+	var Socket = __webpack_require__(65)
 	  , EventEmitter = process.EventEmitter
-	  , parser = __webpack_require__(71)
-	  , util = __webpack_require__(86);
+	  , parser = __webpack_require__(70)
+	  , util = __webpack_require__(85);
 
 	/**
 	 * Exports the constructor.
@@ -38909,17 +38697,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 89 */
+/* 88 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
 
-	var parse = __webpack_require__(122)
-	  , Server = __webpack_require__(92)
-	  , Mongos = __webpack_require__(94)
-	  , ReplSet = __webpack_require__(93)
-	  , ReadPreference = __webpack_require__(95)
-	  , Db = __webpack_require__(90);
+	var parse = __webpack_require__(121)
+	  , Server = __webpack_require__(91)
+	  , Mongos = __webpack_require__(93)
+	  , ReplSet = __webpack_require__(92)
+	  , ReadPreference = __webpack_require__(94)
+	  , Db = __webpack_require__(89);
 
 	/**
 	 * @fileOverview The **MongoClient** class is a class that allows for making Connections to MongoDB.
@@ -39222,7 +39010,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  if(typeof db_options.native_parser == 'boolean') return db_options.native_parser;
 
 	  try {
-	    __webpack_require__(115).BSON.BSONNative.BSON;
+	    __webpack_require__(114).BSON.BSONNative.BSON;
 	    return true;
 	  } catch(err) {
 	    return false;
@@ -39329,30 +39117,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 90 */
+/* 89 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
 
-	var EventEmitter = __webpack_require__(121).EventEmitter
-	  , inherits = __webpack_require__(53).inherits
-	  , getSingleProperty = __webpack_require__(123).getSingleProperty
-	  , shallowClone = __webpack_require__(123).shallowClone
-	  , parseIndexOptions = __webpack_require__(123).parseIndexOptions
-	  , debugOptions = __webpack_require__(123).debugOptions
-	  , CommandCursor = __webpack_require__(124)
-	  , handleCallback = __webpack_require__(123).handleCallback
-	  , toError = __webpack_require__(123).toError
-	  , ReadPreference = __webpack_require__(95)
-	  , f = __webpack_require__(53).format
-	  , Admin = __webpack_require__(125)
-	  , Code = __webpack_require__(115).BSON.Code
-	  , CoreReadPreference = __webpack_require__(115).ReadPreference
-	  , MongoError = __webpack_require__(115).MongoError
-	  , ObjectID = __webpack_require__(115).ObjectID
-	  , Logger = __webpack_require__(115).Logger
-	  , Collection = __webpack_require__(91)
-	  , crypto = __webpack_require__(112);
+	var EventEmitter = __webpack_require__(120).EventEmitter
+	  , inherits = __webpack_require__(52).inherits
+	  , getSingleProperty = __webpack_require__(122).getSingleProperty
+	  , shallowClone = __webpack_require__(122).shallowClone
+	  , parseIndexOptions = __webpack_require__(122).parseIndexOptions
+	  , debugOptions = __webpack_require__(122).debugOptions
+	  , CommandCursor = __webpack_require__(123)
+	  , handleCallback = __webpack_require__(122).handleCallback
+	  , toError = __webpack_require__(122).toError
+	  , ReadPreference = __webpack_require__(94)
+	  , f = __webpack_require__(52).format
+	  , Admin = __webpack_require__(124)
+	  , Code = __webpack_require__(114).BSON.Code
+	  , CoreReadPreference = __webpack_require__(114).ReadPreference
+	  , MongoError = __webpack_require__(114).MongoError
+	  , ObjectID = __webpack_require__(114).ObjectID
+	  , Logger = __webpack_require__(114).Logger
+	  , Collection = __webpack_require__(90)
+	  , crypto = __webpack_require__(110);
 
 	var debugFields = ['authSource', 'w', 'wtimeout', 'j', 'native_parser', 'forceServerObjectId'
 	  , 'serializeFunctions', 'raw', 'promoteLongs', 'bufferMaxEntries', 'numberOfRetries', 'retryMiliSeconds'
@@ -40688,31 +40476,31 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 91 */
+/* 90 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {"use strict";
 
-	var checkCollectionName = __webpack_require__(123).checkCollectionName
-	  , ObjectID = __webpack_require__(115).BSON.ObjectID
-	  , Long = __webpack_require__(115).BSON.Long
-	  , Code = __webpack_require__(115).BSON.Code
-	  , f = __webpack_require__(53).format
-	  , AggregationCursor = __webpack_require__(126)
-	  , MongoError = __webpack_require__(115).MongoError
-	  , shallowClone = __webpack_require__(123).shallowClone
-	  , isObject = __webpack_require__(123).isObject
-	  , toError = __webpack_require__(123).toError
-	  , normalizeHintField = __webpack_require__(123).normalizeHintField
-	  , handleCallback = __webpack_require__(123).handleCallback
-	  , decorateCommand = __webpack_require__(123).decorateCommand
-	  , formattedOrderClause = __webpack_require__(123).formattedOrderClause
-	  , ReadPreference = __webpack_require__(95)
-	  , CoreReadPreference = __webpack_require__(115).ReadPreference
-	  , CommandCursor = __webpack_require__(124)
-	  , Cursor = __webpack_require__(98)
-	  , unordered = __webpack_require__(127)
-	  , ordered = __webpack_require__(128);
+	var checkCollectionName = __webpack_require__(122).checkCollectionName
+	  , ObjectID = __webpack_require__(114).BSON.ObjectID
+	  , Long = __webpack_require__(114).BSON.Long
+	  , Code = __webpack_require__(114).BSON.Code
+	  , f = __webpack_require__(52).format
+	  , AggregationCursor = __webpack_require__(158)
+	  , MongoError = __webpack_require__(114).MongoError
+	  , shallowClone = __webpack_require__(122).shallowClone
+	  , isObject = __webpack_require__(122).isObject
+	  , toError = __webpack_require__(122).toError
+	  , normalizeHintField = __webpack_require__(122).normalizeHintField
+	  , handleCallback = __webpack_require__(122).handleCallback
+	  , decorateCommand = __webpack_require__(122).decorateCommand
+	  , formattedOrderClause = __webpack_require__(122).formattedOrderClause
+	  , ReadPreference = __webpack_require__(94)
+	  , CoreReadPreference = __webpack_require__(114).ReadPreference
+	  , CommandCursor = __webpack_require__(123)
+	  , Cursor = __webpack_require__(97)
+	  , unordered = __webpack_require__(159)
+	  , ordered = __webpack_require__(160);
 
 	/**
 	 * @fileOverview The **Collection** class is an internal class that embodies a MongoDB collection
@@ -42771,23 +42559,23 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = Collection;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 92 */
+/* 91 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
 
-	var EventEmitter = __webpack_require__(121).EventEmitter
-	  , inherits = __webpack_require__(53).inherits
-	  , CServer = __webpack_require__(115).Server
-	  , Cursor = __webpack_require__(98)
-	  , f = __webpack_require__(53).format
-	  , ServerCapabilities = __webpack_require__(129).ServerCapabilities
-	  , Store = __webpack_require__(129).Store
-	  , MongoError = __webpack_require__(115).MongoError
-	  , shallowClone = __webpack_require__(123).shallowClone;
+	var EventEmitter = __webpack_require__(120).EventEmitter
+	  , inherits = __webpack_require__(52).inherits
+	  , CServer = __webpack_require__(114).Server
+	  , Cursor = __webpack_require__(97)
+	  , f = __webpack_require__(52).format
+	  , ServerCapabilities = __webpack_require__(125).ServerCapabilities
+	  , Store = __webpack_require__(125).Store
+	  , MongoError = __webpack_require__(114).MongoError
+	  , shallowClone = __webpack_require__(122).shallowClone;
 
 	/**
 	 * @fileOverview The **Server** class is a class that represents a single server topology and is
@@ -43189,26 +42977,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 93 */
+/* 92 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
 
-	var EventEmitter = __webpack_require__(121).EventEmitter
-	  , inherits = __webpack_require__(53).inherits
-	  , f = __webpack_require__(53).format
-	  , Server = __webpack_require__(92)
-	  , Mongos = __webpack_require__(94)
-	  , Cursor = __webpack_require__(98)
-	  , ReadPreference = __webpack_require__(95)
-	  , MongoCR = __webpack_require__(115).MongoCR
-	  , MongoError = __webpack_require__(115).MongoError
-	  , ServerCapabilities = __webpack_require__(129).ServerCapabilities
-	  , Store = __webpack_require__(129).Store
-	  , CServer = __webpack_require__(115).Server
-	  , CReplSet = __webpack_require__(115).ReplSet
-	  , CoreReadPreference = __webpack_require__(115).ReadPreference
-	  , shallowClone = __webpack_require__(123).shallowClone;
+	var EventEmitter = __webpack_require__(120).EventEmitter
+	  , inherits = __webpack_require__(52).inherits
+	  , f = __webpack_require__(52).format
+	  , Server = __webpack_require__(91)
+	  , Mongos = __webpack_require__(93)
+	  , Cursor = __webpack_require__(97)
+	  , ReadPreference = __webpack_require__(94)
+	  , MongoCR = __webpack_require__(114).MongoCR
+	  , MongoError = __webpack_require__(114).MongoError
+	  , ServerCapabilities = __webpack_require__(125).ServerCapabilities
+	  , Store = __webpack_require__(125).Store
+	  , CServer = __webpack_require__(114).Server
+	  , CReplSet = __webpack_require__(114).ReplSet
+	  , CoreReadPreference = __webpack_require__(114).ReadPreference
+	  , shallowClone = __webpack_require__(122).shallowClone;
 
 	/**
 	 * @fileOverview The **ReplSet** class is a class that represents a Replicaset topology and is
@@ -43722,21 +43510,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 94 */
+/* 93 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
 
-	var EventEmitter = __webpack_require__(121).EventEmitter
-	  , inherits = __webpack_require__(53).inherits
-	  , f = __webpack_require__(53).format
-	  , ServerCapabilities = __webpack_require__(129).ServerCapabilities
-	  , MongoCR = __webpack_require__(115).MongoCR
-	  , CMongos = __webpack_require__(115).Mongos
-	  , Cursor = __webpack_require__(98)
-	  , Server = __webpack_require__(92)
-	  , Store = __webpack_require__(129).Store
-	  , shallowClone = __webpack_require__(123).shallowClone;
+	var EventEmitter = __webpack_require__(120).EventEmitter
+	  , inherits = __webpack_require__(52).inherits
+	  , f = __webpack_require__(52).format
+	  , ServerCapabilities = __webpack_require__(125).ServerCapabilities
+	  , MongoCR = __webpack_require__(114).MongoCR
+	  , CMongos = __webpack_require__(114).Mongos
+	  , Cursor = __webpack_require__(97)
+	  , Server = __webpack_require__(91)
+	  , Store = __webpack_require__(125).Store
+	  , shallowClone = __webpack_require__(122).shallowClone;
 
 	/**
 	 * @fileOverview The **Mongos** class is a class that represents a Mongos Proxy topology and is
@@ -44183,7 +43971,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 95 */
+/* 94 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -44292,7 +44080,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = ReadPreference;
 
 /***/ },
-/* 96 */
+/* 95 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
@@ -44331,16 +44119,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	 *   });
 	 * });
 	 */
-	var Chunk = __webpack_require__(97),
-	  ObjectID = __webpack_require__(115).BSON.ObjectID,
-	  Buffer = __webpack_require__(54).Buffer,
+	var Chunk = __webpack_require__(96),
+	  ObjectID = __webpack_require__(114).BSON.ObjectID,
+	  Buffer = __webpack_require__(53).Buffer,
 	  fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())),
-	  timers = __webpack_require__(62),
-	  f = __webpack_require__(53).format,
-	  util = __webpack_require__(53),
-	  MongoError = __webpack_require__(115).MongoError,
+	  timers = __webpack_require__(61),
+	  f = __webpack_require__(52).format,
+	  util = __webpack_require__(52),
+	  MongoError = __webpack_require__(114).MongoError,
 	  inherits = util.inherits,
-	  Duplex = __webpack_require__(317).Duplex || __webpack_require__(334).Duplex;
+	  Duplex = __webpack_require__(316).Duplex || __webpack_require__(333).Duplex;
 
 	var REFERENCE_BY_FILENAME = 0,
 	  REFERENCE_BY_ID = 1;
@@ -45881,13 +45669,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 97 */
+/* 96 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {"use strict";
 
-	var Binary = __webpack_require__(115).BSON.Binary,
-	  ObjectID = __webpack_require__(115).BSON.ObjectID;
+	var Binary = __webpack_require__(114).BSON.Binary,
+	  ObjectID = __webpack_require__(114).BSON.ObjectID;
 
 	/**
 	 * Class for representing a single chunk in GridFS.
@@ -46120,28 +45908,28 @@ return /******/ (function(modules) { // webpackBootstrap
 	Chunk.DEFAULT_CHUNK_SIZE = 1024 * 255;
 
 	module.exports = Chunk;
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 98 */
+/* 97 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var inherits = __webpack_require__(53).inherits
-	  , f = __webpack_require__(53).format
-	  , toError = __webpack_require__(123).toError
-	  , getSingleProperty = __webpack_require__(123).getSingleProperty
-	  , formattedOrderClause = __webpack_require__(123).formattedOrderClause
-	  , handleCallback = __webpack_require__(123).handleCallback
-	  , Logger = __webpack_require__(115).Logger
-	  , EventEmitter = __webpack_require__(121).EventEmitter
-	  , ReadPreference = __webpack_require__(95)
-	  , MongoError = __webpack_require__(115).MongoError
-	  , Readable = __webpack_require__(317).Readable || __webpack_require__(334).Readable
-	  , CoreCursor = __webpack_require__(115).Cursor
-	  , Query = __webpack_require__(115).Query
-	  , CoreReadPreference = __webpack_require__(115).ReadPreference;
+	var inherits = __webpack_require__(52).inherits
+	  , f = __webpack_require__(52).format
+	  , toError = __webpack_require__(122).toError
+	  , getSingleProperty = __webpack_require__(122).getSingleProperty
+	  , formattedOrderClause = __webpack_require__(122).formattedOrderClause
+	  , handleCallback = __webpack_require__(122).handleCallback
+	  , Logger = __webpack_require__(114).Logger
+	  , EventEmitter = __webpack_require__(120).EventEmitter
+	  , ReadPreference = __webpack_require__(94)
+	  , MongoError = __webpack_require__(114).MongoError
+	  , Readable = __webpack_require__(316).Readable || __webpack_require__(333).Readable
+	  , CoreCursor = __webpack_require__(114).Cursor
+	  , Query = __webpack_require__(114).Query
+	  , CoreReadPreference = __webpack_require__(114).ReadPreference;
 
 	/**
 	 * @fileOverview The **Cursor** class is an internal class that embodies a cursor on MongoDB
@@ -46965,13 +46753,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 99 */
+/* 98 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var object = __webpack_require__(130);
-	var digits = __webpack_require__(131).digits;
+	var object = __webpack_require__(126);
+	var digits = __webpack_require__(127).digits;
 
 	/**
 	 * math.js factory function.
@@ -47036,7 +46824,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      // reload the constants (they depend on option number and precision)
 	      // this must be done after math.type.BigNumber.config is applied
-	      __webpack_require__(132)(math, _config);
+	      __webpack_require__(128)(math, _config);
 
 	      // TODO: remove deprecated setting some day (deprecated since version 0.17.0)
 	      if (options.number && options.number.defaultType) {
@@ -47083,7 +46871,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  math.create = create;
 
 	  // create a new BigNumber factory for this instance of math.js
-	  var BigNumber = __webpack_require__(133).constructor();
+	  var BigNumber = __webpack_require__(129).constructor();
 
 	  /**
 	   * Get a JSON representation of a BigNumber containing
@@ -47142,25 +46930,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 
 	  // errors
-	  math.error = __webpack_require__(134);
+	  math.error = __webpack_require__(130);
 
 	  // types (Matrix, Complex, Unit, ...)
 	  math.type = {};
-	  math.type.Complex = __webpack_require__(135);
-	  math.type.Range = __webpack_require__(136);
-	  math.type.Index = __webpack_require__(137);
-	  math.type.Matrix = __webpack_require__(138)(_config);
-	  math.type.Unit = __webpack_require__(139);
-	  math.type.Help = __webpack_require__(140);
-	  math.type.ResultSet = __webpack_require__(141);
+	  math.type.Complex = __webpack_require__(131);
+	  math.type.Range = __webpack_require__(132);
+	  math.type.Index = __webpack_require__(133);
+	  math.type.Matrix = __webpack_require__(134)(_config);
+	  math.type.Unit = __webpack_require__(135);
+	  math.type.Help = __webpack_require__(136);
+	  math.type.ResultSet = __webpack_require__(137);
 	  math.type.BigNumber = BigNumber;
 
-	  math.collection = __webpack_require__(142)(math, _config);
+	  math.collection = __webpack_require__(138)(math, _config);
 
 	  // matrix storage formats
-	  math.type.CcsMatrix = __webpack_require__(143)(math, _config);
-	  math.type.CrsMatrix = __webpack_require__(144)(math, _config);
-	  math.type.DenseMatrix = __webpack_require__(145)(math, _config);
+	  math.type.CcsMatrix = __webpack_require__(139)(math, _config);
+	  math.type.CrsMatrix = __webpack_require__(140)(math, _config);
+	  math.type.DenseMatrix = __webpack_require__(141)(math, _config);
 
 	  // matrix storage format registry
 	  math.type.Matrix._storage.ccs = math.type.CcsMatrix;
@@ -47170,17 +46958,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  // expression (parse, Parser, nodes, docs)
 	  math.expression = {};
-	  math.expression.node = __webpack_require__(146);
-	  math.expression.parse = __webpack_require__(147)(math, _config);
-	  math.expression.Parser = __webpack_require__(148)(math, _config);
-	  math.expression.docs = __webpack_require__(149);
+	  math.expression.node = __webpack_require__(142);
+	  math.expression.parse = __webpack_require__(143)(math, _config);
+	  math.expression.Parser = __webpack_require__(144)(math, _config);
+	  math.expression.docs = __webpack_require__(145);
 
 	  // serialization utilities
 	  math.json = {
-	    reviver: __webpack_require__(150)(math, _config)
+	    reviver: __webpack_require__(146)(math, _config)
 	  };
 	  
 	  // functions - construction (must be defined before the rest of functions)
+	  __webpack_require__(171)(math, _config);
 	  __webpack_require__(172)(math, _config);
 	  __webpack_require__(173)(math, _config);
 	  __webpack_require__(174)(math, _config);
@@ -47190,15 +46979,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  __webpack_require__(178)(math, _config);
 	  __webpack_require__(179)(math, _config);
 	  __webpack_require__(180)(math, _config);
-	  __webpack_require__(181)(math, _config);
 
 	  // expression parser
+	  __webpack_require__(181)(math, _config);
 	  __webpack_require__(182)(math, _config);
 	  __webpack_require__(183)(math, _config);
 	  __webpack_require__(184)(math, _config);
-	  __webpack_require__(185)(math, _config);
 
 	  // functions - arithmetic
+	  __webpack_require__(185)(math, _config);
 	  __webpack_require__(186)(math, _config);
 	  __webpack_require__(187)(math, _config);
 	  __webpack_require__(188)(math, _config);
@@ -47227,30 +47016,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	  __webpack_require__(211)(math, _config);
 	  __webpack_require__(212)(math, _config);
 	  __webpack_require__(213)(math, _config);
-	  __webpack_require__(214)(math, _config);
 
 	  // functions - bitwise
+	  __webpack_require__(214)(math, _config);
 	  __webpack_require__(215)(math, _config);
 	  __webpack_require__(216)(math, _config);
 	  __webpack_require__(217)(math, _config);
 	  __webpack_require__(218)(math, _config);
 	  __webpack_require__(219)(math, _config);
 	  __webpack_require__(220)(math, _config);
-	  __webpack_require__(221)(math, _config);
 
 	  // functions - complex
+	  __webpack_require__(221)(math, _config);
 	  __webpack_require__(222)(math, _config);
 	  __webpack_require__(223)(math, _config);
 	  __webpack_require__(224)(math, _config);
-	  __webpack_require__(225)(math, _config);
 
 	  // functions - logical
+	  __webpack_require__(225)(math, _config);
 	  __webpack_require__(226)(math, _config);
 	  __webpack_require__(227)(math, _config);
 	  __webpack_require__(228)(math, _config);
-	  __webpack_require__(229)(math, _config);
 
 	  // functions - matrix
+	  __webpack_require__(229)(math, _config);
 	  __webpack_require__(230)(math, _config);
 	  __webpack_require__(231)(math, _config);
 	  __webpack_require__(232)(math, _config);
@@ -47267,19 +47056,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	  __webpack_require__(243)(math, _config);
 	  __webpack_require__(244)(math, _config);
 	  __webpack_require__(245)(math, _config);
-	  __webpack_require__(246)(math, _config);
 
 	  // functions - probability
 	  //require('./function/probability/distribution')(math, _config); // TODO: rethink math.distribution
+	  __webpack_require__(246)(math, _config);
 	  __webpack_require__(247)(math, _config);
 	  __webpack_require__(248)(math, _config);
 	  __webpack_require__(249)(math, _config);
 	  __webpack_require__(250)(math, _config);
 	  __webpack_require__(251)(math, _config);
 	  __webpack_require__(252)(math, _config);
-	  __webpack_require__(253)(math, _config);
 
 	  // functions - relational
+	  __webpack_require__(253)(math, _config);
 	  __webpack_require__(254)(math, _config);
 	  __webpack_require__(255)(math, _config);
 	  __webpack_require__(256)(math, _config);
@@ -47287,9 +47076,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  __webpack_require__(258)(math, _config);
 	  __webpack_require__(259)(math, _config);
 	  __webpack_require__(260)(math, _config);
-	  __webpack_require__(261)(math, _config);
 
 	  // functions - statistics
+	  __webpack_require__(261)(math, _config);
 	  __webpack_require__(262)(math, _config);
 	  __webpack_require__(263)(math, _config);
 	  __webpack_require__(264)(math, _config);
@@ -47297,9 +47086,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  __webpack_require__(266)(math, _config);
 	  __webpack_require__(267)(math, _config);
 	  __webpack_require__(268)(math, _config);
-	  __webpack_require__(269)(math, _config);
 
 	  // functions - trigonometry
+	  __webpack_require__(269)(math, _config);
 	  __webpack_require__(270)(math, _config);
 	  __webpack_require__(271)(math, _config);
 	  __webpack_require__(272)(math, _config);
@@ -47324,12 +47113,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	  __webpack_require__(291)(math, _config);
 	  __webpack_require__(292)(math, _config);
 	  __webpack_require__(293)(math, _config);
-	  __webpack_require__(294)(math, _config);
 
 	  // functions - units
-	  __webpack_require__(295)(math, _config);
+	  __webpack_require__(294)(math, _config);
 
 	  // functions - utils
+	  __webpack_require__(295)(math, _config);
 	  __webpack_require__(296)(math, _config);
 	  __webpack_require__(297)(math, _config);
 	  __webpack_require__(298)(math, _config);
@@ -47338,7 +47127,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	  __webpack_require__(301)(math, _config);
 	  __webpack_require__(302)(math, _config);
 	  __webpack_require__(303)(math, _config);
-	  __webpack_require__(304)(math, _config);
 
 	  // TODO: deprecated since version 0.25.0, remove some day.
 	  math.ifElse = function () {
@@ -47346,25 +47134,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	  };
 
 	  // constants
-	  __webpack_require__(132)(math, _config);
+	  __webpack_require__(128)(math, _config);
 
 	  // attach transform functions (for converting one-based indices to zero-based)
 	  math.expression.transform = {
-	    concat: __webpack_require__(151)(math, _config),
-	    filter: __webpack_require__(152)(math, _config),
-	    forEach:__webpack_require__(153)(math, _config),
-	    index:  __webpack_require__(154)(math, _config),
-	    map:    __webpack_require__(155)(math, _config),
-	    max:    __webpack_require__(156)(math, _config),
-	    mean:   __webpack_require__(157)(math, _config),
-	    min:    __webpack_require__(158)(math, _config),
-	    range:  __webpack_require__(159)(math, _config),
-	    subset: __webpack_require__(160)(math, _config)
+	    concat: __webpack_require__(147)(math, _config),
+	    filter: __webpack_require__(148)(math, _config),
+	    forEach:__webpack_require__(149)(math, _config),
+	    index:  __webpack_require__(150)(math, _config),
+	    map:    __webpack_require__(151)(math, _config),
+	    max:    __webpack_require__(152)(math, _config),
+	    mean:   __webpack_require__(153)(math, _config),
+	    min:    __webpack_require__(154)(math, _config),
+	    range:  __webpack_require__(155)(math, _config),
+	    subset: __webpack_require__(156)(math, _config)
 	  };
 
 	  // selector (we initialize after all functions are loaded)
 	  math.chaining = {};
-	  math.chaining.Chain = __webpack_require__(161)(math, _config);
+	  math.chaining.Chain = __webpack_require__(157)(math, _config);
 	  math.chaining.Selector = math.chaining.Chain; // TODO: deprecate in v2.0
 
 	  // apply provided configuration options
@@ -47388,20 +47176,20 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 100 */
+/* 99 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
 	 * Module dependencies.
 	 */
 
-	var EventEmitter = __webpack_require__(121).EventEmitter;
-	var mixin = __webpack_require__(332);
-	var proto = __webpack_require__(162);
-	var Route = __webpack_require__(163);
-	var Router = __webpack_require__(305);
-	var req = __webpack_require__(164);
-	var res = __webpack_require__(165);
+	var EventEmitter = __webpack_require__(120).EventEmitter;
+	var mixin = __webpack_require__(331);
+	var proto = __webpack_require__(161);
+	var Route = __webpack_require__(162);
+	var Router = __webpack_require__(304);
+	var req = __webpack_require__(163);
+	var res = __webpack_require__(164);
 
 	/**
 	 * Expose `createApplication()`.
@@ -47449,8 +47237,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Expose middleware
 	 */
 
-	exports.query = __webpack_require__(166);
-	exports.static = __webpack_require__(75);
+	exports.query = __webpack_require__(165);
+	exports.static = __webpack_require__(74);
 
 	/**
 	 * Replace removed middleware with an appropriate error message.
@@ -47487,7 +47275,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 101 */
+/* 100 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -47496,20 +47284,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	module.exports = {
-	    websocket: __webpack_require__(167)
-	  , flashsocket: __webpack_require__(168)
-	  , htmlfile: __webpack_require__(169)
-	  , 'xhr-polling': __webpack_require__(170)
-	  , 'jsonp-polling': __webpack_require__(171)
+	    websocket: __webpack_require__(166)
+	  , flashsocket: __webpack_require__(167)
+	  , htmlfile: __webpack_require__(168)
+	  , 'xhr-polling': __webpack_require__(169)
+	  , 'jsonp-polling': __webpack_require__(170)
 	};
 
 
 /***/ },
-/* 102 */
+/* 101 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
-	var arrayUniq = __webpack_require__(335);
+	var arrayUniq = __webpack_require__(334);
 
 	module.exports = function () {
 		return arrayUniq([].concat.apply([], arguments));
@@ -47517,7 +47305,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 103 */
+/* 102 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -47547,7 +47335,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 104 */
+/* 103 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(setImmediate) {'use strict';
@@ -47558,15 +47346,15 @@ return /******/ (function(modules) { // webpackBootstrap
 			setTimeout.apply(null, args);
 		};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(62).setImmediate))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(61).setImmediate))
 
 /***/ },
-/* 105 */
+/* 104 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	var path = __webpack_require__(8);
-	var pathIsInside = __webpack_require__(520);
+	var pathIsInside = __webpack_require__(519);
 
 	module.exports = function (a, b) {
 		a = path.resolve(a);
@@ -47581,7 +47369,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 106 */
+/* 105 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -47606,7 +47394,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var assert = __webpack_require__(108)
+	var assert = __webpack_require__(107)
 	var NEWLINE = '\n'.charCodeAt(0)
 
 	function emitNewlineEvents (stream) {
@@ -47658,7 +47446,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 107 */
+/* 106 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(process, setImmediate) {/*!
@@ -48785,10 +48573,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	}());
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(62).setImmediate))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(61).setImmediate))
 
 /***/ },
-/* 108 */
+/* 107 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// http://wiki.commonjs.org/wiki/Unit_Testing/1.0
@@ -48818,7 +48606,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// when used in node, this will actually load the util module we depend on
 	// versus loading the builtin util module as happens otherwise
 	// this is a bug in node module loading as far as I am concerned
-	var util = __webpack_require__(53);
+	var util = __webpack_require__(52);
 
 	var pSlice = Array.prototype.slice;
 	var hasOwn = Object.prototype.hasOwnProperty;
@@ -49153,222 +48941,24 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 109 */
+/* 108 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Stream = __webpack_require__(317);
-	var Response = __webpack_require__(306);
-	var Base64 = __webpack_require__(521);
-	var inherits = __webpack_require__(522);
+	exports.isatty = function () { return false; };
 
-	var Request = module.exports = function (xhr, params) {
-	    var self = this;
-	    self.writable = true;
-	    self.xhr = xhr;
-	    self.body = [];
-	    
-	    self.uri = (params.protocol || 'http:') + '//'
-	        + params.host
-	        + (params.port ? ':' + params.port : '')
-	        + (params.path || '/')
-	    ;
-	    
-	    if (typeof params.withCredentials === 'undefined') {
-	        params.withCredentials = true;
-	    }
+	function ReadStream() {
+	  throw new Error('tty.ReadStream is not implemented');
+	}
+	exports.ReadStream = ReadStream;
 
-	    try { xhr.withCredentials = params.withCredentials }
-	    catch (e) {}
-	    
-	    if (params.responseType) try { xhr.responseType = params.responseType }
-	    catch (e) {}
-	    
-	    xhr.open(
-	        params.method || 'GET',
-	        self.uri,
-	        true
-	    );
-
-	    xhr.onerror = function(event) {
-	        self.emit('error', new Error('Network error'));
-	    };
-
-	    self._headers = {};
-	    
-	    if (params.headers) {
-	        var keys = objectKeys(params.headers);
-	        for (var i = 0; i < keys.length; i++) {
-	            var key = keys[i];
-	            if (!self.isSafeRequestHeader(key)) continue;
-	            var value = params.headers[key];
-	            self.setHeader(key, value);
-	        }
-	    }
-	    
-	    if (params.auth) {
-	        //basic auth
-	        this.setHeader('Authorization', 'Basic ' + Base64.btoa(params.auth));
-	    }
-
-	    var res = new Response;
-	    res.on('close', function () {
-	        self.emit('close');
-	    });
-	    
-	    res.on('ready', function () {
-	        self.emit('response', res);
-	    });
-
-	    res.on('error', function (err) {
-	        self.emit('error', err);
-	    });
-	    
-	    xhr.onreadystatechange = function () {
-	        // Fix for IE9 bug
-	        // SCRIPT575: Could not complete the operation due to error c00c023f
-	        // It happens when a request is aborted, calling the success callback anyway with readyState === 4
-	        if (xhr.__aborted) return;
-	        res.handle(xhr);
-	    };
-	};
-
-	inherits(Request, Stream);
-
-	Request.prototype.setHeader = function (key, value) {
-	    this._headers[key.toLowerCase()] = value
-	};
-
-	Request.prototype.getHeader = function (key) {
-	    return this._headers[key.toLowerCase()]
-	};
-
-	Request.prototype.removeHeader = function (key) {
-	    delete this._headers[key.toLowerCase()]
-	};
-
-	Request.prototype.write = function (s) {
-	    this.body.push(s);
-	};
-
-	Request.prototype.destroy = function (s) {
-	    this.xhr.__aborted = true;
-	    this.xhr.abort();
-	    this.emit('close');
-	};
-
-	Request.prototype.end = function (s) {
-	    if (s !== undefined) this.body.push(s);
-
-	    var keys = objectKeys(this._headers);
-	    for (var i = 0; i < keys.length; i++) {
-	        var key = keys[i];
-	        var value = this._headers[key];
-	        if (isArray(value)) {
-	            for (var j = 0; j < value.length; j++) {
-	                this.xhr.setRequestHeader(key, value[j]);
-	            }
-	        }
-	        else this.xhr.setRequestHeader(key, value)
-	    }
-
-	    if (this.body.length === 0) {
-	        this.xhr.send('');
-	    }
-	    else if (typeof this.body[0] === 'string') {
-	        this.xhr.send(this.body.join(''));
-	    }
-	    else if (isArray(this.body[0])) {
-	        var body = [];
-	        for (var i = 0; i < this.body.length; i++) {
-	            body.push.apply(body, this.body[i]);
-	        }
-	        this.xhr.send(body);
-	    }
-	    else if (/Array/.test(Object.prototype.toString.call(this.body[0]))) {
-	        var len = 0;
-	        for (var i = 0; i < this.body.length; i++) {
-	            len += this.body[i].length;
-	        }
-	        var body = new(this.body[0].constructor)(len);
-	        var k = 0;
-	        
-	        for (var i = 0; i < this.body.length; i++) {
-	            var b = this.body[i];
-	            for (var j = 0; j < b.length; j++) {
-	                body[k++] = b[j];
-	            }
-	        }
-	        this.xhr.send(body);
-	    }
-	    else if (isXHR2Compatible(this.body[0])) {
-	        this.xhr.send(this.body[0]);
-	    }
-	    else {
-	        var body = '';
-	        for (var i = 0; i < this.body.length; i++) {
-	            body += this.body[i].toString();
-	        }
-	        this.xhr.send(body);
-	    }
-	};
-
-	// Taken from http://dxr.mozilla.org/mozilla/mozilla-central/content/base/src/nsXMLHttpRequest.cpp.html
-	Request.unsafeHeaders = [
-	    "accept-charset",
-	    "accept-encoding",
-	    "access-control-request-headers",
-	    "access-control-request-method",
-	    "connection",
-	    "content-length",
-	    "cookie",
-	    "cookie2",
-	    "content-transfer-encoding",
-	    "date",
-	    "expect",
-	    "host",
-	    "keep-alive",
-	    "origin",
-	    "referer",
-	    "te",
-	    "trailer",
-	    "transfer-encoding",
-	    "upgrade",
-	    "user-agent",
-	    "via"
-	];
-
-	Request.prototype.isSafeRequestHeader = function (headerName) {
-	    if (!headerName) return false;
-	    return indexOf(Request.unsafeHeaders, headerName.toLowerCase()) === -1;
-	};
-
-	var objectKeys = Object.keys || function (obj) {
-	    var keys = [];
-	    for (var key in obj) keys.push(key);
-	    return keys;
-	};
-
-	var isArray = Array.isArray || function (xs) {
-	    return Object.prototype.toString.call(xs) === '[object Array]';
-	};
-
-	var indexOf = function (xs, x) {
-	    if (xs.indexOf) return xs.indexOf(x);
-	    for (var i = 0; i < xs.length; i++) {
-	        if (xs[i] === x) return i;
-	    }
-	    return -1;
-	};
-
-	var isXHR2Compatible = function (obj) {
-	    if (typeof Blob !== 'undefined' && obj instanceof Blob) return true;
-	    if (typeof ArrayBuffer !== 'undefined' && obj instanceof ArrayBuffer) return true;
-	    if (typeof FormData !== 'undefined' && obj instanceof FormData) return true;
-	};
+	function WriteStream() {
+	  throw new Error('tty.ReadStream is not implemented');
+	}
+	exports.WriteStream = WriteStream;
 
 
 /***/ },
-/* 110 */
+/* 109 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -49392,7 +48982,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 	// USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-	var punycode = __webpack_require__(338);
+	var punycode = __webpack_require__(337);
 
 	exports.parse = urlParse;
 	exports.resolve = urlResolve;
@@ -49464,7 +49054,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      'gopher:': true,
 	      'file:': true
 	    },
-	    querystring = __webpack_require__(387);
+	    querystring = __webpack_require__(386);
 
 	function urlParse(url, parseQueryString, slashesDenoteHost) {
 	  if (url && isObject(url) && url instanceof Url) return url;
@@ -50081,27 +49671,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 111 */
+/* 110 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports.isatty = function () { return false; };
-
-	function ReadStream() {
-	  throw new Error('tty.ReadStream is not implemented');
-	}
-	exports.ReadStream = ReadStream;
-
-	function WriteStream() {
-	  throw new Error('tty.ReadStream is not implemented');
-	}
-	exports.WriteStream = WriteStream;
-
-
-/***/ },
-/* 112 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(Buffer) {var rng = __webpack_require__(307)
+	/* WEBPACK VAR INJECTION */(function(Buffer) {var rng = __webpack_require__(305)
 
 	function error () {
 	  var m = [].slice.call(arguments).join(' ')
@@ -50112,9 +49685,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    ].join('\n'))
 	}
 
-	exports.createHash = __webpack_require__(308)
+	exports.createHash = __webpack_require__(306)
 
-	exports.createHmac = __webpack_require__(309)
+	exports.createHmac = __webpack_require__(307)
 
 	exports.randomBytes = function(size, callback) {
 	  if (callback && callback.call) {
@@ -50135,7 +49708,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return ['sha1', 'sha256', 'sha512', 'md5', 'rmd160']
 	}
 
-	var p = __webpack_require__(310)(exports)
+	var p = __webpack_require__(308)(exports)
 	exports.pbkdf2 = p.pbkdf2
 	exports.pbkdf2Sync = p.pbkdf2Sync
 
@@ -50155,20 +49728,235 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	})
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 113 */
+/* 111 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Stream = __webpack_require__(316);
+	var Response = __webpack_require__(309);
+	var Base64 = __webpack_require__(520);
+	var inherits = __webpack_require__(521);
+
+	var Request = module.exports = function (xhr, params) {
+	    var self = this;
+	    self.writable = true;
+	    self.xhr = xhr;
+	    self.body = [];
+	    
+	    self.uri = (params.protocol || 'http:') + '//'
+	        + params.host
+	        + (params.port ? ':' + params.port : '')
+	        + (params.path || '/')
+	    ;
+	    
+	    if (typeof params.withCredentials === 'undefined') {
+	        params.withCredentials = true;
+	    }
+
+	    try { xhr.withCredentials = params.withCredentials }
+	    catch (e) {}
+	    
+	    if (params.responseType) try { xhr.responseType = params.responseType }
+	    catch (e) {}
+	    
+	    xhr.open(
+	        params.method || 'GET',
+	        self.uri,
+	        true
+	    );
+
+	    xhr.onerror = function(event) {
+	        self.emit('error', new Error('Network error'));
+	    };
+
+	    self._headers = {};
+	    
+	    if (params.headers) {
+	        var keys = objectKeys(params.headers);
+	        for (var i = 0; i < keys.length; i++) {
+	            var key = keys[i];
+	            if (!self.isSafeRequestHeader(key)) continue;
+	            var value = params.headers[key];
+	            self.setHeader(key, value);
+	        }
+	    }
+	    
+	    if (params.auth) {
+	        //basic auth
+	        this.setHeader('Authorization', 'Basic ' + Base64.btoa(params.auth));
+	    }
+
+	    var res = new Response;
+	    res.on('close', function () {
+	        self.emit('close');
+	    });
+	    
+	    res.on('ready', function () {
+	        self.emit('response', res);
+	    });
+
+	    res.on('error', function (err) {
+	        self.emit('error', err);
+	    });
+	    
+	    xhr.onreadystatechange = function () {
+	        // Fix for IE9 bug
+	        // SCRIPT575: Could not complete the operation due to error c00c023f
+	        // It happens when a request is aborted, calling the success callback anyway with readyState === 4
+	        if (xhr.__aborted) return;
+	        res.handle(xhr);
+	    };
+	};
+
+	inherits(Request, Stream);
+
+	Request.prototype.setHeader = function (key, value) {
+	    this._headers[key.toLowerCase()] = value
+	};
+
+	Request.prototype.getHeader = function (key) {
+	    return this._headers[key.toLowerCase()]
+	};
+
+	Request.prototype.removeHeader = function (key) {
+	    delete this._headers[key.toLowerCase()]
+	};
+
+	Request.prototype.write = function (s) {
+	    this.body.push(s);
+	};
+
+	Request.prototype.destroy = function (s) {
+	    this.xhr.__aborted = true;
+	    this.xhr.abort();
+	    this.emit('close');
+	};
+
+	Request.prototype.end = function (s) {
+	    if (s !== undefined) this.body.push(s);
+
+	    var keys = objectKeys(this._headers);
+	    for (var i = 0; i < keys.length; i++) {
+	        var key = keys[i];
+	        var value = this._headers[key];
+	        if (isArray(value)) {
+	            for (var j = 0; j < value.length; j++) {
+	                this.xhr.setRequestHeader(key, value[j]);
+	            }
+	        }
+	        else this.xhr.setRequestHeader(key, value)
+	    }
+
+	    if (this.body.length === 0) {
+	        this.xhr.send('');
+	    }
+	    else if (typeof this.body[0] === 'string') {
+	        this.xhr.send(this.body.join(''));
+	    }
+	    else if (isArray(this.body[0])) {
+	        var body = [];
+	        for (var i = 0; i < this.body.length; i++) {
+	            body.push.apply(body, this.body[i]);
+	        }
+	        this.xhr.send(body);
+	    }
+	    else if (/Array/.test(Object.prototype.toString.call(this.body[0]))) {
+	        var len = 0;
+	        for (var i = 0; i < this.body.length; i++) {
+	            len += this.body[i].length;
+	        }
+	        var body = new(this.body[0].constructor)(len);
+	        var k = 0;
+	        
+	        for (var i = 0; i < this.body.length; i++) {
+	            var b = this.body[i];
+	            for (var j = 0; j < b.length; j++) {
+	                body[k++] = b[j];
+	            }
+	        }
+	        this.xhr.send(body);
+	    }
+	    else if (isXHR2Compatible(this.body[0])) {
+	        this.xhr.send(this.body[0]);
+	    }
+	    else {
+	        var body = '';
+	        for (var i = 0; i < this.body.length; i++) {
+	            body += this.body[i].toString();
+	        }
+	        this.xhr.send(body);
+	    }
+	};
+
+	// Taken from http://dxr.mozilla.org/mozilla/mozilla-central/content/base/src/nsXMLHttpRequest.cpp.html
+	Request.unsafeHeaders = [
+	    "accept-charset",
+	    "accept-encoding",
+	    "access-control-request-headers",
+	    "access-control-request-method",
+	    "connection",
+	    "content-length",
+	    "cookie",
+	    "cookie2",
+	    "content-transfer-encoding",
+	    "date",
+	    "expect",
+	    "host",
+	    "keep-alive",
+	    "origin",
+	    "referer",
+	    "te",
+	    "trailer",
+	    "transfer-encoding",
+	    "upgrade",
+	    "user-agent",
+	    "via"
+	];
+
+	Request.prototype.isSafeRequestHeader = function (headerName) {
+	    if (!headerName) return false;
+	    return indexOf(Request.unsafeHeaders, headerName.toLowerCase()) === -1;
+	};
+
+	var objectKeys = Object.keys || function (obj) {
+	    var keys = [];
+	    for (var key in obj) keys.push(key);
+	    return keys;
+	};
+
+	var isArray = Array.isArray || function (xs) {
+	    return Object.prototype.toString.call(xs) === '[object Array]';
+	};
+
+	var indexOf = function (xs, x) {
+	    if (xs.indexOf) return xs.indexOf(x);
+	    for (var i = 0; i < xs.length; i++) {
+	        if (xs[i] === x) return i;
+	    }
+	    return -1;
+	};
+
+	var isXHR2Compatible = function (obj) {
+	    if (typeof Blob !== 'undefined' && obj instanceof Blob) return true;
+	    if (typeof ArrayBuffer !== 'undefined' && obj instanceof ArrayBuffer) return true;
+	    if (typeof FormData !== 'undefined' && obj instanceof FormData) return true;
+	};
+
+
+/***/ },
+/* 112 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process, Buffer) {/*global Buffer require exports console setTimeout */
 
 	var net = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"net\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())),
-	    util = __webpack_require__(311),
-	    Queue = __webpack_require__(312),
-	    to_array = __webpack_require__(313),
-	    events = __webpack_require__(121),
-	    crypto = __webpack_require__(112),
+	    util = __webpack_require__(310),
+	    Queue = __webpack_require__(311),
+	    to_array = __webpack_require__(312),
+	    events = __webpack_require__(120),
+	    crypto = __webpack_require__(110),
 	    parsers = [], commands,
 	    connection_id = 0,
 	    default_port = 6379,
@@ -50179,15 +49967,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	// hiredis might not be installed
 	try {
-	    __webpack_require__(314);
-	    parsers.push(__webpack_require__(314));
+	    __webpack_require__(313);
+	    parsers.push(__webpack_require__(313));
 	} catch (err) {
 	    if (exports.debug_mode) {
 	        console.warn("hiredis parser not installed.");
 	    }
 	}
 
-	parsers.push(__webpack_require__(315));
+	parsers.push(__webpack_require__(314));
 
 	function RedisClient(stream, options) {
 	    this.stream = stream;
@@ -51027,7 +50815,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    "randomkey", "select", "move", "rename", "renamenx", "expire", "expireat", "keys", "dbsize", "auth", "ping", "echo", "save", "bgsave",
 	    "bgrewriteaof", "shutdown", "lastsave", "type", "multi", "exec", "discard", "sync", "flushdb", "flushall", "sort", "info", "monitor", "ttl",
 	    "persist", "slaveof", "debug", "config", "subscribe", "unsubscribe", "psubscribe", "punsubscribe", "publish", "watch", "unwatch", "cluster",
-	    "restore", "migrate", "dump", "object", "client", "eval", "evalsha"], __webpack_require__(316));
+	    "restore", "migrate", "dump", "object", "client", "eval", "evalsha"], __webpack_require__(315));
 
 	commands.forEach(function (command) {
 	    RedisClient.prototype[command] = function (args, callback) {
@@ -51275,10 +51063,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(53).Buffer))
 
 /***/ },
-/* 114 */
+/* 113 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Approach:
@@ -51324,24 +51112,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = glob
 
 	var fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
-	var minimatch = __webpack_require__(550)
+	var minimatch = __webpack_require__(548)
 	var Minimatch = minimatch.Minimatch
-	var inherits = __webpack_require__(551)
-	var EE = __webpack_require__(121).EventEmitter
+	var inherits = __webpack_require__(549)
+	var EE = __webpack_require__(120).EventEmitter
 	var path = __webpack_require__(8)
-	var assert = __webpack_require__(108)
-	var globSync = __webpack_require__(318)
-	var common = __webpack_require__(319)
+	var assert = __webpack_require__(107)
+	var globSync = __webpack_require__(317)
+	var common = __webpack_require__(318)
 	var alphasort = common.alphasort
 	var alphasorti = common.alphasorti
 	var isAbsolute = common.isAbsolute
 	var setopts = common.setopts
 	var ownProp = common.ownProp
-	var inflight = __webpack_require__(552)
-	var util = __webpack_require__(53)
+	var inflight = __webpack_require__(550)
+	var util = __webpack_require__(52)
 	var childrenIgnored = common.childrenIgnored
 
-	var once = __webpack_require__(553)
+	var once = __webpack_require__(551)
 
 	function glob (pattern, options, cb) {
 	  if (typeof options === 'function') cb = options, options = {}
@@ -52025,29 +51813,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 115 */
+/* 114 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
-	    MongoError: __webpack_require__(320)
-	  , Server: __webpack_require__(321)
-	  , ReplSet: __webpack_require__(322)
-	  , Mongos: __webpack_require__(323)
-	  , Logger: __webpack_require__(324)
-	  , Cursor: __webpack_require__(325)
-	  , ReadPreference: __webpack_require__(326)
-	  , BSON: __webpack_require__(569)
+	    MongoError: __webpack_require__(319)
+	  , Server: __webpack_require__(320)
+	  , ReplSet: __webpack_require__(321)
+	  , Mongos: __webpack_require__(322)
+	  , Logger: __webpack_require__(323)
+	  , Cursor: __webpack_require__(324)
+	  , ReadPreference: __webpack_require__(325)
+	  , BSON: __webpack_require__(568)
 	  // Raw operations
-	  , Query: __webpack_require__(327).Query
+	  , Query: __webpack_require__(326).Query
 	  // Auth mechanisms
-	  , MongoCR: __webpack_require__(328)
-	  , X509: __webpack_require__(329)
-	  , Plain: __webpack_require__(330)
-	  , GSSAPI: __webpack_require__(331)
+	  , MongoCR: __webpack_require__(327)
+	  , X509: __webpack_require__(328)
+	  , Plain: __webpack_require__(329)
+	  , GSSAPI: __webpack_require__(330)
 	}
 
 /***/ },
-/* 116 */
+/* 115 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -52069,7 +51857,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 117 */
+/* 116 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -52098,7 +51886,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 118 */
+/* 117 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -52112,7 +51900,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var url = __webpack_require__(110)
+	var url = __webpack_require__(109)
 	var parse = url.parse
 	var Url = url.Url
 
@@ -52240,7 +52028,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 119 */
+/* 118 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -52254,23 +52042,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var debug = __webpack_require__(565)('send')
-	var deprecate = __webpack_require__(523)('send')
-	var destroy = __webpack_require__(524)
-	var escapeHtml = __webpack_require__(116)
-	  , parseRange = __webpack_require__(525)
-	  , Stream = __webpack_require__(317)
-	  , mime = __webpack_require__(549)
-	  , fresh = __webpack_require__(526)
+	var debug = __webpack_require__(564)('send')
+	var deprecate = __webpack_require__(522)('send')
+	var destroy = __webpack_require__(523)
+	var escapeHtml = __webpack_require__(115)
+	  , parseRange = __webpack_require__(524)
+	  , Stream = __webpack_require__(316)
+	  , mime = __webpack_require__(552)
+	  , fresh = __webpack_require__(525)
 	  , path = __webpack_require__(8)
-	  , http = __webpack_require__(80)
+	  , http = __webpack_require__(79)
 	  , fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
 	  , normalize = path.normalize
 	  , join = path.join
-	var etag = __webpack_require__(527)
-	var EventEmitter = __webpack_require__(121).EventEmitter;
-	var ms = __webpack_require__(528);
-	var onFinished = __webpack_require__(529)
+	var etag = __webpack_require__(526)
+	var EventEmitter = __webpack_require__(120).EventEmitter;
+	var ms = __webpack_require__(527);
+	var onFinished = __webpack_require__(528)
 
 	/**
 	 * Variables.
@@ -53043,7 +52831,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 120 */
+/* 119 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Approach:
@@ -53091,22 +52879,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	var fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
 	var minimatch = __webpack_require__(578)
 	var Minimatch = minimatch.Minimatch
-	var inherits = __webpack_require__(579)
-	var EE = __webpack_require__(121).EventEmitter
+	var inherits = __webpack_require__(577)
+	var EE = __webpack_require__(120).EventEmitter
 	var path = __webpack_require__(8)
-	var assert = __webpack_require__(108)
-	var globSync = __webpack_require__(336)
-	var common = __webpack_require__(337)
+	var assert = __webpack_require__(107)
+	var globSync = __webpack_require__(335)
+	var common = __webpack_require__(336)
 	var alphasort = common.alphasort
 	var alphasorti = common.alphasorti
 	var isAbsolute = common.isAbsolute
 	var setopts = common.setopts
 	var ownProp = common.ownProp
-	var inflight = __webpack_require__(580)
-	var util = __webpack_require__(53)
+	var inflight = __webpack_require__(579)
+	var util = __webpack_require__(52)
 	var childrenIgnored = common.childrenIgnored
 
-	var once = __webpack_require__(581)
+	var once = __webpack_require__(580)
 
 	function glob (pattern, options, cb) {
 	  if (typeof options === 'function') cb = options, options = {}
@@ -53790,7 +53578,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 121 */
+/* 120 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -54097,12 +53885,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 122 */
+/* 121 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var ReadPreference = __webpack_require__(95);
+	var ReadPreference = __webpack_require__(94);
 
 	module.exports = function(url, options) {
 	  // Ensure we have a default options object if none set
@@ -54384,12 +54172,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 123 */
+/* 122 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
 
-	var MongoError = __webpack_require__(115).MongoError
+	var MongoError = __webpack_require__(114).MongoError
 
 	var shallowClone = function(obj) {
 	  var copy = {};
@@ -54623,26 +54411,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 124 */
+/* 123 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var inherits = __webpack_require__(53).inherits
-	  , f = __webpack_require__(53).format
-	  , toError = __webpack_require__(123).toError
-	  , getSingleProperty = __webpack_require__(123).getSingleProperty
-	  , formattedOrderClause = __webpack_require__(123).formattedOrderClause
-	  , handleCallback = __webpack_require__(123).handleCallback
-	  , Logger = __webpack_require__(115).Logger
-	  , EventEmitter = __webpack_require__(121).EventEmitter
-	  , ReadPreference = __webpack_require__(95)
-	  , MongoError = __webpack_require__(115).MongoError
-	  , Readable = __webpack_require__(317).Readable || __webpack_require__(334).Readable
+	var inherits = __webpack_require__(52).inherits
+	  , f = __webpack_require__(52).format
+	  , toError = __webpack_require__(122).toError
+	  , getSingleProperty = __webpack_require__(122).getSingleProperty
+	  , formattedOrderClause = __webpack_require__(122).formattedOrderClause
+	  , handleCallback = __webpack_require__(122).handleCallback
+	  , Logger = __webpack_require__(114).Logger
+	  , EventEmitter = __webpack_require__(120).EventEmitter
+	  , ReadPreference = __webpack_require__(94)
+	  , MongoError = __webpack_require__(114).MongoError
+	  , Readable = __webpack_require__(316).Readable || __webpack_require__(333).Readable
 	  // , CoreCursor = require('mongodb-core').Cursor
-	  , CoreCursor = __webpack_require__(98)
-	  , Query = __webpack_require__(115).Query
-	  , CoreReadPreference = __webpack_require__(115).ReadPreference;
+	  , CoreCursor = __webpack_require__(97)
+	  , Query = __webpack_require__(114).Query
+	  , CoreReadPreference = __webpack_require__(114).ReadPreference;
 
 	/**
 	 * @fileOverview The **CommandCursor** class is an internal class that embodies a 
@@ -54907,12 +54695,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = CommandCursor;
 
 /***/ },
-/* 125 */
+/* 124 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var toError = __webpack_require__(123).toError;
+	var toError = __webpack_require__(122).toError;
 
 	/**
 	 * @fileOverview The **Admin** class is an internal class that allows convenient access to
@@ -55259,1379 +55047,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Admin;
 
 /***/ },
-/* 126 */
+/* 125 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var inherits = __webpack_require__(53).inherits
-	  , f = __webpack_require__(53).format
-	  , toError = __webpack_require__(123).toError
-	  , getSingleProperty = __webpack_require__(123).getSingleProperty
-	  , formattedOrderClause = __webpack_require__(123).formattedOrderClause
-	  , handleCallback = __webpack_require__(123).handleCallback
-	  , Logger = __webpack_require__(115).Logger
-	  , EventEmitter = __webpack_require__(121).EventEmitter
-	  , ReadPreference = __webpack_require__(95)
-	  , MongoError = __webpack_require__(115).MongoError
-	  , Readable = __webpack_require__(317).Readable || __webpack_require__(334).Readable
-	  // , CoreCursor = require('mongodb-core').Cursor
-	  , CoreCursor = __webpack_require__(98)
-	  , Query = __webpack_require__(115).Query
-	  , CoreReadPreference = __webpack_require__(115).ReadPreference;
-
-	/**
-	 * @fileOverview The **AggregationCursor** class is an internal class that embodies an aggregation cursor on MongoDB
-	 * allowing for iteration over the results returned from the underlying query. It supports
-	 * one by one document iteration, conversion to an array or can be iterated as a Node 0.10.X 
-	 * or higher stream
-	 * 
-	 * **AGGREGATIONCURSOR Cannot directly be instantiated**
-	 * @example
-	 * var MongoClient = require('mongodb').MongoClient,
-	 *   test = require('assert');
-	 * // Connection url
-	 * var url = 'mongodb://localhost:27017/test';
-	 * // Connect using MongoClient
-	 * MongoClient.connect(url, function(err, db) {
-	 *   // Create a collection we want to drop later
-	 *   var col = db.collection('createIndexExample1');
-	 *   // Insert a bunch of documents
-	 *   col.insert([{a:1, b:1}
-	 *     , {a:2, b:2}, {a:3, b:3}
-	 *     , {a:4, b:4}], {w:1}, function(err, result) {
-	 *     test.equal(null, err);
-	 * 
-	 *     // Show that duplicate records got dropped
-	 *     col.aggregation({}, {cursor: {}}).toArray(function(err, items) {
-	 *       test.equal(null, err);
-	 *       test.equal(4, items.length);
-	 *       db.close();
-	 *     });
-	 *   });
-	 * });
-	 */
-
-	/**
-	 * Namespace provided by the browser.
-	 * @external Readable
-	 */
-
-	/**
-	 * Creates a new Aggregation Cursor instance (INTERNAL TYPE, do not instantiate directly)
-	 * @class
-	 * @extends external:Readable
-	 * @fires AggregationCursor#data
-	 * @fires AggregationCursor#end
-	 * @fires AggregationCursor#close
-	 * @fires AggregationCursor#readable
-	 * @return {AggregationCursor} an AggregationCursor instance.
-	 */
-	var AggregationCursor = function(bson, ns, cmd, options, topology, topologyOptions) {
-	  CoreCursor.apply(this, Array.prototype.slice.call(arguments, 0));
-	  var self = this;
-	  var state = AggregationCursor.INIT;
-	  var streamOptions = {};
-
-	  // MaxTimeMS
-	  var maxTimeMS = null;
-
-	  // Set up
-	  Readable.call(this, {objectMode: true});
-
-	  // Internal state
-	  this.s = {
-	    // MaxTimeMS
-	      maxTimeMS: maxTimeMS
-	    // State
-	    , state: state
-	    // Stream options
-	    , streamOptions: streamOptions
-	    // BSON
-	    , bson: bson
-	    // Namespae
-	    , ns: ns
-	    // Command
-	    , cmd: cmd
-	    // Options
-	    , options: options
-	    // Topology
-	    , topology: topology
-	    // Topology Options
-	    , topologyOptions: topologyOptions
-	  }
-	}
-
-	/**
-	 * AggregationCursor stream data event, fired for each document in the cursor.
-	 *
-	 * @event AggregationCursor#data
-	 * @type {object}
-	 */
-
-	/**
-	 * AggregationCursor stream end event
-	 *
-	 * @event AggregationCursor#end
-	 * @type {null}
-	 */
-
-	/**
-	 * AggregationCursor stream close event
-	 *
-	 * @event AggregationCursor#close
-	 * @type {null}
-	 */
-
-	/**
-	 * AggregationCursor stream readable event
-	 *
-	 * @event AggregationCursor#readable
-	 * @type {null}
-	 */
-
-	// // Extend the Cursor
-	// inherits(AggregationCursor, CoreCursor);
-
-	// Inherit from Readable
-	inherits(AggregationCursor, Readable);  
-
-	// Extend the Cursor
-	for(var name in CoreCursor.prototype) {
-	  AggregationCursor.prototype[name] = CoreCursor.prototype[name];
-	}
-
-	/**
-	 * Set the batch size for the cursor.
-	 * @method
-	 * @param {number} value The batchSize for the cursor.
-	 * @throws {MongoError}
-	 * @return {AggregationCursor}
-	 */
-	AggregationCursor.prototype.batchSize = function(value) {
-	  if(this.s.state == AggregationCursor.CLOSED || this.isDead()) throw new MongoError("Cursor is closed");
-	  if(typeof value != 'number') throw new MongoError("batchSize requires an integer");
-	  if(this.s.cmd.cursor) this.s.cmd.cursor.batchSize = value;
-	  this.setCursorBatchSize(value);
-	  return this;
-	}
-
-	/**
-	 * Add a geoNear stage to the aggregation pipeline
-	 * @method
-	 * @param {object} document The geoNear stage document.
-	 * @return {AggregationCursor}
-	 */
-	AggregationCursor.prototype.geoNear = function(document) {
-	  this.s.cmd.pipeline.push({$geoNear: document});
-	  return this;
-	}
-
-	/**
-	 * Add a group stage to the aggregation pipeline
-	 * @method
-	 * @param {object} document The group stage document.
-	 * @return {AggregationCursor}
-	 */
-	AggregationCursor.prototype.group = function(document) {
-	  this.s.cmd.pipeline.push({$group: document});
-	  return this;
-	}
-
-	/**
-	 * Add a limit stage to the aggregation pipeline
-	 * @method
-	 * @param {number} value The state limit value.
-	 * @return {AggregationCursor}
-	 */
-	AggregationCursor.prototype.limit = function(value) {
-	  this.s.cmd.pipeline.push({$limit: value});
-	  return this;
-	}
-
-	/**
-	 * Add a match stage to the aggregation pipeline
-	 * @method
-	 * @param {object} document The match stage document.
-	 * @return {AggregationCursor}
-	 */
-	AggregationCursor.prototype.match = function(document) {
-	  this.s.cmd.pipeline.push({$match: document});
-	  return this;
-	}
-
-	/**
-	 * Add a maxTimeMS stage to the aggregation pipeline
-	 * @method
-	 * @param {number} value The state maxTimeMS value.
-	 * @return {AggregationCursor}
-	 */
-	AggregationCursor.prototype.maxTimeMS = function(value) {
-	  if(this.s.topology.lastIsMaster().minWireVersion > 2) {
-	    this.s.cmd.maxTimeMS = value;
-	  }
-	  return this;
-	}
-
-	/**
-	 * Add a out stage to the aggregation pipeline
-	 * @method
-	 * @param {number} destination The destination name.
-	 * @return {AggregationCursor}
-	 */
-	AggregationCursor.prototype.out = function(destination) {
-	  this.s.cmd.pipeline.push({$out: destination});
-	  return this;
-	}
-
-	/**
-	 * Add a project stage to the aggregation pipeline
-	 * @method
-	 * @param {object} document The project stage document.
-	 * @return {AggregationCursor}
-	 */
-	AggregationCursor.prototype.project = function(document) {
-	  this.s.cmd.pipeline.push({$project: document});
-	  return this;
-	}
-
-	/**
-	 * Add a redact stage to the aggregation pipeline
-	 * @method
-	 * @param {object} document The redact stage document.
-	 * @return {AggregationCursor}
-	 */
-	AggregationCursor.prototype.redact = function(document) {
-	  this.s.cmd.pipeline.push({$redact: document});
-	  return this;
-	}
-
-	/**
-	 * Add a skip stage to the aggregation pipeline
-	 * @method
-	 * @param {number} value The state skip value.
-	 * @return {AggregationCursor}
-	 */
-	AggregationCursor.prototype.skip = function(value) {
-	  this.s.cmd.pipeline.push({$skip: value});
-	  return this;
-	}
-
-	/**
-	 * Add a sort stage to the aggregation pipeline
-	 * @method
-	 * @param {object} document The sort stage document.
-	 * @return {AggregationCursor}
-	 */
-	AggregationCursor.prototype.sort = function(document) {
-	  this.s.cmd.pipeline.push({$sort: document});
-	  return this;
-	}
-
-	/**
-	 * Add a unwind stage to the aggregation pipeline
-	 * @method
-	 * @param {number} field The unwind field name.
-	 * @return {AggregationCursor}
-	 */
-	AggregationCursor.prototype.unwind = function(field) {
-	  this.s.cmd.pipeline.push({$unwind: field});
-	  return this;
-	}
-
-	AggregationCursor.prototype.get = AggregationCursor.prototype.toArray;
-
-	/**
-	 * Get the next available document from the cursor, returns null if no more documents are available.
-	 * @function AggregationCursor.prototype.next
-	 * @param {AggregationCursor~resultCallback} callback The result callback.
-	 * @throws {MongoError}
-	 * @return {null}
-	 */
-
-	/**
-	 * Set the new batchSize of the cursor
-	 * @function AggregationCursor.prototype.setBatchSize
-	 * @param {number} value The new batchSize for the cursor
-	 * @return {null}
-	 */
-
-	/**
-	 * Get the batchSize of the cursor
-	 * @function AggregationCursor.prototype.batchSize
-	 * @param {number} value The current batchSize for the cursor
-	 * @return {null}
-	 */
-
-	/**
-	 * The callback format for results
-	 * @callback AggregationCursor~toArrayResultCallback
-	 * @param {MongoError} error An error instance representing the error during the execution.
-	 * @param {object[]} documents All the documents the satisfy the cursor.
-	 */
-
-	/**
-	 * Returns an array of documents. The caller is responsible for making sure that there
-	 * is enough memory to store the results. Note that the array only contain partial
-	 * results when this cursor had been previouly accessed. In that case,
-	 * cursor.rewind() can be used to reset the cursor.
-	 * @method AggregationCursor.prototype.toArray
-	 * @param {AggregationCursor~toArrayResultCallback} callback The result callback.
-	 * @throws {MongoError}
-	 * @return {null}
-	 */
-
-	/**
-	 * The callback format for results
-	 * @callback AggregationCursor~resultCallback
-	 * @param {MongoError} error An error instance representing the error during the execution.
-	 * @param {(object|null)} result The result object if the command was executed successfully.
-	 */
-
-	/**
-	 * Iterates over all the documents for this cursor. As with **{cursor.toArray}**,
-	 * not all of the elements will be iterated if this cursor had been previouly accessed.
-	 * In that case, **{cursor.rewind}** can be used to reset the cursor. However, unlike
-	 * **{cursor.toArray}**, the cursor will only hold a maximum of batch size elements
-	 * at any given time if batch size is specified. Otherwise, the caller is responsible
-	 * for making sure that the entire result can fit the memory.
-	 * @method AggregationCursor.prototype.each
-	 * @param {AggregationCursor~resultCallback} callback The result callback.
-	 * @throws {MongoError}
-	 * @return {null}
-	 */
-
-	/**
-	 * Close the cursor, sending a KillCursor command and emitting close.
-	 * @method AggregationCursor.prototype.close
-	 * @param {AggregationCursor~resultCallback} [callback] The result callback.
-	 * @return {null}
-	 */   
-
-	/**
-	 * Is the cursor closed
-	 * @method AggregationCursor.prototype.isClosed
-	 * @return {boolean}
-	 */   
-
-	/**
-	 * Execute the explain for the cursor
-	 * @method AggregationCursor.prototype.explain
-	 * @param {AggregationCursor~resultCallback} [callback] The result callback.
-	 * @return {null}
-	 */
-
-	/**
-	 * Clone the cursor
-	 * @function AggregationCursor.prototype.clone
-	 * @return {AggregationCursor}
-	 */     
-
-	/**
-	 * Resets the cursor
-	 * @function AggregationCursor.prototype.rewind
-	 * @return {AggregationCursor}
-	 */  
-
-	/**
-	 * The callback format for the forEach iterator method
-	 * @callback AggregationCursor~iteratorCallback
-	 * @param {Object} doc An emitted document for the iterator
-	 */
-
-	/**
-	 * The callback error format for the forEach iterator method
-	 * @callback AggregationCursor~endCallback
-	 * @param {MongoError} error An error instance representing the error during the execution.
-	 */
-
-	/*
-	 * Iterates over all the documents for this cursor using the iterator, callback pattern.
-	 * @method AggregationCursor.prototype.forEach
-	 * @param {AggregationCursor~iteratorCallback} iterator The iteration callback.
-	 * @param {AggregationCursor~endCallback} callback The end callback.
-	 * @throws {MongoError}
-	 * @return {null}
-	 */
-
-	AggregationCursor.INIT = 0;
-	AggregationCursor.OPEN = 1;
-	AggregationCursor.CLOSED = 2;
-
-	module.exports = AggregationCursor;
-
-/***/ },
-/* 127 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var common = __webpack_require__(339)
-		, utils = __webpack_require__(123)
-	  , toError = __webpack_require__(123).toError
-	  , f = __webpack_require__(53).format
-	  , shallowClone = utils.shallowClone
-	  , WriteError = common.WriteError
-	  , BulkWriteResult = common.BulkWriteResult
-	  , LegacyOp = common.LegacyOp
-	  , ObjectID = __webpack_require__(115).BSON.ObjectID
-	  , Batch = common.Batch
-	  , mergeBatchResults = common.mergeBatchResults;
-
-	/**
-	 * Create a FindOperatorsUnordered instance (INTERNAL TYPE, do not instantiate directly)
-	 * @class
-	 * @property {number} length Get the number of operations in the bulk.
-	 * @return {FindOperatorsUnordered} a FindOperatorsUnordered instance.
-	 */
-	var FindOperatorsUnordered = function(self) {
-	  this.s = self.s;
-	}
-
-	/**
-	 * Add a single update document to the bulk operation
-	 *
-	 * @method
-	 * @param {object} doc update operations
-	 * @throws {MongoError}
-	 * @return {UnorderedBulkOperation}
-	 */
-	FindOperatorsUnordered.prototype.update = function(updateDocument) {
-	  // Perform upsert
-	  var upsert = typeof this.s.currentOp.upsert == 'boolean' ? this.s.currentOp.upsert : false;
-
-	  // Establish the update command
-	  var document = {
-	      q: this.s.currentOp.selector
-	    , u: updateDocument
-	    , multi: true
-	    , upsert: upsert
-	  }
-
-	  // Clear out current Op
-	  this.s.currentOp = null;
-	  // Add the update document to the list
-	  return addToOperationsList(this, common.UPDATE, document);
-	}
-
-	/**
-	 * Add a single update one document to the bulk operation
-	 *
-	 * @method
-	 * @param {object} doc update operations
-	 * @throws {MongoError}
-	 * @return {UnorderedBulkOperation}
-	 */
-	FindOperatorsUnordered.prototype.updateOne = function(updateDocument) {
-	  // Perform upsert
-	  var upsert = typeof this.s.currentOp.upsert == 'boolean' ? this.s.currentOp.upsert : false;
-
-	  // Establish the update command
-	  var document = {
-	      q: this.s.currentOp.selector
-	    , u: updateDocument
-	    , multi: false
-	    , upsert: upsert
-	  }
-
-	  // Clear out current Op
-	  this.s.currentOp = null;
-	  // Add the update document to the list
-	  return addToOperationsList(this, common.UPDATE, document);
-	}
-
-	/**
-	 * Add a replace one operation to the bulk operation
-	 *
-	 * @method
-	 * @param {object} doc the new document to replace the existing one with
-	 * @throws {MongoError}
-	 * @return {UnorderedBulkOperation}
-	 */
-	FindOperatorsUnordered.prototype.replaceOne = function(updateDocument) {
-	  this.updateOne(updateDocument);
-	}
-
-	/**
-	 * Upsert modifier for update bulk operation
-	 *
-	 * @method
-	 * @throws {MongoError}
-	 * @return {UnorderedBulkOperation}
-	 */
-	FindOperatorsUnordered.prototype.upsert = function() {
-	  this.s.currentOp.upsert = true;
-	  return this;
-	}
-
-	/**
-	 * Add a remove one operation to the bulk operation
-	 *
-	 * @method
-	 * @throws {MongoError}
-	 * @return {UnorderedBulkOperation}
-	 */
-	FindOperatorsUnordered.prototype.removeOne = function() {
-	  // Establish the update command
-	  var document = {
-	      q: this.s.currentOp.selector
-	    , limit: 1
-	  }
-
-	  // Clear out current Op
-	  this.s.currentOp = null;
-	  // Add the remove document to the list
-	  return addToOperationsList(this, common.REMOVE, document);
-	}
-
-	/**
-	 * Add a remove operation to the bulk operation
-	 *
-	 * @method
-	 * @throws {MongoError}
-	 * @return {UnorderedBulkOperation}
-	 */
-	FindOperatorsUnordered.prototype.remove = function() {
-	  // Establish the update command
-	  var document = {
-	      q: this.s.currentOp.selector
-	    , limit: 0
-	  }
-
-	  // Clear out current Op
-	  this.s.currentOp = null;
-	  // Add the remove document to the list
-	  return addToOperationsList(this, common.REMOVE, document);
-	}
-
-	//
-	// Add to the operations list
-	//
-	var addToOperationsList = function(_self, docType, document) {
-	  // Get the bsonSize
-	  var bsonSize = _self.s.bson.calculateObjectSize(document, false);
-	  // Throw error if the doc is bigger than the max BSON size
-	  if(bsonSize >= _self.s.maxBatchSizeBytes) throw toError("document is larger than the maximum size " + _self.s.maxBatchSizeBytes);
-	  // Holds the current batch
-	  _self.s.currentBatch = null;
-	  // Get the right type of batch
-	  if(docType == common.INSERT) {
-	    _self.s.currentBatch = _self.s.currentInsertBatch;
-	  } else if(docType == common.UPDATE) {
-	    _self.s.currentBatch = _self.s.currentUpdateBatch;
-	  } else if(docType == common.REMOVE) {
-	    _self.s.currentBatch = _self.s.currentRemoveBatch;
-	  }
-
-	  // Create a new batch object if we don't have a current one
-	  if(_self.s.currentBatch == null) _self.s.currentBatch = new Batch(docType, _self.s.currentIndex);
-
-	  // Check if we need to create a new batch
-	  if(((_self.s.currentBatch.size + 1) >= _self.s.maxWriteBatchSize)
-	    || ((_self.s.currentBatch.sizeBytes + bsonSize) >= _self.s.maxBatchSizeBytes)
-	    || (_self.s.currentBatch.batchType != docType)) {
-	    // Save the batch to the execution stack
-	    _self.s.batches.push(_self.s.currentBatch);
-
-	    // Create a new batch
-	    _self.s.currentBatch = new Batch(docType, _self.s.currentIndex);
-	  }
-
-	  // We have an array of documents
-	  if(Array.isArray(document)) {
-	    throw toError("operation passed in cannot be an Array");
-	  } else {
-	    _self.s.currentBatch.operations.push(document);
-	    _self.s.currentBatch.originalIndexes.push(_self.s.currentIndex);
-	    _self.s.currentIndex = _self.s.currentIndex + 1;
-	  }
-
-	  // Save back the current Batch to the right type
-	  if(docType == common.INSERT) {
-	    _self.s.currentInsertBatch = _self.s.currentBatch;
-	    _self.s.bulkResult.insertedIds.push({index: _self.s.currentIndex, _id: document._id});
-	  } else if(docType == common.UPDATE) {
-	    _self.s.currentUpdateBatch = _self.s.currentBatch;
-	  } else if(docType == common.REMOVE) {
-	    _self.s.currentRemoveBatch = _self.s.currentBatch;
-	  }
-
-	  // Update current batch size
-	  _self.s.currentBatch.size = _self.s.currentBatch.size + 1;
-	  _self.s.currentBatch.sizeBytes = _self.s.currentBatch.sizeBytes + bsonSize;
-
-	  // Return self
-	  return _self;
-	}
-
-	/**
-	 * Create a new UnorderedBulkOperation instance (INTERNAL TYPE, do not instantiate directly)
-	 * @class
-	 * @return {UnorderedBulkOperation} a UnorderedBulkOperation instance.
-	 */
-	var UnorderedBulkOperation = function(topology, collection, options) {
-		options = options == null ? {} : options;
-
-		// Contains reference to self
-		var self = this;
-		// Get the namesspace for the write operations
-	  var namespace = collection.collectionName;
-	  // Used to mark operation as executed
-	  var executed = false;
-
-		// Current item
-	  // var currentBatch = null;
-		var currentOp = null;
-		var currentIndex = 0;
-	  var batches = [];
-
-	  // The current Batches for the different operations
-	  var currentInsertBatch = null;
-	  var currentUpdateBatch = null;
-	  var currentRemoveBatch = null;
-
-		// Handle to the bson serializer, used to calculate running sizes
-		var bson = topology.bson;
-
-	  // Get the capabilities
-	  var capabilities = topology.capabilities();
-
-	  // Set max byte size
-		var maxBatchSizeBytes = topology.isMasterDoc.maxBsonObjectSize;
-		var maxWriteBatchSize = topology.isMasterDoc.maxWriteBatchSize || 1000;
-
-	  // Get the write concern
-	  var writeConcern = common.writeConcern(shallowClone(options), collection, options);
-
-	  // Final results
-	  var bulkResult = {
-	  	  ok: 1
-	    , writeErrors: []
-	    , writeConcernErrors: []
-	    , insertedIds: []
-	    , nInserted: 0
-	    , nUpserted: 0
-	    , nMatched: 0
-	    , nModified: 0
-	    , nRemoved: 0
-	    , upserted: []
-	  };
-
-	  // Internal state
-	  this.s = {
-	    // Final result
-	      bulkResult: bulkResult
-	    // Current batch state
-	    , currentInsertBatch: null
-	    , currentUpdateBatch: null
-	    , currentRemoveBatch: null
-	    , currentBatch: null
-	    , currentIndex: 0
-	    , batches: []
-	    // Write concern
-	    , writeConcern: writeConcern
-	    // Capabilities
-	    , capabilities: capabilities
-	    // Max batch size options
-	    , maxBatchSizeBytes: maxBatchSizeBytes
-	    , maxWriteBatchSize: maxWriteBatchSize
-	    // Namespace
-	    , namespace: namespace
-	    // BSON
-	    , bson: bson
-	    // Topology
-	    , topology: topology
-	    // Options
-	    , options: options
-	    // Current operation
-	    , currentOp: currentOp
-	    // Executed
-	    , executed: executed
-	    // Collection
-	    , collection: collection
-	  }
-	}
-
-	/**
-	 * Add a single insert document to the bulk operation
-	 *
-	 * @param {object} doc the document to insert
-	 * @throws {MongoError}
-	 * @return {UnorderedBulkOperation}
-	 */
-	UnorderedBulkOperation.prototype.insert = function(document) {
-	  if(document._id == null) document._id = new ObjectID();
-	  return addToOperationsList(this, common.INSERT, document);
-	}
-
-	/**
-	 * Initiate a find operation for an update/updateOne/remove/removeOne/replaceOne
-	 *
-	 * @method
-	 * @param {object} selector The selector for the bulk operation.
-	 * @throws {MongoError}
-	 * @return {FindOperatorsUnordered}
-	 */
-	UnorderedBulkOperation.prototype.find = function(selector) {
-	  if (!selector) {
-	    throw toError("Bulk find operation must specify a selector");
-	  }
-
-	  // Save a current selector
-	  this.s.currentOp = {
-	    selector: selector
-	  }
-
-	  return new FindOperatorsUnordered(this);
-	}
-
-	Object.defineProperty(UnorderedBulkOperation.prototype, 'length', {
-	  enumerable: true,
-	  get: function() {
-	    return this.s.currentIndex;
-	  }
-	});
-
-	UnorderedBulkOperation.prototype.raw = function(op) {
-	  var key = Object.keys(op)[0];
-
-	  // Update operations
-	  if((op.updateOne && op.updateOne.q)
-	    || (op.updateMany && op.updateMany.q)
-	    || (op.replaceOne && op.replaceOne.q)) {
-	    op[key].multi = op.updateOne || op.replaceOne ? false : true;
-	    return addToOperationsList(this, common.UPDATE, op[key]);
-	  }
-
-	  // Crud spec update format
-	  if(op.updateOne || op.updateMany || op.replaceOne) {
-	    var multi = op.updateOne || op.replaceOne ? false : true;
-	    var operation = {q: op[key].filter, u: op[key].update || op[key].replacement, multi: multi}
-	    if(op[key].upsert) operation.upsert = true;
-	    return addToOperationsList(this, common.UPDATE, operation);
-	  }
-
-	  // Remove operations
-	  if(op.removeOne || op.removeMany || (op.deleteOne && op.deleteOne.q) || op.deleteMany && op.deleteMany.q) {
-	    op[key].limit = op.removeOne ? 1 : 0;
-	    return addToOperationsList(this, common.REMOVE, op[key]);
-	  }
-
-	  // Crud spec delete operations, less efficient
-	  if(op.deleteOne || op.deleteMany) {
-	    var limit = op.deleteOne ? 1 : 0;
-	    var operation = {q: op[key].filter, limit: limit}
-	    return addToOperationsList(this, common.REMOVE, operation);
-	  }
-
-	  // Insert operations
-	  if(op.insertOne && op.insertOne.document == null) {
-	    if(op.insertOne._id == null) op.insertOne._id = new ObjectID();
-	    return addToOperationsList(this, common.INSERT, op.insertOne);
-	  } else if(op.insertOne && op.insertOne.document) {
-	    if(op.insertOne.document._id == null) op.insertOne.document._id = new ObjectID();
-	    return addToOperationsList(this, common.INSERT, op.insertOne.document);
-	  }
-
-	  if(op.insertMany) {
-	    for(var i = 0; i < op.insertMany.length; i++) {
-	      addToOperationsList(this, common.INSERT, op.insertMany[i]);
-	    }
-
-	    return;
-	  }
-
-	  // No valid type of operation
-	  throw toError("bulkWrite only supports insertOne, insertMany, updateOne, updateMany, removeOne, removeMany, deleteOne, deleteMany");
-	}
-
-	//
-	// Execute the command
-	var executeBatch = function(self, batch, callback) {
-	  var finalOptions = {ordered: false}
-	  if(self.s.writeConcern != null) {
-	    finalOptions.writeConcern = self.s.writeConcern;
-	  }
-
-	  var resultHandler = function(err, result) {
-	    // If we have and error
-	    if(err) err.ok = 0;
-	    callback(null, mergeBatchResults(false, batch, self.s.bulkResult, err, result));
-	  }
-
-	  try {
-	    if(batch.batchType == common.INSERT) {
-	      self.s.topology.insert(self.s.collection.namespace, batch.operations, finalOptions, resultHandler);
-	    } else if(batch.batchType == common.UPDATE) {
-	      self.s.topology.update(self.s.collection.namespace, batch.operations, finalOptions, resultHandler);
-	    } else if(batch.batchType == common.REMOVE) {
-	      self.s.topology.remove(self.s.collection.namespace, batch.operations, finalOptions, resultHandler);
-	    }
-	  } catch(err) {
-	    // Force top level error
-	    err.ok = 0;
-	    // Merge top level error and return 
-	    callback(null, mergeBatchResults(false, batch, self.s.bulkResult, err, null));
-	  }
-	}
-
-	//
-	// Execute all the commands
-	var executeBatches = function(self, callback) {
-	  var numberOfCommandsToExecute = self.s.batches.length;
-	  // Execute over all the batches
-	  for(var i = 0; i < self.s.batches.length; i++) {
-	    executeBatch(self, self.s.batches[i], function(err, result) {
-	      numberOfCommandsToExecute = numberOfCommandsToExecute - 1;
-
-	      // Execute
-	      if(numberOfCommandsToExecute == 0) {
-	        var error = self.s.bulkResult.writeErrors.length > 0 ? self.s.bulkResult.writeErrors[0] : null;
-	        callback(error, new BulkWriteResult(self.s.bulkResult));
-	      }
-	    });
-	  }
-	}
-
-	/**
-	 * The callback format for results
-	 * @callback UnorderedBulkOperation~resultCallback
-	 * @param {MongoError} error An error instance representing the error during the execution.
-	 * @param {BulkWriteResult} result The bulk write result.
-	 */
-
-	/**
-	 * Execute the ordered bulk operation
-	 *
-	 * @method
-	 * @param {object} [options=null] Optional settings.
-	 * @param {(number|string)} [options.w=null] The write concern.
-	 * @param {number} [options.wtimeout=null] The write concern timeout.
-	 * @param {boolean} [options.j=false] Specify a journal write concern.
-	 * @param {boolean} [options.fsync=false] Specify a file sync write concern.
-	 * @param {UnorderedBulkOperation~resultCallback} callback The result callback
-	 * @throws {MongoError}
-	 * @return {null}
-	 */
-	UnorderedBulkOperation.prototype.execute = function(_writeConcern, callback) {
-	  if(this.s.executed) throw toError("batch cannot be re-executed");
-	  if(typeof _writeConcern == 'function') {
-	    callback = _writeConcern;
-	  } else {
-	    this.s.writeConcern = _writeConcern;
-	  }
-
-	  // If we have current batch
-	  if(this.s.currentInsertBatch) this.s.batches.push(this.s.currentInsertBatch);
-	  if(this.s.currentUpdateBatch) this.s.batches.push(this.s.currentUpdateBatch);
-	  if(this.s.currentRemoveBatch) this.s.batches.push(this.s.currentRemoveBatch);
-
-	  // If we have no operations in the bulk raise an error
-	  if(this.s.batches.length == 0) {
-	    throw toError("Invalid Operation, No operations in bulk");
-	  }
-
-	  // Execute batches
-	  return executeBatches(this, function(err, result) {
-	    callback(err, result);
-	  });
-	}
-
-	/**
-	 * Returns an unordered batch object
-	 * @ignore
-	 */
-	var initializeUnorderedBulkOp = function(topology, collection, options) {
-		return new UnorderedBulkOperation(topology, collection, options);
-	}
-
-	module.exports = initializeUnorderedBulkOp;
-
-
-/***/ },
-/* 128 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var common = __webpack_require__(339)
-		, utils = __webpack_require__(123)
-	  , toError = __webpack_require__(123).toError
-		, f = __webpack_require__(53).format
-		, shallowClone = utils.shallowClone
-	  , WriteError = common.WriteError
-	  , BulkWriteResult = common.BulkWriteResult
-	  , LegacyOp = common.LegacyOp
-	  , ObjectID = __webpack_require__(115).BSON.ObjectID
-	  , Batch = common.Batch
-	  , mergeBatchResults = common.mergeBatchResults;
-
-	/**
-	 * Create a FindOperatorsOrdered instance (INTERNAL TYPE, do not instantiate directly)
-	 * @class
-	 * @return {FindOperatorsOrdered} a FindOperatorsOrdered instance.
-	 */
-	var FindOperatorsOrdered = function(self) {
-	  this.s = self.s;
-	}
-
-	/**
-	 * Add a single update document to the bulk operation
-	 *
-	 * @method
-	 * @param {object} doc update operations
-	 * @throws {MongoError}
-	 * @return {OrderedBulkOperation}
-	 */
-	FindOperatorsOrdered.prototype.update = function(updateDocument) {
-	  // Perform upsert
-	  var upsert = typeof this.s.currentOp.upsert == 'boolean' ? this.s.currentOp.upsert : false;
-
-	  // Establish the update command
-	  var document = {
-	      q: this.s.currentOp.selector
-	    , u: updateDocument
-	    , multi: true
-	    , upsert: upsert
-	  }
-
-	  // Clear out current Op
-	  this.s.currentOp = null;
-	  // Add the update document to the list
-	  return addToOperationsList(this, common.UPDATE, document);
-	}
-
-	/**
-	 * Add a single update one document to the bulk operation
-	 *
-	 * @method
-	 * @param {object} doc update operations
-	 * @throws {MongoError}
-	 * @return {OrderedBulkOperation}
-	 */
-	FindOperatorsOrdered.prototype.updateOne = function(updateDocument) {
-	  // Perform upsert
-	  var upsert = typeof this.s.currentOp.upsert == 'boolean' ? this.s.currentOp.upsert : false;
-
-	  // Establish the update command
-	  var document = {
-	      q: this.s.currentOp.selector
-	    , u: updateDocument
-	    , multi: false
-	    , upsert: upsert
-	  }
-
-	  // Clear out current Op
-	  this.s.currentOp = null;
-	  // Add the update document to the list
-	  return addToOperationsList(this, common.UPDATE, document);
-	}
-
-	/**
-	 * Add a replace one operation to the bulk operation
-	 *
-	 * @method
-	 * @param {object} doc the new document to replace the existing one with
-	 * @throws {MongoError}
-	 * @return {OrderedBulkOperation}
-	 */
-	FindOperatorsOrdered.prototype.replaceOne = function(updateDocument) {
-	  this.updateOne(updateDocument);
-	}
-
-	/**
-	 * Upsert modifier for update bulk operation
-	 *
-	 * @method
-	 * @throws {MongoError}
-	 * @return {FindOperatorsOrdered}
-	 */
-	FindOperatorsOrdered.prototype.upsert = function() {
-	  this.s.currentOp.upsert = true;
-	  return this;
-	}
-
-	/**
-	 * Add a remove one operation to the bulk operation
-	 *
-	 * @method
-	 * @throws {MongoError}
-	 * @return {OrderedBulkOperation}
-	 */
-	FindOperatorsOrdered.prototype.deleteOne = function() {
-	  // Establish the update command
-	  var document = {
-	      q: this.s.currentOp.selector
-	    , limit: 1
-	  }
-
-	  // Clear out current Op
-	  this.s.currentOp = null;
-	  // Add the remove document to the list
-	  return addToOperationsList(this, common.REMOVE, document);
-	}
-
-	// Backward compatibility
-	FindOperatorsOrdered.prototype.removeOne = FindOperatorsOrdered.prototype.deleteOne;
-
-	/**
-	 * Add a remove operation to the bulk operation
-	 *
-	 * @method
-	 * @throws {MongoError}
-	 * @return {OrderedBulkOperation}
-	 */
-	FindOperatorsOrdered.prototype.delete = function() {
-	  // Establish the update command
-	  var document = {
-	      q: this.s.currentOp.selector
-	    , limit: 0
-	  }
-
-	  // Clear out current Op
-	  this.s.currentOp = null;
-	  // Add the remove document to the list
-	  return addToOperationsList(this, common.REMOVE, document);
-	}
-
-	// Backward compatibility
-	FindOperatorsOrdered.prototype.remove = FindOperatorsOrdered.prototype.delete;
-
-	// Add to internal list of documents
-	var addToOperationsList = function(_self, docType, document) {
-	  // Get the bsonSize
-	  var bsonSize = _self.s.bson.calculateObjectSize(document, false);
-
-	  // Throw error if the doc is bigger than the max BSON size
-	  if(bsonSize >= _self.s.maxBatchSizeBytes) throw toError("document is larger than the maximum size " + _self.s.maxBatchSizeBytes);
-	  // Create a new batch object if we don't have a current one
-	  if(_self.s.currentBatch == null) _self.s.currentBatch = new Batch(docType, _self.s.currentIndex);
-
-	  // Check if we need to create a new batch
-	  if(((_self.s.currentBatchSize + 1) >= _self.s.maxWriteBatchSize)
-	    || ((_self.s.currentBatchSizeBytes +  _self.s.currentBatchSizeBytes) >= _self.s.maxBatchSizeBytes)
-	    || (_self.s.currentBatch.batchType != docType)) {
-	    // Save the batch to the execution stack
-	    _self.s.batches.push(_self.s.currentBatch);
-
-	    // Create a new batch
-	    _self.s.currentBatch = new Batch(docType, _self.s.currentIndex);
-
-	    // Reset the current size trackers
-	    _self.s.currentBatchSize = 0;
-	    _self.s.currentBatchSizeBytes = 0;
-	  } else {
-	    // Update current batch size
-	    _self.s.currentBatchSize = _self.s.currentBatchSize + 1;
-	    _self.s.currentBatchSizeBytes = _self.s.currentBatchSizeBytes + bsonSize;
-	  }
-
-	  if(docType == common.INSERT) {
-	    _self.s.bulkResult.insertedIds.push({index: _self.s.currentIndex, _id: document._id});
-	  }
-
-	  // We have an array of documents
-	  if(Array.isArray(document)) {
-	    throw toError("operation passed in cannot be an Array");
-	  } else {
-	    _self.s.currentBatch.originalIndexes.push(_self.s.currentIndex);
-	    _self.s.currentBatch.operations.push(document)
-	    _self.s.currentIndex = _self.s.currentIndex + 1;
-	  }
-
-	  // Return self
-	  return _self;
-	}
-
-	/**
-	 * Create a new OrderedBulkOperation instance (INTERNAL TYPE, do not instantiate directly)
-	 * @class
-	 * @property {number} length Get the number of operations in the bulk.
-	 * @return {OrderedBulkOperation} a OrderedBulkOperation instance.
-	 */
-	function OrderedBulkOperation(topology, collection, options) {
-		options = options == null ? {} : options;
-		// TODO Bring from driver information in isMaster
-		var self = this;
-		var executed = false;
-
-		// Current item
-		var currentOp = null;
-
-		// Handle to the bson serializer, used to calculate running sizes
-		var bson = topology.bson;
-
-		// Namespace for the operation
-	  var namespace = collection.collectionName;
-
-	  // Set max byte size
-		var maxBatchSizeBytes = topology.isMasterDoc.maxBsonObjectSize;
-		var maxWriteBatchSize = topology.isMasterDoc.maxWriteBatchSize || 1000;
-
-		// Get the capabilities
-		var capabilities = topology.capabilities();
-
-	  // Get the write concern
-	  var writeConcern = common.writeConcern(shallowClone(options), collection, options);
-
-	  // Current batch
-	  var currentBatch = null;
-	  var currentIndex = 0;
-	  var currentBatchSize = 0;
-	  var currentBatchSizeBytes = 0;
-	  var batches = [];
-
-	  // Final results
-	  var bulkResult = {
-	  	  ok: 1
-	    , writeErrors: []
-	    , writeConcernErrors: []
-	    , insertedIds: []
-	    , nInserted: 0
-	    , nUpserted: 0
-	    , nMatched: 0
-	    , nModified: 0
-	    , nRemoved: 0
-	    , upserted: []
-	  };
-
-	  // Internal state
-	  this.s = {
-	    // Final result
-	      bulkResult: bulkResult
-	    // Current batch state
-	    , currentBatch: null
-	    , currentIndex: 0
-	    , currentBatchSize: 0
-	    , currentBatchSizeBytes: 0
-	    , batches: []
-	    // Write concern
-	    , writeConcern: writeConcern
-	    // Capabilities
-	    , capabilities: capabilities
-	    // Max batch size options
-	    , maxBatchSizeBytes: maxBatchSizeBytes
-	    , maxWriteBatchSize: maxWriteBatchSize
-	    // Namespace
-	    , namespace: namespace
-	    // BSON
-	    , bson: bson
-	    // Topology
-	    , topology: topology
-	    // Options
-	    , options: options
-	    // Current operation
-	    , currentOp: currentOp
-	    // Executed
-	    , executed: executed
-	    // Collection
-	    , collection: collection
-	  }
-	}
-
-	OrderedBulkOperation.prototype.raw = function(op) {
-	  var key = Object.keys(op)[0];
-
-	  // Update operations
-	  if((op.updateOne && op.updateOne.q)
-	    || (op.updateMany && op.updateMany.q)
-	    || (op.replaceOne && op.replaceOne.q)) {
-	    op[key].multi = op.updateOne || op.replaceOne ? false : true;
-	    return addToOperationsList(this, common.UPDATE, op[key]);
-	  }
-
-	  // Crud spec update format
-	  if(op.updateOne || op.updateMany || op.replaceOne) {
-	    var multi = op.updateOne || op.replaceOne ? false : true;
-	    var operation = {q: op[key].filter, u: op[key].update || op[key].replacement, multi: multi}
-	    if(op[key].upsert) operation.upsert = true;
-	    return addToOperationsList(this, common.UPDATE, operation);
-	  }
-
-	  // Remove operations
-	  if(op.removeOne || op.removeMany || (op.deleteOne && op.deleteOne.q) || op.deleteMany && op.deleteMany.q) {
-	    op[key].limit = op.removeOne ? 1 : 0;
-	    return addToOperationsList(this, common.REMOVE, op[key]);
-	  }
-
-	  // Crud spec delete operations, less efficient
-	  if(op.deleteOne || op.deleteMany) {
-	    var limit = op.deleteOne ? 1 : 0;
-	    var operation = {q: op[key].filter, limit: limit}
-	    return addToOperationsList(this, common.REMOVE, operation);
-	  }
-
-	  // Insert operations
-	  if(op.insertOne && op.insertOne.document == null) {
-	    if(op.insertOne._id == null) op.insertOne._id = new ObjectID();
-	    return addToOperationsList(this, common.INSERT, op.insertOne);
-	  } else if(op.insertOne && op.insertOne.document) {
-	    if(op.insertOne.document._id == null) op.insertOne.document._id = new ObjectID();
-	    return addToOperationsList(this, common.INSERT, op.insertOne.document);
-	  }
-
-	  if(op.insertMany) {
-	    for(var i = 0; i < op.insertMany.length; i++) {
-	      if(op.insertMany[i]._id == null) op.insertMany[i]._id = new ObjectID();
-	      addToOperationsList(this, common.INSERT, op.insertMany[i]);
-	    }
-
-	    return;
-	  }
-
-	  // No valid type of operation
-	  throw toError("bulkWrite only supports insertOne, insertMany, updateOne, updateMany, removeOne, removeMany, deleteOne, deleteMany");
-	}
-
-	/**
-	 * Add a single insert document to the bulk operation
-	 *
-	 * @param {object} doc the document to insert
-	 * @throws {MongoError}
-	 * @return {OrderedBulkOperation}
-	 */
-	OrderedBulkOperation.prototype.insert = function(document) {
-	  if(document._id == null) document._id = new ObjectID();
-	  return addToOperationsList(this, common.INSERT, document);
-	}
-
-	/**
-	 * Initiate a find operation for an update/updateOne/remove/removeOne/replaceOne
-	 *
-	 * @method
-	 * @param {object} selector The selector for the bulk operation.
-	 * @throws {MongoError}
-	 * @return {FindOperatorsOrdered}
-	 */
-	OrderedBulkOperation.prototype.find = function(selector) {
-	  if (!selector) {
-	    throw toError("Bulk find operation must specify a selector");
-	  }
-
-	  // Save a current selector
-	  this.s.currentOp = {
-	    selector: selector
-	  }
-
-	  return new FindOperatorsOrdered(this);
-	}
-
-	Object.defineProperty(OrderedBulkOperation.prototype, 'length', {
-	  enumerable: true,
-	  get: function() {
-	    return this.s.currentIndex;
-	  }
-	});
-
-	//
-	// Execute next write command in a chain
-	var executeCommands = function(self, callback) {
-	  if(self.s.batches.length == 0) {
-	    return callback(null, new BulkWriteResult(self.s.bulkResult));
-	  }
-
-	  // Ordered execution of the command
-	  var batch = self.s.batches.shift();
-
-	  var resultHandler = function(err, result) {
-	    // If we have and error
-	    if(err) err.ok = 0;
-	    // Merge the results together
-	    var mergeResult = mergeBatchResults(true, batch, self.s.bulkResult, err, result);
-	    if(mergeResult != null) {
-	      return callback(null, new BulkWriteResult(self.s.bulkResult));
-	    }
-
-	    // If we are ordered and have errors and they are
-	    // not all replication errors terminate the operation
-	    if(self.s.bulkResult.writeErrors.length > 0) {
-	      return callback(self.s.bulkResult.writeErrors[0], new BulkWriteResult(self.s.bulkResult));
-	    }
-
-	    // Execute the next command in line
-	    executeCommands(self, callback);
-	  }
-
-	  var finalOptions = {ordered: true}
-	  if(self.s.writeConcern != null) {
-	    finalOptions.writeConcern = self.s.writeConcern;
-	  }
-
-	  try {
-	    if(batch.batchType == common.INSERT) {
-	      self.s.topology.insert(self.s.collection.namespace, batch.operations, finalOptions, resultHandler);
-	    } else if(batch.batchType == common.UPDATE) {
-	      self.s.topology.update(self.s.collection.namespace, batch.operations, finalOptions, resultHandler);
-	    } else if(batch.batchType == common.REMOVE) {
-	      self.s.topology.remove(self.s.collection.namespace, batch.operations, finalOptions, resultHandler);
-	    }
-	  } catch(err) {
-	    // Force top level error
-	    err.ok = 0;
-	    // Merge top level error and return 
-	    callback(null, mergeBatchResults(false, batch, self.s.bulkResult, err, null));
-	  }
-	}
-
-	/**
-	 * The callback format for results
-	 * @callback OrderedBulkOperation~resultCallback
-	 * @param {MongoError} error An error instance representing the error during the execution.
-	 * @param {BulkWriteResult} result The bulk write result.
-	 */
-
-	/**
-	 * Execute the ordered bulk operation
-	 *
-	 * @method
-	 * @param {object} [options=null] Optional settings.
-	 * @param {(number|string)} [options.w=null] The write concern.
-	 * @param {number} [options.wtimeout=null] The write concern timeout.
-	 * @param {boolean} [options.j=false] Specify a journal write concern.
-	 * @param {boolean} [options.fsync=false] Specify a file sync write concern.
-	 * @param {OrderedBulkOperation~resultCallback} callback The result callback
-	 * @throws {MongoError}
-	 * @return {null}
-	 */
-	OrderedBulkOperation.prototype.execute = function(_writeConcern, callback) {
-	  if(this.s.executed) throw new toError("batch cannot be re-executed");
-	  if(typeof _writeConcern == 'function') {
-	    callback = _writeConcern;
-	  } else {
-	    this.s.writeConcern = _writeConcern;
-	  }
-
-	  // If we have current batch
-	  if(this.s.currentBatch) this.s.batches.push(this.s.currentBatch);
-
-	  // If we have no operations in the bulk raise an error
-	  if(this.s.batches.length == 0) {
-	    throw toError("Invalid Operation, No operations in bulk");
-	  }
-
-	  // Execute the commands
-	  return executeCommands(this, callback);
-	}
-
-	/**
-	 * Returns an unordered batch object
-	 * @ignore
-	 */
-	var initializeOrderedBulkOp = function(topology, collection, options) {
-		return new OrderedBulkOperation(topology, collection, options);
-	}
-
-	module.exports = initializeOrderedBulkOp;
-
-
-/***/ },
-/* 129 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var MongoError = __webpack_require__(115).MongoError
-	  , f = __webpack_require__(53).format;
+	var MongoError = __webpack_require__(114).MongoError
+	  , f = __webpack_require__(52).format;
 
 	// The store of ops
 	var Store = function(topology, storeOptions) {
@@ -56770,7 +55192,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.ServerCapabilities = ServerCapabilities;
 
 /***/ },
-/* 130 */
+/* 126 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -56975,12 +55397,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 131 */
+/* 127 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var NumberFormatter = __webpack_require__(340);
+	var NumberFormatter = __webpack_require__(338);
 
 	/**
 	 * Test whether value is a Number
@@ -57240,21 +55662,21 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 132 */
+/* 128 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var object = __webpack_require__(130);
-	  var bignumber = __webpack_require__(341);
-	  var Complex = __webpack_require__(135);
+	  var object = __webpack_require__(126);
+	  var bignumber = __webpack_require__(339);
+	  var Complex = __webpack_require__(131);
 	  var BigNumber = math.type.BigNumber;
 
 	  math['true']     = true;
 	  math['false']    = false;
 	  math['null']     = null;
-	  math['uninitialized'] = __webpack_require__(342).UNINITIALIZED;
+	  math['uninitialized'] = __webpack_require__(340).UNINITIALIZED;
 
 	  if (config.number === 'bignumber') {
 	    math['Infinity'] = new BigNumber(Infinity);
@@ -57299,15 +55721,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	  math.i = new Complex(0, 1);
 
 	  // meta information
-	  math.version = __webpack_require__(343);
+	  math.version = __webpack_require__(341);
 	};
 
 
 /***/ },
-/* 133 */
+/* 129 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var BigNumber = __webpack_require__(583);
+	var BigNumber = __webpack_require__(581);
 
 	// FIXME: replace all require('decimal.js') with require('./BigNumber').
 
@@ -57315,27 +55737,27 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 134 */
+/* 130 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	exports.ArgumentsError = __webpack_require__(345);
-	exports.DimensionError = __webpack_require__(346);
-	exports.IndexError = __webpack_require__(347);
-	exports.UnsupportedTypeError = __webpack_require__(348);
+	exports.ArgumentsError = __webpack_require__(342);
+	exports.DimensionError = __webpack_require__(343);
+	exports.IndexError = __webpack_require__(344);
+	exports.UnsupportedTypeError = __webpack_require__(345);
 
 	// TODO: implement an InvalidValueError?
 
 
 /***/ },
-/* 135 */
+/* 131 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var util = __webpack_require__(344),
-	    Unit = __webpack_require__(139),
+	var util = __webpack_require__(346),
+	    Unit = __webpack_require__(135),
 	    number = util.number,
 
 	    isNumber = util.number.isNumber,
@@ -57808,12 +56230,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 136 */
+/* 132 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var util = __webpack_require__(344);
+	var util = __webpack_require__(346);
 
 	var number = util.number;
 	var string = util.string;
@@ -58107,14 +56529,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 137 */
+/* 133 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var util = __webpack_require__(344),
+	var util = __webpack_require__(346),
 
-	    Range = __webpack_require__(136),
+	    Range = __webpack_require__(132),
 
 	    number = util.number,
 
@@ -58404,12 +56826,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 138 */
+/* 134 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var string = __webpack_require__(349),
+	var string = __webpack_require__(347),
 
 	    isString = string.isString;
 
@@ -58673,12 +57095,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 139 */
+/* 135 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var util = __webpack_require__(344),
+	var util = __webpack_require__(346),
 
 	    number = util.number,
 	    string = util.string,
@@ -59572,12 +57994,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 140 */
+/* 136 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var util = __webpack_require__(344);
+	var util = __webpack_require__(346);
 	var object = util.object;
 	var string = util.string;
 
@@ -59705,7 +58127,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 141 */
+/* 137 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -59765,16 +58187,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 142 */
+/* 138 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// utility methods for arrays and matrices
 	'use strict';
 
-	var util = __webpack_require__(344),
+	var util = __webpack_require__(346),
 
-	    IndexError = __webpack_require__(347),
-	    DimensionError = __webpack_require__(346),
+	    IndexError = __webpack_require__(344),
+	    DimensionError = __webpack_require__(343),
 
 	    array = util.array,
 	    isArray = util.array.isArray;
@@ -60039,13 +58461,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 143 */
+/* 139 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var util = __webpack_require__(344);
-	var DimensionError = __webpack_require__(346);
+	var util = __webpack_require__(346);
+	var DimensionError = __webpack_require__(343);
 
 	var array = util.array;
 	var object = util.object;
@@ -61254,13 +59676,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 144 */
+/* 140 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var util = __webpack_require__(344);
-	var DimensionError = __webpack_require__(346);
+	var util = __webpack_require__(346);
+	var DimensionError = __webpack_require__(343);
 
 	var array = util.array;
 	var object = util.object;
@@ -62456,13 +60878,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 145 */
+/* 141 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var util = __webpack_require__(344);
-	var DimensionError = __webpack_require__(346);
+	var util = __webpack_require__(346);
+	var DimensionError = __webpack_require__(343);
 
 	var string = util.string;
 	var array = util.array;
@@ -63518,52 +61940,52 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 146 */
+/* 142 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	exports.ArrayNode = __webpack_require__(350);
-	exports.AssignmentNode = __webpack_require__(351);
-	exports.BlockNode = __webpack_require__(352);
-	exports.ConditionalNode = __webpack_require__(353);
-	exports.ConstantNode = __webpack_require__(354);
-	exports.IndexNode = __webpack_require__(355);
-	exports.FunctionAssignmentNode = __webpack_require__(356);
-	exports.FunctionNode = __webpack_require__(357);
-	exports.Node = __webpack_require__(358);
-	exports.OperatorNode = __webpack_require__(359);
-	exports.RangeNode = __webpack_require__(360);
-	exports.SymbolNode = __webpack_require__(361);
-	exports.UpdateNode = __webpack_require__(362);
+	exports.ArrayNode = __webpack_require__(348);
+	exports.AssignmentNode = __webpack_require__(349);
+	exports.BlockNode = __webpack_require__(350);
+	exports.ConditionalNode = __webpack_require__(351);
+	exports.ConstantNode = __webpack_require__(352);
+	exports.IndexNode = __webpack_require__(353);
+	exports.FunctionAssignmentNode = __webpack_require__(354);
+	exports.FunctionNode = __webpack_require__(355);
+	exports.Node = __webpack_require__(356);
+	exports.OperatorNode = __webpack_require__(357);
+	exports.RangeNode = __webpack_require__(358);
+	exports.SymbolNode = __webpack_require__(359);
+	exports.UpdateNode = __webpack_require__(360);
 
 
 /***/ },
-/* 147 */
+/* 143 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var util = __webpack_require__(344),
+	var util = __webpack_require__(346),
 
-	    ArgumentsError = __webpack_require__(345),
+	    ArgumentsError = __webpack_require__(342),
 
 	    isString = util.string.isString,
 	    isArray = Array.isArray,
 
 	    // scope and nodes
-	    ArrayNode = __webpack_require__(350),
-	    AssignmentNode = __webpack_require__(351),
-	    BlockNode = __webpack_require__(352),
-	    ConditionalNode = __webpack_require__(353),
-	    ConstantNode = __webpack_require__(354),
-	    FunctionAssignmentNode = __webpack_require__(356),
-	    IndexNode = __webpack_require__(355),
-	    OperatorNode = __webpack_require__(359),
-	    FunctionNode = __webpack_require__(357),
-	    RangeNode = __webpack_require__(360),
-	    SymbolNode = __webpack_require__(361),
-	    UpdateNode = __webpack_require__(362);
+	    ArrayNode = __webpack_require__(348),
+	    AssignmentNode = __webpack_require__(349),
+	    BlockNode = __webpack_require__(350),
+	    ConditionalNode = __webpack_require__(351),
+	    ConstantNode = __webpack_require__(352),
+	    FunctionAssignmentNode = __webpack_require__(354),
+	    IndexNode = __webpack_require__(353),
+	    OperatorNode = __webpack_require__(357),
+	    FunctionNode = __webpack_require__(355),
+	    RangeNode = __webpack_require__(358),
+	    SymbolNode = __webpack_require__(359),
+	    UpdateNode = __webpack_require__(360);
 
 	module.exports = function (math) {
 
@@ -64924,7 +63346,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 148 */
+/* 144 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -65069,188 +63491,188 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 149 */
+/* 145 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// constants
-	exports.e = __webpack_require__(363);
-	exports.E = __webpack_require__(363);
-	exports['false'] = __webpack_require__(364);
-	exports.i = __webpack_require__(365);
-	exports['Infinity'] = __webpack_require__(366);
-	exports.LN2 = __webpack_require__(367);
-	exports.LN10 = __webpack_require__(368);
-	exports.LOG2E = __webpack_require__(369);
-	exports.LOG10E = __webpack_require__(370);
-	exports.NaN = __webpack_require__(371);
-	exports['null'] = __webpack_require__(372);
-	exports.pi = __webpack_require__(373);
-	exports.PI = __webpack_require__(373);
-	exports.phi = __webpack_require__(374);
-	exports.SQRT1_2 = __webpack_require__(375);
-	exports.SQRT2 = __webpack_require__(376);
-	exports.tau = __webpack_require__(377);
-	exports['true'] = __webpack_require__(378);
-	exports.version = __webpack_require__(379);
+	exports.e = __webpack_require__(361);
+	exports.E = __webpack_require__(361);
+	exports['false'] = __webpack_require__(362);
+	exports.i = __webpack_require__(363);
+	exports['Infinity'] = __webpack_require__(364);
+	exports.LN2 = __webpack_require__(365);
+	exports.LN10 = __webpack_require__(366);
+	exports.LOG2E = __webpack_require__(367);
+	exports.LOG10E = __webpack_require__(368);
+	exports.NaN = __webpack_require__(369);
+	exports['null'] = __webpack_require__(370);
+	exports.pi = __webpack_require__(371);
+	exports.PI = __webpack_require__(371);
+	exports.phi = __webpack_require__(372);
+	exports.SQRT1_2 = __webpack_require__(373);
+	exports.SQRT2 = __webpack_require__(374);
+	exports.tau = __webpack_require__(375);
+	exports['true'] = __webpack_require__(376);
+	exports.version = __webpack_require__(377);
 
 	// functions - arithmetic
-	exports.abs = __webpack_require__(391);
-	exports.add = __webpack_require__(392);
-	exports.ceil = __webpack_require__(393);
-	exports.cube = __webpack_require__(394);
-	exports.divide = __webpack_require__(395);
-	exports.dotDivide = __webpack_require__(396);
-	exports.dotMultiply = __webpack_require__(397);
-	exports.dotPow = __webpack_require__(398);
-	exports.exp = __webpack_require__(399);
-	exports.fix = __webpack_require__(400);
-	exports.floor = __webpack_require__(401);
-	exports.gcd = __webpack_require__(402);
-	exports.lcm = __webpack_require__(403);
-	exports.log = __webpack_require__(404);
-	exports.log10 = __webpack_require__(405);
-	exports.mod = __webpack_require__(406);
-	exports.multiply = __webpack_require__(407);
-	exports.norm = __webpack_require__(408);
-	exports.nthRoot = __webpack_require__(409);
-	exports.pow = __webpack_require__(410);
-	exports.round = __webpack_require__(411);
-	exports.sign = __webpack_require__(412);
-	exports.sqrt = __webpack_require__(413);
-	exports.square = __webpack_require__(414);
-	exports.subtract = __webpack_require__(415);
-	exports.unaryMinus = __webpack_require__(416);
-	exports.unaryPlus = __webpack_require__(417);
-	exports.xgcd = __webpack_require__(418);
+	exports.abs = __webpack_require__(390);
+	exports.add = __webpack_require__(391);
+	exports.ceil = __webpack_require__(392);
+	exports.cube = __webpack_require__(393);
+	exports.divide = __webpack_require__(394);
+	exports.dotDivide = __webpack_require__(395);
+	exports.dotMultiply = __webpack_require__(396);
+	exports.dotPow = __webpack_require__(397);
+	exports.exp = __webpack_require__(398);
+	exports.fix = __webpack_require__(399);
+	exports.floor = __webpack_require__(400);
+	exports.gcd = __webpack_require__(401);
+	exports.lcm = __webpack_require__(402);
+	exports.log = __webpack_require__(403);
+	exports.log10 = __webpack_require__(404);
+	exports.mod = __webpack_require__(405);
+	exports.multiply = __webpack_require__(406);
+	exports.norm = __webpack_require__(407);
+	exports.nthRoot = __webpack_require__(408);
+	exports.pow = __webpack_require__(409);
+	exports.round = __webpack_require__(410);
+	exports.sign = __webpack_require__(411);
+	exports.sqrt = __webpack_require__(412);
+	exports.square = __webpack_require__(413);
+	exports.subtract = __webpack_require__(414);
+	exports.unaryMinus = __webpack_require__(415);
+	exports.unaryPlus = __webpack_require__(416);
+	exports.xgcd = __webpack_require__(417);
 
 	// functions - bitwise
-	exports.bitAnd = __webpack_require__(419);
-	exports.bitNot = __webpack_require__(420);
-	exports.bitOr = __webpack_require__(421);
-	exports.bitXor = __webpack_require__(422);
-	exports.leftShift = __webpack_require__(423);
-	exports.rightArithShift = __webpack_require__(424);
-	exports.rightLogShift = __webpack_require__(425);
+	exports.bitAnd = __webpack_require__(418);
+	exports.bitNot = __webpack_require__(419);
+	exports.bitOr = __webpack_require__(420);
+	exports.bitXor = __webpack_require__(421);
+	exports.leftShift = __webpack_require__(422);
+	exports.rightArithShift = __webpack_require__(423);
+	exports.rightLogShift = __webpack_require__(424);
 
 	// functions - complex
-	exports.arg = __webpack_require__(426);
-	exports.conj = __webpack_require__(427);
-	exports.re = __webpack_require__(428);
-	exports.im = __webpack_require__(429);
+	exports.arg = __webpack_require__(425);
+	exports.conj = __webpack_require__(426);
+	exports.re = __webpack_require__(427);
+	exports.im = __webpack_require__(428);
 
 	// functions - construction
-	exports.bignumber = __webpack_require__(430);
-	exports['boolean'] = __webpack_require__(431);
-	exports.complex = __webpack_require__(432);
-	exports.index = __webpack_require__(433);
-	exports.matrix = __webpack_require__(434);
-	exports.number = __webpack_require__(435);
-	exports.string = __webpack_require__(436);
-	exports.unit = __webpack_require__(437);
+	exports.bignumber = __webpack_require__(429);
+	exports['boolean'] = __webpack_require__(430);
+	exports.complex = __webpack_require__(431);
+	exports.index = __webpack_require__(432);
+	exports.matrix = __webpack_require__(433);
+	exports.number = __webpack_require__(434);
+	exports.string = __webpack_require__(435);
+	exports.unit = __webpack_require__(436);
 
 	// functions - expression
-	exports['eval'] =  __webpack_require__(438);
-	exports.help =  __webpack_require__(439);
+	exports['eval'] =  __webpack_require__(437);
+	exports.help =  __webpack_require__(438);
 
 	// functions - logical
-	exports['and'] = __webpack_require__(440);
-	exports['not'] = __webpack_require__(441);
-	exports['or'] = __webpack_require__(442);
-	exports['xor'] = __webpack_require__(443);
+	exports['and'] = __webpack_require__(439);
+	exports['not'] = __webpack_require__(440);
+	exports['or'] = __webpack_require__(441);
+	exports['xor'] = __webpack_require__(442);
 
 	// functions - matrix
-	exports['concat'] = __webpack_require__(444);
-	exports.cross = __webpack_require__(445);
-	exports.det = __webpack_require__(446);
-	exports.diag = __webpack_require__(447);
-	exports.dot = __webpack_require__(448);
-	exports.eye = __webpack_require__(449);
-	exports.flatten = __webpack_require__(450);
-	exports.inv = __webpack_require__(451);
-	exports.ones = __webpack_require__(452);
-	exports.range = __webpack_require__(453);
-	exports.resize = __webpack_require__(454);
-	exports.size = __webpack_require__(455);
-	exports.squeeze = __webpack_require__(456);
-	exports.subset = __webpack_require__(457);
-	exports.trace = __webpack_require__(458);
-	exports.transpose = __webpack_require__(459);
-	exports.zeros = __webpack_require__(460);
+	exports['concat'] = __webpack_require__(443);
+	exports.cross = __webpack_require__(444);
+	exports.det = __webpack_require__(445);
+	exports.diag = __webpack_require__(446);
+	exports.dot = __webpack_require__(447);
+	exports.eye = __webpack_require__(448);
+	exports.flatten = __webpack_require__(449);
+	exports.inv = __webpack_require__(450);
+	exports.ones = __webpack_require__(451);
+	exports.range = __webpack_require__(452);
+	exports.resize = __webpack_require__(453);
+	exports.size = __webpack_require__(454);
+	exports.squeeze = __webpack_require__(455);
+	exports.subset = __webpack_require__(456);
+	exports.trace = __webpack_require__(457);
+	exports.transpose = __webpack_require__(458);
+	exports.zeros = __webpack_require__(459);
 
 	// functions - probability
-	exports.combinations = __webpack_require__(461);
+	exports.combinations = __webpack_require__(460);
 	//exports.distribution = require('./function/probability/distribution');
-	exports.factorial = __webpack_require__(462);
-	exports.gamma = __webpack_require__(463);
-	exports.permutations = __webpack_require__(464);
-	exports.pickRandom = __webpack_require__(465);
-	exports.random = __webpack_require__(466);
-	exports.randomInt = __webpack_require__(467);
+	exports.factorial = __webpack_require__(461);
+	exports.gamma = __webpack_require__(462);
+	exports.permutations = __webpack_require__(463);
+	exports.pickRandom = __webpack_require__(464);
+	exports.random = __webpack_require__(465);
+	exports.randomInt = __webpack_require__(466);
 
 	// functions - relational
-	exports.compare = __webpack_require__(468);
-	exports.deepEqual = __webpack_require__(469);
-	exports['equal'] = __webpack_require__(470);
-	exports.larger = __webpack_require__(471);
-	exports.largerEq = __webpack_require__(472);
-	exports.smaller = __webpack_require__(473);
-	exports.smallerEq = __webpack_require__(474);
-	exports.unequal = __webpack_require__(475);
+	exports.compare = __webpack_require__(467);
+	exports.deepEqual = __webpack_require__(468);
+	exports['equal'] = __webpack_require__(469);
+	exports.larger = __webpack_require__(470);
+	exports.largerEq = __webpack_require__(471);
+	exports.smaller = __webpack_require__(472);
+	exports.smallerEq = __webpack_require__(473);
+	exports.unequal = __webpack_require__(474);
 
 	// functions - statistics
-	exports.max = __webpack_require__(476);
-	exports.mean = __webpack_require__(477);
-	exports.median = __webpack_require__(478);
-	exports.min = __webpack_require__(479);
-	exports.prod = __webpack_require__(480);
-	exports.std = __webpack_require__(481);
-	exports.sum = __webpack_require__(482);
-	exports['var'] = __webpack_require__(483);
+	exports.max = __webpack_require__(475);
+	exports.mean = __webpack_require__(476);
+	exports.median = __webpack_require__(477);
+	exports.min = __webpack_require__(478);
+	exports.prod = __webpack_require__(479);
+	exports.std = __webpack_require__(480);
+	exports.sum = __webpack_require__(481);
+	exports['var'] = __webpack_require__(482);
 
 	// functions - trigonometry
-	exports.acos = __webpack_require__(484);
-	exports.acosh = __webpack_require__(485);
-	exports.acot = __webpack_require__(486);
-	exports.acoth = __webpack_require__(487);
-	exports.acsc = __webpack_require__(488);
-	exports.acsch = __webpack_require__(489);
-	exports.asec = __webpack_require__(490);
-	exports.asech = __webpack_require__(491);
-	exports.asin = __webpack_require__(492);
-	exports.asinh = __webpack_require__(493);
-	exports.atan = __webpack_require__(494);
-	exports.atanh = __webpack_require__(495);
-	exports.atan2 = __webpack_require__(496);
-	exports.cos = __webpack_require__(497);
-	exports.cosh = __webpack_require__(498);
-	exports.cot = __webpack_require__(499);
-	exports.coth = __webpack_require__(500);
-	exports.csc = __webpack_require__(501);
-	exports.csch = __webpack_require__(502);
-	exports.sec = __webpack_require__(503);
-	exports.sech = __webpack_require__(504);
-	exports.sin = __webpack_require__(505);
-	exports.sinh = __webpack_require__(506);
-	exports.tan = __webpack_require__(507);
-	exports.tanh = __webpack_require__(508);
+	exports.acos = __webpack_require__(483);
+	exports.acosh = __webpack_require__(484);
+	exports.acot = __webpack_require__(485);
+	exports.acoth = __webpack_require__(486);
+	exports.acsc = __webpack_require__(487);
+	exports.acsch = __webpack_require__(488);
+	exports.asec = __webpack_require__(489);
+	exports.asech = __webpack_require__(490);
+	exports.asin = __webpack_require__(491);
+	exports.asinh = __webpack_require__(492);
+	exports.atan = __webpack_require__(493);
+	exports.atanh = __webpack_require__(494);
+	exports.atan2 = __webpack_require__(495);
+	exports.cos = __webpack_require__(496);
+	exports.cosh = __webpack_require__(497);
+	exports.cot = __webpack_require__(498);
+	exports.coth = __webpack_require__(499);
+	exports.csc = __webpack_require__(500);
+	exports.csch = __webpack_require__(501);
+	exports.sec = __webpack_require__(502);
+	exports.sech = __webpack_require__(503);
+	exports.sin = __webpack_require__(504);
+	exports.sinh = __webpack_require__(505);
+	exports.tan = __webpack_require__(506);
+	exports.tanh = __webpack_require__(507);
 
 	// functions - units
-	exports.to = __webpack_require__(509);
+	exports.to = __webpack_require__(508);
 
 	// functions - utils
-	exports.clone =  __webpack_require__(510);
-	exports.map =  __webpack_require__(511);
-	exports.filter =  __webpack_require__(512);
-	exports.forEach =  __webpack_require__(513);
-	exports.format =  __webpack_require__(514);
+	exports.clone =  __webpack_require__(509);
+	exports.map =  __webpack_require__(510);
+	exports.filter =  __webpack_require__(511);
+	exports.forEach =  __webpack_require__(512);
+	exports.format =  __webpack_require__(513);
 	// exports.print =  require('./function/utils/print'); // TODO: add documentation for print as soon as the parser supports objects.
-	exports['import'] =  __webpack_require__(515);
-	exports.sort =  __webpack_require__(516);
-	exports['typeof'] =  __webpack_require__(517);
+	exports['import'] =  __webpack_require__(514);
+	exports.sort =  __webpack_require__(515);
+	exports['typeof'] =  __webpack_require__(516);
 
 
 /***/ },
-/* 150 */
+/* 146 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -65277,15 +63699,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 151 */
+/* 147 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var BigNumber = __webpack_require__(133);
-	var errorTransform = __webpack_require__(381).transform;
-	var isNumber = __webpack_require__(131).isNumber;
-	var argsToArray = __webpack_require__(342).argsToArray;
+	var BigNumber = __webpack_require__(129);
+	var errorTransform = __webpack_require__(380).transform;
+	var isNumber = __webpack_require__(127).isNumber;
+	var argsToArray = __webpack_require__(340).argsToArray;
 
 	/**
 	 * Attach a transform function to math.range
@@ -65325,15 +63747,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 152 */
+/* 148 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var SymbolNode = __webpack_require__(361);
-	var isBoolean = __webpack_require__(382).isBoolean;
-	var argsToArray = __webpack_require__(342).argsToArray;
-	var ArgumentsError = __webpack_require__(345);
+	var SymbolNode = __webpack_require__(359);
+	var isBoolean = __webpack_require__(379).isBoolean;
+	var argsToArray = __webpack_require__(340).argsToArray;
+	var ArgumentsError = __webpack_require__(342);
 
 	/**
 	 * Attach a transform function to math.filter
@@ -65395,7 +63817,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 153 */
+/* 149 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -65447,15 +63869,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 154 */
+/* 150 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var BigNumber = __webpack_require__(133);
-	var Range = __webpack_require__(136);
-	var Index = __webpack_require__(137);
-	var isNumber = __webpack_require__(131).isNumber;
+	var BigNumber = __webpack_require__(129);
+	var Range = __webpack_require__(132);
+	var Index = __webpack_require__(133);
+	var isNumber = __webpack_require__(127).isNumber;
 
 	/**
 	 * Attach a transform function to math.index
@@ -65500,7 +63922,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 155 */
+/* 151 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -65553,15 +63975,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 156 */
+/* 152 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var BigNumber = __webpack_require__(133);
-	var errorTransform = __webpack_require__(381).transform;
-	var isNumber = __webpack_require__(131).isNumber;
-	var argsToArray = __webpack_require__(342).argsToArray;
+	var BigNumber = __webpack_require__(129);
+	var errorTransform = __webpack_require__(380).transform;
+	var isNumber = __webpack_require__(127).isNumber;
+	var argsToArray = __webpack_require__(340).argsToArray;
 
 	/**
 	 * Attach a transform function to math.max
@@ -65604,15 +64026,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 157 */
+/* 153 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var BigNumber = __webpack_require__(133);
-	var errorTransform = __webpack_require__(381).transform;
-	var isNumber = __webpack_require__(131).isNumber;
-	var argsToArray = __webpack_require__(342).argsToArray;
+	var BigNumber = __webpack_require__(129);
+	var errorTransform = __webpack_require__(380).transform;
+	var isNumber = __webpack_require__(127).isNumber;
+	var argsToArray = __webpack_require__(340).argsToArray;
 
 	/**
 	 * Attach a transform function to math.mean
@@ -65655,15 +64077,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 158 */
+/* 154 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var BigNumber = __webpack_require__(133);
-	var errorTransform = __webpack_require__(381).transform;
-	var isNumber = __webpack_require__(131).isNumber;
-	var argsToArray = __webpack_require__(342).argsToArray;
+	var BigNumber = __webpack_require__(129);
+	var errorTransform = __webpack_require__(380).transform;
+	var isNumber = __webpack_require__(127).isNumber;
+	var argsToArray = __webpack_require__(340).argsToArray;
 
 	/**
 	 * Attach a transform function to math.min
@@ -65706,13 +64128,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 159 */
+/* 155 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var isBoolean = __webpack_require__(382).isBoolean;
-	var argsToArray = __webpack_require__(342).argsToArray;
+	var isBoolean = __webpack_require__(379).isBoolean;
+	var argsToArray = __webpack_require__(340).argsToArray;
 
 	/**
 	 * Attach a transform function to math.range
@@ -65741,14 +64163,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 160 */
+/* 156 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var errorTransform = __webpack_require__(381).transform;
-	var isBoolean = __webpack_require__(382).isBoolean;
-	var argsToArray = __webpack_require__(342).argsToArray;
+	var errorTransform = __webpack_require__(380).transform;
+	var isBoolean = __webpack_require__(379).isBoolean;
+	var argsToArray = __webpack_require__(340).argsToArray;
 
 	/**
 	 * Attach a transform function to math.subset
@@ -65774,13 +64196,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 161 */
+/* 157 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var string = __webpack_require__(349);
+	  var string = __webpack_require__(347);
 
 	  /**
 	   * @constructor Chain
@@ -65875,7 +64297,1373 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 162 */
+/* 158 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var inherits = __webpack_require__(52).inherits
+	  , f = __webpack_require__(52).format
+	  , toError = __webpack_require__(122).toError
+	  , getSingleProperty = __webpack_require__(122).getSingleProperty
+	  , formattedOrderClause = __webpack_require__(122).formattedOrderClause
+	  , handleCallback = __webpack_require__(122).handleCallback
+	  , Logger = __webpack_require__(114).Logger
+	  , EventEmitter = __webpack_require__(120).EventEmitter
+	  , ReadPreference = __webpack_require__(94)
+	  , MongoError = __webpack_require__(114).MongoError
+	  , Readable = __webpack_require__(316).Readable || __webpack_require__(333).Readable
+	  // , CoreCursor = require('mongodb-core').Cursor
+	  , CoreCursor = __webpack_require__(97)
+	  , Query = __webpack_require__(114).Query
+	  , CoreReadPreference = __webpack_require__(114).ReadPreference;
+
+	/**
+	 * @fileOverview The **AggregationCursor** class is an internal class that embodies an aggregation cursor on MongoDB
+	 * allowing for iteration over the results returned from the underlying query. It supports
+	 * one by one document iteration, conversion to an array or can be iterated as a Node 0.10.X 
+	 * or higher stream
+	 * 
+	 * **AGGREGATIONCURSOR Cannot directly be instantiated**
+	 * @example
+	 * var MongoClient = require('mongodb').MongoClient,
+	 *   test = require('assert');
+	 * // Connection url
+	 * var url = 'mongodb://localhost:27017/test';
+	 * // Connect using MongoClient
+	 * MongoClient.connect(url, function(err, db) {
+	 *   // Create a collection we want to drop later
+	 *   var col = db.collection('createIndexExample1');
+	 *   // Insert a bunch of documents
+	 *   col.insert([{a:1, b:1}
+	 *     , {a:2, b:2}, {a:3, b:3}
+	 *     , {a:4, b:4}], {w:1}, function(err, result) {
+	 *     test.equal(null, err);
+	 * 
+	 *     // Show that duplicate records got dropped
+	 *     col.aggregation({}, {cursor: {}}).toArray(function(err, items) {
+	 *       test.equal(null, err);
+	 *       test.equal(4, items.length);
+	 *       db.close();
+	 *     });
+	 *   });
+	 * });
+	 */
+
+	/**
+	 * Namespace provided by the browser.
+	 * @external Readable
+	 */
+
+	/**
+	 * Creates a new Aggregation Cursor instance (INTERNAL TYPE, do not instantiate directly)
+	 * @class
+	 * @extends external:Readable
+	 * @fires AggregationCursor#data
+	 * @fires AggregationCursor#end
+	 * @fires AggregationCursor#close
+	 * @fires AggregationCursor#readable
+	 * @return {AggregationCursor} an AggregationCursor instance.
+	 */
+	var AggregationCursor = function(bson, ns, cmd, options, topology, topologyOptions) {
+	  CoreCursor.apply(this, Array.prototype.slice.call(arguments, 0));
+	  var self = this;
+	  var state = AggregationCursor.INIT;
+	  var streamOptions = {};
+
+	  // MaxTimeMS
+	  var maxTimeMS = null;
+
+	  // Set up
+	  Readable.call(this, {objectMode: true});
+
+	  // Internal state
+	  this.s = {
+	    // MaxTimeMS
+	      maxTimeMS: maxTimeMS
+	    // State
+	    , state: state
+	    // Stream options
+	    , streamOptions: streamOptions
+	    // BSON
+	    , bson: bson
+	    // Namespae
+	    , ns: ns
+	    // Command
+	    , cmd: cmd
+	    // Options
+	    , options: options
+	    // Topology
+	    , topology: topology
+	    // Topology Options
+	    , topologyOptions: topologyOptions
+	  }
+	}
+
+	/**
+	 * AggregationCursor stream data event, fired for each document in the cursor.
+	 *
+	 * @event AggregationCursor#data
+	 * @type {object}
+	 */
+
+	/**
+	 * AggregationCursor stream end event
+	 *
+	 * @event AggregationCursor#end
+	 * @type {null}
+	 */
+
+	/**
+	 * AggregationCursor stream close event
+	 *
+	 * @event AggregationCursor#close
+	 * @type {null}
+	 */
+
+	/**
+	 * AggregationCursor stream readable event
+	 *
+	 * @event AggregationCursor#readable
+	 * @type {null}
+	 */
+
+	// // Extend the Cursor
+	// inherits(AggregationCursor, CoreCursor);
+
+	// Inherit from Readable
+	inherits(AggregationCursor, Readable);  
+
+	// Extend the Cursor
+	for(var name in CoreCursor.prototype) {
+	  AggregationCursor.prototype[name] = CoreCursor.prototype[name];
+	}
+
+	/**
+	 * Set the batch size for the cursor.
+	 * @method
+	 * @param {number} value The batchSize for the cursor.
+	 * @throws {MongoError}
+	 * @return {AggregationCursor}
+	 */
+	AggregationCursor.prototype.batchSize = function(value) {
+	  if(this.s.state == AggregationCursor.CLOSED || this.isDead()) throw new MongoError("Cursor is closed");
+	  if(typeof value != 'number') throw new MongoError("batchSize requires an integer");
+	  if(this.s.cmd.cursor) this.s.cmd.cursor.batchSize = value;
+	  this.setCursorBatchSize(value);
+	  return this;
+	}
+
+	/**
+	 * Add a geoNear stage to the aggregation pipeline
+	 * @method
+	 * @param {object} document The geoNear stage document.
+	 * @return {AggregationCursor}
+	 */
+	AggregationCursor.prototype.geoNear = function(document) {
+	  this.s.cmd.pipeline.push({$geoNear: document});
+	  return this;
+	}
+
+	/**
+	 * Add a group stage to the aggregation pipeline
+	 * @method
+	 * @param {object} document The group stage document.
+	 * @return {AggregationCursor}
+	 */
+	AggregationCursor.prototype.group = function(document) {
+	  this.s.cmd.pipeline.push({$group: document});
+	  return this;
+	}
+
+	/**
+	 * Add a limit stage to the aggregation pipeline
+	 * @method
+	 * @param {number} value The state limit value.
+	 * @return {AggregationCursor}
+	 */
+	AggregationCursor.prototype.limit = function(value) {
+	  this.s.cmd.pipeline.push({$limit: value});
+	  return this;
+	}
+
+	/**
+	 * Add a match stage to the aggregation pipeline
+	 * @method
+	 * @param {object} document The match stage document.
+	 * @return {AggregationCursor}
+	 */
+	AggregationCursor.prototype.match = function(document) {
+	  this.s.cmd.pipeline.push({$match: document});
+	  return this;
+	}
+
+	/**
+	 * Add a maxTimeMS stage to the aggregation pipeline
+	 * @method
+	 * @param {number} value The state maxTimeMS value.
+	 * @return {AggregationCursor}
+	 */
+	AggregationCursor.prototype.maxTimeMS = function(value) {
+	  if(this.s.topology.lastIsMaster().minWireVersion > 2) {
+	    this.s.cmd.maxTimeMS = value;
+	  }
+	  return this;
+	}
+
+	/**
+	 * Add a out stage to the aggregation pipeline
+	 * @method
+	 * @param {number} destination The destination name.
+	 * @return {AggregationCursor}
+	 */
+	AggregationCursor.prototype.out = function(destination) {
+	  this.s.cmd.pipeline.push({$out: destination});
+	  return this;
+	}
+
+	/**
+	 * Add a project stage to the aggregation pipeline
+	 * @method
+	 * @param {object} document The project stage document.
+	 * @return {AggregationCursor}
+	 */
+	AggregationCursor.prototype.project = function(document) {
+	  this.s.cmd.pipeline.push({$project: document});
+	  return this;
+	}
+
+	/**
+	 * Add a redact stage to the aggregation pipeline
+	 * @method
+	 * @param {object} document The redact stage document.
+	 * @return {AggregationCursor}
+	 */
+	AggregationCursor.prototype.redact = function(document) {
+	  this.s.cmd.pipeline.push({$redact: document});
+	  return this;
+	}
+
+	/**
+	 * Add a skip stage to the aggregation pipeline
+	 * @method
+	 * @param {number} value The state skip value.
+	 * @return {AggregationCursor}
+	 */
+	AggregationCursor.prototype.skip = function(value) {
+	  this.s.cmd.pipeline.push({$skip: value});
+	  return this;
+	}
+
+	/**
+	 * Add a sort stage to the aggregation pipeline
+	 * @method
+	 * @param {object} document The sort stage document.
+	 * @return {AggregationCursor}
+	 */
+	AggregationCursor.prototype.sort = function(document) {
+	  this.s.cmd.pipeline.push({$sort: document});
+	  return this;
+	}
+
+	/**
+	 * Add a unwind stage to the aggregation pipeline
+	 * @method
+	 * @param {number} field The unwind field name.
+	 * @return {AggregationCursor}
+	 */
+	AggregationCursor.prototype.unwind = function(field) {
+	  this.s.cmd.pipeline.push({$unwind: field});
+	  return this;
+	}
+
+	AggregationCursor.prototype.get = AggregationCursor.prototype.toArray;
+
+	/**
+	 * Get the next available document from the cursor, returns null if no more documents are available.
+	 * @function AggregationCursor.prototype.next
+	 * @param {AggregationCursor~resultCallback} callback The result callback.
+	 * @throws {MongoError}
+	 * @return {null}
+	 */
+
+	/**
+	 * Set the new batchSize of the cursor
+	 * @function AggregationCursor.prototype.setBatchSize
+	 * @param {number} value The new batchSize for the cursor
+	 * @return {null}
+	 */
+
+	/**
+	 * Get the batchSize of the cursor
+	 * @function AggregationCursor.prototype.batchSize
+	 * @param {number} value The current batchSize for the cursor
+	 * @return {null}
+	 */
+
+	/**
+	 * The callback format for results
+	 * @callback AggregationCursor~toArrayResultCallback
+	 * @param {MongoError} error An error instance representing the error during the execution.
+	 * @param {object[]} documents All the documents the satisfy the cursor.
+	 */
+
+	/**
+	 * Returns an array of documents. The caller is responsible for making sure that there
+	 * is enough memory to store the results. Note that the array only contain partial
+	 * results when this cursor had been previouly accessed. In that case,
+	 * cursor.rewind() can be used to reset the cursor.
+	 * @method AggregationCursor.prototype.toArray
+	 * @param {AggregationCursor~toArrayResultCallback} callback The result callback.
+	 * @throws {MongoError}
+	 * @return {null}
+	 */
+
+	/**
+	 * The callback format for results
+	 * @callback AggregationCursor~resultCallback
+	 * @param {MongoError} error An error instance representing the error during the execution.
+	 * @param {(object|null)} result The result object if the command was executed successfully.
+	 */
+
+	/**
+	 * Iterates over all the documents for this cursor. As with **{cursor.toArray}**,
+	 * not all of the elements will be iterated if this cursor had been previouly accessed.
+	 * In that case, **{cursor.rewind}** can be used to reset the cursor. However, unlike
+	 * **{cursor.toArray}**, the cursor will only hold a maximum of batch size elements
+	 * at any given time if batch size is specified. Otherwise, the caller is responsible
+	 * for making sure that the entire result can fit the memory.
+	 * @method AggregationCursor.prototype.each
+	 * @param {AggregationCursor~resultCallback} callback The result callback.
+	 * @throws {MongoError}
+	 * @return {null}
+	 */
+
+	/**
+	 * Close the cursor, sending a KillCursor command and emitting close.
+	 * @method AggregationCursor.prototype.close
+	 * @param {AggregationCursor~resultCallback} [callback] The result callback.
+	 * @return {null}
+	 */   
+
+	/**
+	 * Is the cursor closed
+	 * @method AggregationCursor.prototype.isClosed
+	 * @return {boolean}
+	 */   
+
+	/**
+	 * Execute the explain for the cursor
+	 * @method AggregationCursor.prototype.explain
+	 * @param {AggregationCursor~resultCallback} [callback] The result callback.
+	 * @return {null}
+	 */
+
+	/**
+	 * Clone the cursor
+	 * @function AggregationCursor.prototype.clone
+	 * @return {AggregationCursor}
+	 */     
+
+	/**
+	 * Resets the cursor
+	 * @function AggregationCursor.prototype.rewind
+	 * @return {AggregationCursor}
+	 */  
+
+	/**
+	 * The callback format for the forEach iterator method
+	 * @callback AggregationCursor~iteratorCallback
+	 * @param {Object} doc An emitted document for the iterator
+	 */
+
+	/**
+	 * The callback error format for the forEach iterator method
+	 * @callback AggregationCursor~endCallback
+	 * @param {MongoError} error An error instance representing the error during the execution.
+	 */
+
+	/*
+	 * Iterates over all the documents for this cursor using the iterator, callback pattern.
+	 * @method AggregationCursor.prototype.forEach
+	 * @param {AggregationCursor~iteratorCallback} iterator The iteration callback.
+	 * @param {AggregationCursor~endCallback} callback The end callback.
+	 * @throws {MongoError}
+	 * @return {null}
+	 */
+
+	AggregationCursor.INIT = 0;
+	AggregationCursor.OPEN = 1;
+	AggregationCursor.CLOSED = 2;
+
+	module.exports = AggregationCursor;
+
+/***/ },
+/* 159 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var common = __webpack_require__(381)
+		, utils = __webpack_require__(122)
+	  , toError = __webpack_require__(122).toError
+	  , f = __webpack_require__(52).format
+	  , shallowClone = utils.shallowClone
+	  , WriteError = common.WriteError
+	  , BulkWriteResult = common.BulkWriteResult
+	  , LegacyOp = common.LegacyOp
+	  , ObjectID = __webpack_require__(114).BSON.ObjectID
+	  , Batch = common.Batch
+	  , mergeBatchResults = common.mergeBatchResults;
+
+	/**
+	 * Create a FindOperatorsUnordered instance (INTERNAL TYPE, do not instantiate directly)
+	 * @class
+	 * @property {number} length Get the number of operations in the bulk.
+	 * @return {FindOperatorsUnordered} a FindOperatorsUnordered instance.
+	 */
+	var FindOperatorsUnordered = function(self) {
+	  this.s = self.s;
+	}
+
+	/**
+	 * Add a single update document to the bulk operation
+	 *
+	 * @method
+	 * @param {object} doc update operations
+	 * @throws {MongoError}
+	 * @return {UnorderedBulkOperation}
+	 */
+	FindOperatorsUnordered.prototype.update = function(updateDocument) {
+	  // Perform upsert
+	  var upsert = typeof this.s.currentOp.upsert == 'boolean' ? this.s.currentOp.upsert : false;
+
+	  // Establish the update command
+	  var document = {
+	      q: this.s.currentOp.selector
+	    , u: updateDocument
+	    , multi: true
+	    , upsert: upsert
+	  }
+
+	  // Clear out current Op
+	  this.s.currentOp = null;
+	  // Add the update document to the list
+	  return addToOperationsList(this, common.UPDATE, document);
+	}
+
+	/**
+	 * Add a single update one document to the bulk operation
+	 *
+	 * @method
+	 * @param {object} doc update operations
+	 * @throws {MongoError}
+	 * @return {UnorderedBulkOperation}
+	 */
+	FindOperatorsUnordered.prototype.updateOne = function(updateDocument) {
+	  // Perform upsert
+	  var upsert = typeof this.s.currentOp.upsert == 'boolean' ? this.s.currentOp.upsert : false;
+
+	  // Establish the update command
+	  var document = {
+	      q: this.s.currentOp.selector
+	    , u: updateDocument
+	    , multi: false
+	    , upsert: upsert
+	  }
+
+	  // Clear out current Op
+	  this.s.currentOp = null;
+	  // Add the update document to the list
+	  return addToOperationsList(this, common.UPDATE, document);
+	}
+
+	/**
+	 * Add a replace one operation to the bulk operation
+	 *
+	 * @method
+	 * @param {object} doc the new document to replace the existing one with
+	 * @throws {MongoError}
+	 * @return {UnorderedBulkOperation}
+	 */
+	FindOperatorsUnordered.prototype.replaceOne = function(updateDocument) {
+	  this.updateOne(updateDocument);
+	}
+
+	/**
+	 * Upsert modifier for update bulk operation
+	 *
+	 * @method
+	 * @throws {MongoError}
+	 * @return {UnorderedBulkOperation}
+	 */
+	FindOperatorsUnordered.prototype.upsert = function() {
+	  this.s.currentOp.upsert = true;
+	  return this;
+	}
+
+	/**
+	 * Add a remove one operation to the bulk operation
+	 *
+	 * @method
+	 * @throws {MongoError}
+	 * @return {UnorderedBulkOperation}
+	 */
+	FindOperatorsUnordered.prototype.removeOne = function() {
+	  // Establish the update command
+	  var document = {
+	      q: this.s.currentOp.selector
+	    , limit: 1
+	  }
+
+	  // Clear out current Op
+	  this.s.currentOp = null;
+	  // Add the remove document to the list
+	  return addToOperationsList(this, common.REMOVE, document);
+	}
+
+	/**
+	 * Add a remove operation to the bulk operation
+	 *
+	 * @method
+	 * @throws {MongoError}
+	 * @return {UnorderedBulkOperation}
+	 */
+	FindOperatorsUnordered.prototype.remove = function() {
+	  // Establish the update command
+	  var document = {
+	      q: this.s.currentOp.selector
+	    , limit: 0
+	  }
+
+	  // Clear out current Op
+	  this.s.currentOp = null;
+	  // Add the remove document to the list
+	  return addToOperationsList(this, common.REMOVE, document);
+	}
+
+	//
+	// Add to the operations list
+	//
+	var addToOperationsList = function(_self, docType, document) {
+	  // Get the bsonSize
+	  var bsonSize = _self.s.bson.calculateObjectSize(document, false);
+	  // Throw error if the doc is bigger than the max BSON size
+	  if(bsonSize >= _self.s.maxBatchSizeBytes) throw toError("document is larger than the maximum size " + _self.s.maxBatchSizeBytes);
+	  // Holds the current batch
+	  _self.s.currentBatch = null;
+	  // Get the right type of batch
+	  if(docType == common.INSERT) {
+	    _self.s.currentBatch = _self.s.currentInsertBatch;
+	  } else if(docType == common.UPDATE) {
+	    _self.s.currentBatch = _self.s.currentUpdateBatch;
+	  } else if(docType == common.REMOVE) {
+	    _self.s.currentBatch = _self.s.currentRemoveBatch;
+	  }
+
+	  // Create a new batch object if we don't have a current one
+	  if(_self.s.currentBatch == null) _self.s.currentBatch = new Batch(docType, _self.s.currentIndex);
+
+	  // Check if we need to create a new batch
+	  if(((_self.s.currentBatch.size + 1) >= _self.s.maxWriteBatchSize)
+	    || ((_self.s.currentBatch.sizeBytes + bsonSize) >= _self.s.maxBatchSizeBytes)
+	    || (_self.s.currentBatch.batchType != docType)) {
+	    // Save the batch to the execution stack
+	    _self.s.batches.push(_self.s.currentBatch);
+
+	    // Create a new batch
+	    _self.s.currentBatch = new Batch(docType, _self.s.currentIndex);
+	  }
+
+	  // We have an array of documents
+	  if(Array.isArray(document)) {
+	    throw toError("operation passed in cannot be an Array");
+	  } else {
+	    _self.s.currentBatch.operations.push(document);
+	    _self.s.currentBatch.originalIndexes.push(_self.s.currentIndex);
+	    _self.s.currentIndex = _self.s.currentIndex + 1;
+	  }
+
+	  // Save back the current Batch to the right type
+	  if(docType == common.INSERT) {
+	    _self.s.currentInsertBatch = _self.s.currentBatch;
+	    _self.s.bulkResult.insertedIds.push({index: _self.s.currentIndex, _id: document._id});
+	  } else if(docType == common.UPDATE) {
+	    _self.s.currentUpdateBatch = _self.s.currentBatch;
+	  } else if(docType == common.REMOVE) {
+	    _self.s.currentRemoveBatch = _self.s.currentBatch;
+	  }
+
+	  // Update current batch size
+	  _self.s.currentBatch.size = _self.s.currentBatch.size + 1;
+	  _self.s.currentBatch.sizeBytes = _self.s.currentBatch.sizeBytes + bsonSize;
+
+	  // Return self
+	  return _self;
+	}
+
+	/**
+	 * Create a new UnorderedBulkOperation instance (INTERNAL TYPE, do not instantiate directly)
+	 * @class
+	 * @return {UnorderedBulkOperation} a UnorderedBulkOperation instance.
+	 */
+	var UnorderedBulkOperation = function(topology, collection, options) {
+		options = options == null ? {} : options;
+
+		// Contains reference to self
+		var self = this;
+		// Get the namesspace for the write operations
+	  var namespace = collection.collectionName;
+	  // Used to mark operation as executed
+	  var executed = false;
+
+		// Current item
+	  // var currentBatch = null;
+		var currentOp = null;
+		var currentIndex = 0;
+	  var batches = [];
+
+	  // The current Batches for the different operations
+	  var currentInsertBatch = null;
+	  var currentUpdateBatch = null;
+	  var currentRemoveBatch = null;
+
+		// Handle to the bson serializer, used to calculate running sizes
+		var bson = topology.bson;
+
+	  // Get the capabilities
+	  var capabilities = topology.capabilities();
+
+	  // Set max byte size
+		var maxBatchSizeBytes = topology.isMasterDoc.maxBsonObjectSize;
+		var maxWriteBatchSize = topology.isMasterDoc.maxWriteBatchSize || 1000;
+
+	  // Get the write concern
+	  var writeConcern = common.writeConcern(shallowClone(options), collection, options);
+
+	  // Final results
+	  var bulkResult = {
+	  	  ok: 1
+	    , writeErrors: []
+	    , writeConcernErrors: []
+	    , insertedIds: []
+	    , nInserted: 0
+	    , nUpserted: 0
+	    , nMatched: 0
+	    , nModified: 0
+	    , nRemoved: 0
+	    , upserted: []
+	  };
+
+	  // Internal state
+	  this.s = {
+	    // Final result
+	      bulkResult: bulkResult
+	    // Current batch state
+	    , currentInsertBatch: null
+	    , currentUpdateBatch: null
+	    , currentRemoveBatch: null
+	    , currentBatch: null
+	    , currentIndex: 0
+	    , batches: []
+	    // Write concern
+	    , writeConcern: writeConcern
+	    // Capabilities
+	    , capabilities: capabilities
+	    // Max batch size options
+	    , maxBatchSizeBytes: maxBatchSizeBytes
+	    , maxWriteBatchSize: maxWriteBatchSize
+	    // Namespace
+	    , namespace: namespace
+	    // BSON
+	    , bson: bson
+	    // Topology
+	    , topology: topology
+	    // Options
+	    , options: options
+	    // Current operation
+	    , currentOp: currentOp
+	    // Executed
+	    , executed: executed
+	    // Collection
+	    , collection: collection
+	  }
+	}
+
+	/**
+	 * Add a single insert document to the bulk operation
+	 *
+	 * @param {object} doc the document to insert
+	 * @throws {MongoError}
+	 * @return {UnorderedBulkOperation}
+	 */
+	UnorderedBulkOperation.prototype.insert = function(document) {
+	  if(document._id == null) document._id = new ObjectID();
+	  return addToOperationsList(this, common.INSERT, document);
+	}
+
+	/**
+	 * Initiate a find operation for an update/updateOne/remove/removeOne/replaceOne
+	 *
+	 * @method
+	 * @param {object} selector The selector for the bulk operation.
+	 * @throws {MongoError}
+	 * @return {FindOperatorsUnordered}
+	 */
+	UnorderedBulkOperation.prototype.find = function(selector) {
+	  if (!selector) {
+	    throw toError("Bulk find operation must specify a selector");
+	  }
+
+	  // Save a current selector
+	  this.s.currentOp = {
+	    selector: selector
+	  }
+
+	  return new FindOperatorsUnordered(this);
+	}
+
+	Object.defineProperty(UnorderedBulkOperation.prototype, 'length', {
+	  enumerable: true,
+	  get: function() {
+	    return this.s.currentIndex;
+	  }
+	});
+
+	UnorderedBulkOperation.prototype.raw = function(op) {
+	  var key = Object.keys(op)[0];
+
+	  // Update operations
+	  if((op.updateOne && op.updateOne.q)
+	    || (op.updateMany && op.updateMany.q)
+	    || (op.replaceOne && op.replaceOne.q)) {
+	    op[key].multi = op.updateOne || op.replaceOne ? false : true;
+	    return addToOperationsList(this, common.UPDATE, op[key]);
+	  }
+
+	  // Crud spec update format
+	  if(op.updateOne || op.updateMany || op.replaceOne) {
+	    var multi = op.updateOne || op.replaceOne ? false : true;
+	    var operation = {q: op[key].filter, u: op[key].update || op[key].replacement, multi: multi}
+	    if(op[key].upsert) operation.upsert = true;
+	    return addToOperationsList(this, common.UPDATE, operation);
+	  }
+
+	  // Remove operations
+	  if(op.removeOne || op.removeMany || (op.deleteOne && op.deleteOne.q) || op.deleteMany && op.deleteMany.q) {
+	    op[key].limit = op.removeOne ? 1 : 0;
+	    return addToOperationsList(this, common.REMOVE, op[key]);
+	  }
+
+	  // Crud spec delete operations, less efficient
+	  if(op.deleteOne || op.deleteMany) {
+	    var limit = op.deleteOne ? 1 : 0;
+	    var operation = {q: op[key].filter, limit: limit}
+	    return addToOperationsList(this, common.REMOVE, operation);
+	  }
+
+	  // Insert operations
+	  if(op.insertOne && op.insertOne.document == null) {
+	    if(op.insertOne._id == null) op.insertOne._id = new ObjectID();
+	    return addToOperationsList(this, common.INSERT, op.insertOne);
+	  } else if(op.insertOne && op.insertOne.document) {
+	    if(op.insertOne.document._id == null) op.insertOne.document._id = new ObjectID();
+	    return addToOperationsList(this, common.INSERT, op.insertOne.document);
+	  }
+
+	  if(op.insertMany) {
+	    for(var i = 0; i < op.insertMany.length; i++) {
+	      addToOperationsList(this, common.INSERT, op.insertMany[i]);
+	    }
+
+	    return;
+	  }
+
+	  // No valid type of operation
+	  throw toError("bulkWrite only supports insertOne, insertMany, updateOne, updateMany, removeOne, removeMany, deleteOne, deleteMany");
+	}
+
+	//
+	// Execute the command
+	var executeBatch = function(self, batch, callback) {
+	  var finalOptions = {ordered: false}
+	  if(self.s.writeConcern != null) {
+	    finalOptions.writeConcern = self.s.writeConcern;
+	  }
+
+	  var resultHandler = function(err, result) {
+	    // If we have and error
+	    if(err) err.ok = 0;
+	    callback(null, mergeBatchResults(false, batch, self.s.bulkResult, err, result));
+	  }
+
+	  try {
+	    if(batch.batchType == common.INSERT) {
+	      self.s.topology.insert(self.s.collection.namespace, batch.operations, finalOptions, resultHandler);
+	    } else if(batch.batchType == common.UPDATE) {
+	      self.s.topology.update(self.s.collection.namespace, batch.operations, finalOptions, resultHandler);
+	    } else if(batch.batchType == common.REMOVE) {
+	      self.s.topology.remove(self.s.collection.namespace, batch.operations, finalOptions, resultHandler);
+	    }
+	  } catch(err) {
+	    // Force top level error
+	    err.ok = 0;
+	    // Merge top level error and return 
+	    callback(null, mergeBatchResults(false, batch, self.s.bulkResult, err, null));
+	  }
+	}
+
+	//
+	// Execute all the commands
+	var executeBatches = function(self, callback) {
+	  var numberOfCommandsToExecute = self.s.batches.length;
+	  // Execute over all the batches
+	  for(var i = 0; i < self.s.batches.length; i++) {
+	    executeBatch(self, self.s.batches[i], function(err, result) {
+	      numberOfCommandsToExecute = numberOfCommandsToExecute - 1;
+
+	      // Execute
+	      if(numberOfCommandsToExecute == 0) {
+	        var error = self.s.bulkResult.writeErrors.length > 0 ? self.s.bulkResult.writeErrors[0] : null;
+	        callback(error, new BulkWriteResult(self.s.bulkResult));
+	      }
+	    });
+	  }
+	}
+
+	/**
+	 * The callback format for results
+	 * @callback UnorderedBulkOperation~resultCallback
+	 * @param {MongoError} error An error instance representing the error during the execution.
+	 * @param {BulkWriteResult} result The bulk write result.
+	 */
+
+	/**
+	 * Execute the ordered bulk operation
+	 *
+	 * @method
+	 * @param {object} [options=null] Optional settings.
+	 * @param {(number|string)} [options.w=null] The write concern.
+	 * @param {number} [options.wtimeout=null] The write concern timeout.
+	 * @param {boolean} [options.j=false] Specify a journal write concern.
+	 * @param {boolean} [options.fsync=false] Specify a file sync write concern.
+	 * @param {UnorderedBulkOperation~resultCallback} callback The result callback
+	 * @throws {MongoError}
+	 * @return {null}
+	 */
+	UnorderedBulkOperation.prototype.execute = function(_writeConcern, callback) {
+	  if(this.s.executed) throw toError("batch cannot be re-executed");
+	  if(typeof _writeConcern == 'function') {
+	    callback = _writeConcern;
+	  } else {
+	    this.s.writeConcern = _writeConcern;
+	  }
+
+	  // If we have current batch
+	  if(this.s.currentInsertBatch) this.s.batches.push(this.s.currentInsertBatch);
+	  if(this.s.currentUpdateBatch) this.s.batches.push(this.s.currentUpdateBatch);
+	  if(this.s.currentRemoveBatch) this.s.batches.push(this.s.currentRemoveBatch);
+
+	  // If we have no operations in the bulk raise an error
+	  if(this.s.batches.length == 0) {
+	    throw toError("Invalid Operation, No operations in bulk");
+	  }
+
+	  // Execute batches
+	  return executeBatches(this, function(err, result) {
+	    callback(err, result);
+	  });
+	}
+
+	/**
+	 * Returns an unordered batch object
+	 * @ignore
+	 */
+	var initializeUnorderedBulkOp = function(topology, collection, options) {
+		return new UnorderedBulkOperation(topology, collection, options);
+	}
+
+	module.exports = initializeUnorderedBulkOp;
+
+
+/***/ },
+/* 160 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var common = __webpack_require__(381)
+		, utils = __webpack_require__(122)
+	  , toError = __webpack_require__(122).toError
+		, f = __webpack_require__(52).format
+		, shallowClone = utils.shallowClone
+	  , WriteError = common.WriteError
+	  , BulkWriteResult = common.BulkWriteResult
+	  , LegacyOp = common.LegacyOp
+	  , ObjectID = __webpack_require__(114).BSON.ObjectID
+	  , Batch = common.Batch
+	  , mergeBatchResults = common.mergeBatchResults;
+
+	/**
+	 * Create a FindOperatorsOrdered instance (INTERNAL TYPE, do not instantiate directly)
+	 * @class
+	 * @return {FindOperatorsOrdered} a FindOperatorsOrdered instance.
+	 */
+	var FindOperatorsOrdered = function(self) {
+	  this.s = self.s;
+	}
+
+	/**
+	 * Add a single update document to the bulk operation
+	 *
+	 * @method
+	 * @param {object} doc update operations
+	 * @throws {MongoError}
+	 * @return {OrderedBulkOperation}
+	 */
+	FindOperatorsOrdered.prototype.update = function(updateDocument) {
+	  // Perform upsert
+	  var upsert = typeof this.s.currentOp.upsert == 'boolean' ? this.s.currentOp.upsert : false;
+
+	  // Establish the update command
+	  var document = {
+	      q: this.s.currentOp.selector
+	    , u: updateDocument
+	    , multi: true
+	    , upsert: upsert
+	  }
+
+	  // Clear out current Op
+	  this.s.currentOp = null;
+	  // Add the update document to the list
+	  return addToOperationsList(this, common.UPDATE, document);
+	}
+
+	/**
+	 * Add a single update one document to the bulk operation
+	 *
+	 * @method
+	 * @param {object} doc update operations
+	 * @throws {MongoError}
+	 * @return {OrderedBulkOperation}
+	 */
+	FindOperatorsOrdered.prototype.updateOne = function(updateDocument) {
+	  // Perform upsert
+	  var upsert = typeof this.s.currentOp.upsert == 'boolean' ? this.s.currentOp.upsert : false;
+
+	  // Establish the update command
+	  var document = {
+	      q: this.s.currentOp.selector
+	    , u: updateDocument
+	    , multi: false
+	    , upsert: upsert
+	  }
+
+	  // Clear out current Op
+	  this.s.currentOp = null;
+	  // Add the update document to the list
+	  return addToOperationsList(this, common.UPDATE, document);
+	}
+
+	/**
+	 * Add a replace one operation to the bulk operation
+	 *
+	 * @method
+	 * @param {object} doc the new document to replace the existing one with
+	 * @throws {MongoError}
+	 * @return {OrderedBulkOperation}
+	 */
+	FindOperatorsOrdered.prototype.replaceOne = function(updateDocument) {
+	  this.updateOne(updateDocument);
+	}
+
+	/**
+	 * Upsert modifier for update bulk operation
+	 *
+	 * @method
+	 * @throws {MongoError}
+	 * @return {FindOperatorsOrdered}
+	 */
+	FindOperatorsOrdered.prototype.upsert = function() {
+	  this.s.currentOp.upsert = true;
+	  return this;
+	}
+
+	/**
+	 * Add a remove one operation to the bulk operation
+	 *
+	 * @method
+	 * @throws {MongoError}
+	 * @return {OrderedBulkOperation}
+	 */
+	FindOperatorsOrdered.prototype.deleteOne = function() {
+	  // Establish the update command
+	  var document = {
+	      q: this.s.currentOp.selector
+	    , limit: 1
+	  }
+
+	  // Clear out current Op
+	  this.s.currentOp = null;
+	  // Add the remove document to the list
+	  return addToOperationsList(this, common.REMOVE, document);
+	}
+
+	// Backward compatibility
+	FindOperatorsOrdered.prototype.removeOne = FindOperatorsOrdered.prototype.deleteOne;
+
+	/**
+	 * Add a remove operation to the bulk operation
+	 *
+	 * @method
+	 * @throws {MongoError}
+	 * @return {OrderedBulkOperation}
+	 */
+	FindOperatorsOrdered.prototype.delete = function() {
+	  // Establish the update command
+	  var document = {
+	      q: this.s.currentOp.selector
+	    , limit: 0
+	  }
+
+	  // Clear out current Op
+	  this.s.currentOp = null;
+	  // Add the remove document to the list
+	  return addToOperationsList(this, common.REMOVE, document);
+	}
+
+	// Backward compatibility
+	FindOperatorsOrdered.prototype.remove = FindOperatorsOrdered.prototype.delete;
+
+	// Add to internal list of documents
+	var addToOperationsList = function(_self, docType, document) {
+	  // Get the bsonSize
+	  var bsonSize = _self.s.bson.calculateObjectSize(document, false);
+
+	  // Throw error if the doc is bigger than the max BSON size
+	  if(bsonSize >= _self.s.maxBatchSizeBytes) throw toError("document is larger than the maximum size " + _self.s.maxBatchSizeBytes);
+	  // Create a new batch object if we don't have a current one
+	  if(_self.s.currentBatch == null) _self.s.currentBatch = new Batch(docType, _self.s.currentIndex);
+
+	  // Check if we need to create a new batch
+	  if(((_self.s.currentBatchSize + 1) >= _self.s.maxWriteBatchSize)
+	    || ((_self.s.currentBatchSizeBytes +  _self.s.currentBatchSizeBytes) >= _self.s.maxBatchSizeBytes)
+	    || (_self.s.currentBatch.batchType != docType)) {
+	    // Save the batch to the execution stack
+	    _self.s.batches.push(_self.s.currentBatch);
+
+	    // Create a new batch
+	    _self.s.currentBatch = new Batch(docType, _self.s.currentIndex);
+
+	    // Reset the current size trackers
+	    _self.s.currentBatchSize = 0;
+	    _self.s.currentBatchSizeBytes = 0;
+	  } else {
+	    // Update current batch size
+	    _self.s.currentBatchSize = _self.s.currentBatchSize + 1;
+	    _self.s.currentBatchSizeBytes = _self.s.currentBatchSizeBytes + bsonSize;
+	  }
+
+	  if(docType == common.INSERT) {
+	    _self.s.bulkResult.insertedIds.push({index: _self.s.currentIndex, _id: document._id});
+	  }
+
+	  // We have an array of documents
+	  if(Array.isArray(document)) {
+	    throw toError("operation passed in cannot be an Array");
+	  } else {
+	    _self.s.currentBatch.originalIndexes.push(_self.s.currentIndex);
+	    _self.s.currentBatch.operations.push(document)
+	    _self.s.currentIndex = _self.s.currentIndex + 1;
+	  }
+
+	  // Return self
+	  return _self;
+	}
+
+	/**
+	 * Create a new OrderedBulkOperation instance (INTERNAL TYPE, do not instantiate directly)
+	 * @class
+	 * @property {number} length Get the number of operations in the bulk.
+	 * @return {OrderedBulkOperation} a OrderedBulkOperation instance.
+	 */
+	function OrderedBulkOperation(topology, collection, options) {
+		options = options == null ? {} : options;
+		// TODO Bring from driver information in isMaster
+		var self = this;
+		var executed = false;
+
+		// Current item
+		var currentOp = null;
+
+		// Handle to the bson serializer, used to calculate running sizes
+		var bson = topology.bson;
+
+		// Namespace for the operation
+	  var namespace = collection.collectionName;
+
+	  // Set max byte size
+		var maxBatchSizeBytes = topology.isMasterDoc.maxBsonObjectSize;
+		var maxWriteBatchSize = topology.isMasterDoc.maxWriteBatchSize || 1000;
+
+		// Get the capabilities
+		var capabilities = topology.capabilities();
+
+	  // Get the write concern
+	  var writeConcern = common.writeConcern(shallowClone(options), collection, options);
+
+	  // Current batch
+	  var currentBatch = null;
+	  var currentIndex = 0;
+	  var currentBatchSize = 0;
+	  var currentBatchSizeBytes = 0;
+	  var batches = [];
+
+	  // Final results
+	  var bulkResult = {
+	  	  ok: 1
+	    , writeErrors: []
+	    , writeConcernErrors: []
+	    , insertedIds: []
+	    , nInserted: 0
+	    , nUpserted: 0
+	    , nMatched: 0
+	    , nModified: 0
+	    , nRemoved: 0
+	    , upserted: []
+	  };
+
+	  // Internal state
+	  this.s = {
+	    // Final result
+	      bulkResult: bulkResult
+	    // Current batch state
+	    , currentBatch: null
+	    , currentIndex: 0
+	    , currentBatchSize: 0
+	    , currentBatchSizeBytes: 0
+	    , batches: []
+	    // Write concern
+	    , writeConcern: writeConcern
+	    // Capabilities
+	    , capabilities: capabilities
+	    // Max batch size options
+	    , maxBatchSizeBytes: maxBatchSizeBytes
+	    , maxWriteBatchSize: maxWriteBatchSize
+	    // Namespace
+	    , namespace: namespace
+	    // BSON
+	    , bson: bson
+	    // Topology
+	    , topology: topology
+	    // Options
+	    , options: options
+	    // Current operation
+	    , currentOp: currentOp
+	    // Executed
+	    , executed: executed
+	    // Collection
+	    , collection: collection
+	  }
+	}
+
+	OrderedBulkOperation.prototype.raw = function(op) {
+	  var key = Object.keys(op)[0];
+
+	  // Update operations
+	  if((op.updateOne && op.updateOne.q)
+	    || (op.updateMany && op.updateMany.q)
+	    || (op.replaceOne && op.replaceOne.q)) {
+	    op[key].multi = op.updateOne || op.replaceOne ? false : true;
+	    return addToOperationsList(this, common.UPDATE, op[key]);
+	  }
+
+	  // Crud spec update format
+	  if(op.updateOne || op.updateMany || op.replaceOne) {
+	    var multi = op.updateOne || op.replaceOne ? false : true;
+	    var operation = {q: op[key].filter, u: op[key].update || op[key].replacement, multi: multi}
+	    if(op[key].upsert) operation.upsert = true;
+	    return addToOperationsList(this, common.UPDATE, operation);
+	  }
+
+	  // Remove operations
+	  if(op.removeOne || op.removeMany || (op.deleteOne && op.deleteOne.q) || op.deleteMany && op.deleteMany.q) {
+	    op[key].limit = op.removeOne ? 1 : 0;
+	    return addToOperationsList(this, common.REMOVE, op[key]);
+	  }
+
+	  // Crud spec delete operations, less efficient
+	  if(op.deleteOne || op.deleteMany) {
+	    var limit = op.deleteOne ? 1 : 0;
+	    var operation = {q: op[key].filter, limit: limit}
+	    return addToOperationsList(this, common.REMOVE, operation);
+	  }
+
+	  // Insert operations
+	  if(op.insertOne && op.insertOne.document == null) {
+	    if(op.insertOne._id == null) op.insertOne._id = new ObjectID();
+	    return addToOperationsList(this, common.INSERT, op.insertOne);
+	  } else if(op.insertOne && op.insertOne.document) {
+	    if(op.insertOne.document._id == null) op.insertOne.document._id = new ObjectID();
+	    return addToOperationsList(this, common.INSERT, op.insertOne.document);
+	  }
+
+	  if(op.insertMany) {
+	    for(var i = 0; i < op.insertMany.length; i++) {
+	      if(op.insertMany[i]._id == null) op.insertMany[i]._id = new ObjectID();
+	      addToOperationsList(this, common.INSERT, op.insertMany[i]);
+	    }
+
+	    return;
+	  }
+
+	  // No valid type of operation
+	  throw toError("bulkWrite only supports insertOne, insertMany, updateOne, updateMany, removeOne, removeMany, deleteOne, deleteMany");
+	}
+
+	/**
+	 * Add a single insert document to the bulk operation
+	 *
+	 * @param {object} doc the document to insert
+	 * @throws {MongoError}
+	 * @return {OrderedBulkOperation}
+	 */
+	OrderedBulkOperation.prototype.insert = function(document) {
+	  if(document._id == null) document._id = new ObjectID();
+	  return addToOperationsList(this, common.INSERT, document);
+	}
+
+	/**
+	 * Initiate a find operation for an update/updateOne/remove/removeOne/replaceOne
+	 *
+	 * @method
+	 * @param {object} selector The selector for the bulk operation.
+	 * @throws {MongoError}
+	 * @return {FindOperatorsOrdered}
+	 */
+	OrderedBulkOperation.prototype.find = function(selector) {
+	  if (!selector) {
+	    throw toError("Bulk find operation must specify a selector");
+	  }
+
+	  // Save a current selector
+	  this.s.currentOp = {
+	    selector: selector
+	  }
+
+	  return new FindOperatorsOrdered(this);
+	}
+
+	Object.defineProperty(OrderedBulkOperation.prototype, 'length', {
+	  enumerable: true,
+	  get: function() {
+	    return this.s.currentIndex;
+	  }
+	});
+
+	//
+	// Execute next write command in a chain
+	var executeCommands = function(self, callback) {
+	  if(self.s.batches.length == 0) {
+	    return callback(null, new BulkWriteResult(self.s.bulkResult));
+	  }
+
+	  // Ordered execution of the command
+	  var batch = self.s.batches.shift();
+
+	  var resultHandler = function(err, result) {
+	    // If we have and error
+	    if(err) err.ok = 0;
+	    // Merge the results together
+	    var mergeResult = mergeBatchResults(true, batch, self.s.bulkResult, err, result);
+	    if(mergeResult != null) {
+	      return callback(null, new BulkWriteResult(self.s.bulkResult));
+	    }
+
+	    // If we are ordered and have errors and they are
+	    // not all replication errors terminate the operation
+	    if(self.s.bulkResult.writeErrors.length > 0) {
+	      return callback(self.s.bulkResult.writeErrors[0], new BulkWriteResult(self.s.bulkResult));
+	    }
+
+	    // Execute the next command in line
+	    executeCommands(self, callback);
+	  }
+
+	  var finalOptions = {ordered: true}
+	  if(self.s.writeConcern != null) {
+	    finalOptions.writeConcern = self.s.writeConcern;
+	  }
+
+	  try {
+	    if(batch.batchType == common.INSERT) {
+	      self.s.topology.insert(self.s.collection.namespace, batch.operations, finalOptions, resultHandler);
+	    } else if(batch.batchType == common.UPDATE) {
+	      self.s.topology.update(self.s.collection.namespace, batch.operations, finalOptions, resultHandler);
+	    } else if(batch.batchType == common.REMOVE) {
+	      self.s.topology.remove(self.s.collection.namespace, batch.operations, finalOptions, resultHandler);
+	    }
+	  } catch(err) {
+	    // Force top level error
+	    err.ok = 0;
+	    // Merge top level error and return 
+	    callback(null, mergeBatchResults(false, batch, self.s.bulkResult, err, null));
+	  }
+	}
+
+	/**
+	 * The callback format for results
+	 * @callback OrderedBulkOperation~resultCallback
+	 * @param {MongoError} error An error instance representing the error during the execution.
+	 * @param {BulkWriteResult} result The bulk write result.
+	 */
+
+	/**
+	 * Execute the ordered bulk operation
+	 *
+	 * @method
+	 * @param {object} [options=null] Optional settings.
+	 * @param {(number|string)} [options.w=null] The write concern.
+	 * @param {number} [options.wtimeout=null] The write concern timeout.
+	 * @param {boolean} [options.j=false] Specify a journal write concern.
+	 * @param {boolean} [options.fsync=false] Specify a file sync write concern.
+	 * @param {OrderedBulkOperation~resultCallback} callback The result callback
+	 * @throws {MongoError}
+	 * @return {null}
+	 */
+	OrderedBulkOperation.prototype.execute = function(_writeConcern, callback) {
+	  if(this.s.executed) throw new toError("batch cannot be re-executed");
+	  if(typeof _writeConcern == 'function') {
+	    callback = _writeConcern;
+	  } else {
+	    this.s.writeConcern = _writeConcern;
+	  }
+
+	  // If we have current batch
+	  if(this.s.currentBatch) this.s.batches.push(this.s.currentBatch);
+
+	  // If we have no operations in the bulk raise an error
+	  if(this.s.batches.length == 0) {
+	    throw toError("Invalid Operation, No operations in bulk");
+	  }
+
+	  // Execute the commands
+	  return executeCommands(this, callback);
+	}
+
+	/**
+	 * Returns an unordered batch object
+	 * @ignore
+	 */
+	var initializeOrderedBulkOp = function(topology, collection, options) {
+		return new OrderedBulkOperation(topology, collection, options);
+	}
+
+	module.exports = initializeOrderedBulkOp;
+
+
+/***/ },
+/* 161 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {/*!
@@ -65893,18 +65681,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var finalhandler = __webpack_require__(531);
 	var flatten = __webpack_require__(383).flatten;
-	var Router = __webpack_require__(305);
-	var methods = __webpack_require__(532);
+	var Router = __webpack_require__(304);
+	var methods = __webpack_require__(530);
 	var middleware = __webpack_require__(384);
-	var query = __webpack_require__(166);
-	var debug = __webpack_require__(576)('express:application');
+	var query = __webpack_require__(165);
+	var debug = __webpack_require__(574)('express:application');
 	var View = __webpack_require__(385);
-	var http = __webpack_require__(80);
+	var http = __webpack_require__(79);
 	var compileETag = __webpack_require__(383).compileETag;
 	var compileQueryParser = __webpack_require__(383).compileQueryParser;
 	var compileTrust = __webpack_require__(383).compileTrust;
-	var deprecate = __webpack_require__(533)('express');
-	var merge = __webpack_require__(534);
+	var deprecate = __webpack_require__(532)('express');
+	var merge = __webpack_require__(533);
 	var resolve = __webpack_require__(8).resolve;
 	var slice = Array.prototype.slice;
 
@@ -66489,16 +66277,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 163 */
+/* 162 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
 	 * Module dependencies.
 	 */
 
-	var debug = __webpack_require__(576)('express:router:route');
-	var Layer = __webpack_require__(386);
-	var methods = __webpack_require__(532);
+	var debug = __webpack_require__(574)('express:router:route');
+	var Layer = __webpack_require__(382);
+	var methods = __webpack_require__(530);
 	var utils = __webpack_require__(383);
 
 	/**
@@ -66678,22 +66466,22 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 164 */
+/* 163 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
 	 * Module dependencies.
 	 */
 
-	var accepts = __webpack_require__(535);
-	var deprecate = __webpack_require__(533)('express');
+	var accepts = __webpack_require__(534);
+	var deprecate = __webpack_require__(532)('express');
 	var isIP = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"net\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())).isIP;
-	var typeis = __webpack_require__(536);
-	var http = __webpack_require__(80);
-	var fresh = __webpack_require__(537);
-	var parseRange = __webpack_require__(538);
-	var parse = __webpack_require__(539);
-	var proxyaddr = __webpack_require__(540);
+	var typeis = __webpack_require__(535);
+	var http = __webpack_require__(79);
+	var fresh = __webpack_require__(536);
+	var parseRange = __webpack_require__(537);
+	var parse = __webpack_require__(538);
+	var proxyaddr = __webpack_require__(539);
 
 	/**
 	 * Request prototype.
@@ -67151,7 +66939,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 165 */
+/* 164 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer, setImmediate) {/*!
@@ -67167,13 +66955,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	var contentDisposition = __webpack_require__(541);
-	var deprecate = __webpack_require__(533)('express');
+	var deprecate = __webpack_require__(532)('express');
 	var escapeHtml = __webpack_require__(542);
-	var http = __webpack_require__(80);
+	var http = __webpack_require__(79);
 	var isAbsolute = __webpack_require__(383).isAbsolute;
 	var onFinished = __webpack_require__(543);
 	var path = __webpack_require__(8);
-	var merge = __webpack_require__(534);
+	var merge = __webpack_require__(533);
 	var sign = __webpack_require__(544).sign;
 	var normalizeType = __webpack_require__(383).normalizeType;
 	var normalizeTypes = __webpack_require__(383).normalizeTypes;
@@ -68185,18 +67973,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	  file.pipe(res);
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer, __webpack_require__(62).setImmediate))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer, __webpack_require__(61).setImmediate))
 
 /***/ },
-/* 166 */
+/* 165 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
 	 * Module dependencies.
 	 */
 
-	var parseUrl = __webpack_require__(539);
-	var qs = __webpack_require__(548);
+	var parseUrl = __webpack_require__(538);
+	var qs = __webpack_require__(540);
 
 	/**
 	 * @param {Object} options
@@ -68224,7 +68012,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 167 */
+/* 166 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -68238,7 +68026,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module requirements.
 	 */
 
-	var protocolVersions = __webpack_require__(333);
+	var protocolVersions = __webpack_require__(332);
 
 	/**
 	 * Export the constructor.
@@ -68266,7 +68054,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 168 */
+/* 167 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -68278,7 +68066,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/**
 	 * Module requirements.
 	 */
-	var WebSocket = __webpack_require__(167);
+	var WebSocket = __webpack_require__(166);
 
 	/**
 	 * Export the constructor.
@@ -68330,7 +68118,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return;
 	    }
 
-	    server = __webpack_require__(554).createServer({ 
+	    server = __webpack_require__(553).createServer({ 
 	      log: function(msg){
 	        manager.log.info(msg);
 	      }
@@ -68401,7 +68189,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 169 */
+/* 168 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -68415,7 +68203,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module requirements.
 	 */
 
-	var HTTPTransport = __webpack_require__(389);
+	var HTTPTransport = __webpack_require__(388);
 
 	/**
 	 * Export the constructor.
@@ -68490,7 +68278,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 170 */
+/* 169 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {
@@ -68504,7 +68292,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module requirements.
 	 */
 
-	var HTTPPolling = __webpack_require__(390);
+	var HTTPPolling = __webpack_require__(389);
 
 	/**
 	 * Export the constructor.
@@ -68563,10 +68351,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.log.debug(this.name + ' writing', data);
 	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 171 */
+/* 170 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {
@@ -68580,7 +68368,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module requirements.
 	 */
 
-	var HTTPPolling = __webpack_require__(390);
+	var HTTPPolling = __webpack_require__(389);
 	var jsonpolling_re = /^\d+$/
 
 	/**
@@ -68667,16 +68455,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.log.debug(this.name + ' writing', data);
 	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 172 */
+/* 171 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      // take the BigNumber instance the provided math.js instance
 	      BigNumber = math.type.BigNumber,
@@ -68739,13 +68527,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 173 */
+/* 172 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      collection = math.collection,
@@ -68833,16 +68621,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 174 */
+/* 173 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isCollection = collection.isCollection,
@@ -68966,16 +68754,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 175 */
+/* 174 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Index = __webpack_require__(137);
+	      Index = __webpack_require__(133);
 
 	  /**
 	   * Create an index. An Index can store ranges having start, step, and end
@@ -69040,12 +68828,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 176 */
+/* 175 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var string = __webpack_require__(349);
+	var string = __webpack_require__(347);
 
 	var isArray = Array.isArray;
 	var isString = string.isString;
@@ -69128,13 +68916,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 177 */
+/* 176 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344);
+	  var util = __webpack_require__(346);
 
 	  var BigNumber = math.type.BigNumber;
 	  var Unit = math.type.Unit;
@@ -69225,7 +69013,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 178 */
+/* 177 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -69283,7 +69071,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 179 */
+/* 178 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -69346,13 +69134,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 180 */
+/* 179 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      collection = math.collection,
 
@@ -69413,16 +69201,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 181 */
+/* 180 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Unit = __webpack_require__(139),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isCollection = collection.isCollection,
@@ -69500,13 +69288,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 182 */
+/* 181 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 	      _parse = math.expression.parse,
 
 	      collection = math.collection,
@@ -69572,13 +69360,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 183 */
+/* 182 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 	      _parse = math.expression.parse,
 
 	      collection = math.collection,
@@ -69645,13 +69433,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 184 */
+/* 183 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var Help = __webpack_require__(140);
+	  var Help = __webpack_require__(136);
 
 	  /**
 	   * Retrieve help on a function or data type.
@@ -69718,7 +69506,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 185 */
+/* 184 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -69766,16 +69554,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 186 */
+/* 185 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -69854,17 +69642,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 187 */
+/* 186 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isBoolean = util['boolean'].isBoolean,
@@ -70015,16 +69803,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 188 */
+/* 187 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -70095,16 +69883,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 189 */
+/* 188 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -70167,18 +69955,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 190 */
+/* 189 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function(math) {
-	  var util = __webpack_require__(344);
+	  var util = __webpack_require__(346);
 
 	  var BigNumber = math.type.BigNumber;
-	  var Complex = __webpack_require__(135);
+	  var Complex = __webpack_require__(131);
 	  var Matrix = math.type.Matrix;
-	  var Unit = __webpack_require__(139);
+	  var Unit = __webpack_require__(135);
 
 	  var isNumber = util.number.isNumber;
 	  var isBoolean = util['boolean'].isBoolean;
@@ -70300,7 +70088,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 191 */
+/* 190 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -70371,7 +70159,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 192 */
+/* 191 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -70421,13 +70209,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 193 */
+/* 192 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 	      collection = math.collection;
 
 	  /**
@@ -70472,13 +70260,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 194 */
+/* 193 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 	      collection = math.collection;
 
 	  /**
@@ -70520,16 +70308,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 195 */
+/* 194 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      Matrix = math.type.Matrix,
 	      collection = math.collection,
 
@@ -70601,16 +70389,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 196 */
+/* 195 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -70680,16 +70468,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 197 */
+/* 196 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -70759,13 +70547,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 198 */
+/* 197 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      collection = math.collection,
@@ -70906,13 +70694,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 199 */
+/* 198 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      collection = math.collection,
@@ -71068,16 +70856,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 200 */
+/* 199 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -71171,16 +70959,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 201 */
+/* 200 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -71259,13 +71047,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 202 */
+/* 201 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      collection = math.collection,
@@ -71398,18 +71186,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 203 */
+/* 202 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function(math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      Matrix = math.type.Matrix,
-	      Unit = __webpack_require__(139),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -71652,16 +71440,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 204 */
+/* 203 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	    BigNumber = math.type.BigNumber,
-	    Complex = __webpack_require__(135),
+	    Complex = __webpack_require__(131),
 	    Matrix = math.type.Matrix,
 
 	    isNumber = util.number.isNumber,
@@ -71839,13 +71627,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 205 */
+/* 204 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344);
+	  var util = __webpack_require__(346);
 
 	  var BigNumber = math.type.BigNumber;
 	  var collection = math.collection;
@@ -72038,16 +71826,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 206 */
+/* 205 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      Matrix = math.type.Matrix,
 	      
 	      array = util.array,
@@ -72221,16 +72009,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 207 */
+/* 206 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -72361,16 +72149,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 208 */
+/* 207 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      number = util.number,
@@ -72442,16 +72230,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 209 */
+/* 208 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -72549,16 +72337,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 210 */
+/* 209 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -72624,18 +72412,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 211 */
+/* 210 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      Matrix = math.type.Matrix,
-	      Unit = __webpack_require__(139),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isBoolean = util['boolean'].isBoolean,
@@ -72784,17 +72572,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 212 */
+/* 211 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -72874,17 +72662,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 213 */
+/* 212 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -72955,13 +72743,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 214 */
+/* 213 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      Matrix = math.type.Matrix,
 	      BigNumber = math.type.BigNumber,
@@ -73137,17 +72925,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 215 */
+/* 214 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      Matrix = math.type.Matrix,
-	      Unit = __webpack_require__(139),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isBoolean = util['boolean'].isBoolean,
@@ -73236,17 +73024,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 216 */
+/* 215 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      Matrix = math.type.Matrix,
-	      Unit = __webpack_require__(139),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isBoolean = util['boolean'].isBoolean,
@@ -73309,17 +73097,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 217 */
+/* 216 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      Matrix = math.type.Matrix,
-	      Unit = __webpack_require__(139),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isBoolean = util['boolean'].isBoolean,
@@ -73409,17 +73197,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 218 */
+/* 217 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      Matrix = math.type.Matrix,
-	      Unit = __webpack_require__(139),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isBoolean = util['boolean'].isBoolean,
@@ -73508,17 +73296,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 219 */
+/* 218 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      Matrix = math.type.Matrix,
-	      Unit = __webpack_require__(139),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isBoolean = util['boolean'].isBoolean,
@@ -73630,17 +73418,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 220 */
+/* 219 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      Matrix = math.type.Matrix,
-	      Unit = __webpack_require__(139),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isBoolean = util['boolean'].isBoolean,
@@ -73754,16 +73542,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 221 */
+/* 220 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      Matrix = math.type.Matrix,
-	      Unit = __webpack_require__(139),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isBoolean = util['boolean'].isBoolean,
@@ -73824,16 +73612,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 222 */
+/* 221 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -73901,16 +73689,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 223 */
+/* 222 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      object = util.object,
@@ -73976,16 +73764,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 224 */
+/* 223 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      object = util.object,
@@ -74053,16 +73841,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 225 */
+/* 224 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -74129,17 +73917,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 226 */
+/* 225 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -74241,17 +74029,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 227 */
+/* 226 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -74316,17 +74104,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 228 */
+/* 227 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -74422,17 +74210,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 229 */
+/* 228 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -74510,15 +74298,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 230 */
+/* 229 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344);
+	  var util = __webpack_require__(346);
 
-	  var BigNumber = __webpack_require__(133);
+	  var BigNumber = __webpack_require__(129);
 	  var Matrix = math.type.Matrix;
 	  var collection = math.collection;
 
@@ -74652,13 +74440,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 231 */
+/* 230 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function(math) {
-	  var array = __webpack_require__(342);
+	  var array = __webpack_require__(340);
 	  var Matrix = math.type.Matrix;
 
 	  /**
@@ -74737,13 +74525,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 232 */
+/* 231 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      Matrix = math.type.Matrix,
 
@@ -74898,13 +74686,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 233 */
+/* 232 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      Matrix = math.type.Matrix,
@@ -75074,13 +74862,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 234 */
+/* 233 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function(math) {
-	  var array = __webpack_require__(342);
+	  var array = __webpack_require__(340);
 	  var Matrix = math.type.Matrix;
 
 	  /**
@@ -75155,13 +74943,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 235 */
+/* 234 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      Matrix = math.type.Matrix,
@@ -75289,13 +75077,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 236 */
+/* 235 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344);
+	  var util = __webpack_require__(346);
 
 	  var Matrix = math.type.Matrix;
 
@@ -75342,13 +75130,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 237 */
+/* 236 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344);
+	  var util = __webpack_require__(346);
 	  var Matrix = math.type.Matrix;
 
 	  /**
@@ -75541,13 +75329,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 238 */
+/* 237 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      Matrix = math.type.Matrix,
@@ -75658,13 +75446,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 239 */
+/* 238 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      Matrix = math.type.Matrix,
@@ -75984,13 +75772,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 240 */
+/* 239 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      Matrix = math.type.Matrix,
@@ -76123,17 +75911,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 241 */
+/* 240 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      Matrix = math.type.Matrix,
 
 	      array = util.array,
@@ -76196,13 +75984,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 242 */
+/* 241 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      Matrix = math.type.Matrix,
 
@@ -76260,17 +76048,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 243 */
+/* 242 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
 
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      Matrix = math.type.Matrix,
-	      Index = __webpack_require__(137),
+	      Index = __webpack_require__(133),
 
 	      array = util.array,
 	      isString = util.string.isString,
@@ -76478,13 +76266,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 244 */
+/* 243 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      Matrix = math.type.Matrix,
 
@@ -76580,13 +76368,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 245 */
+/* 244 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      Matrix = math.type.Matrix,
 
@@ -76667,13 +76455,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 246 */
+/* 245 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      Matrix = math.type.Matrix,
@@ -76782,13 +76570,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 247 */
+/* 246 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      collection = math.collection,
@@ -76924,16 +76712,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 248 */
+/* 247 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isBoolean = util['boolean'].isBoolean,
@@ -77118,13 +76906,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 249 */
+/* 248 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var distribution = __webpack_require__(518)(math);
+	  var distribution = __webpack_require__(517)(math);
 
 	  /**
 	   * Return a random number larger or equal to `min` and smaller than `max`
@@ -77161,13 +76949,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 250 */
+/* 249 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var distribution = __webpack_require__(518)(math);
+	  var distribution = __webpack_require__(517)(math);
 
 	  /**
 	   * Return a random integer number larger or equal to `min` and smaller than `max`
@@ -77204,13 +76992,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 251 */
+/* 250 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var distribution = __webpack_require__(518)(math);
+	  var distribution = __webpack_require__(517)(math);
 
 	  /**
 	   * Random pick a value from a one dimensional array.
@@ -77236,13 +77024,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 252 */
+/* 251 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 
@@ -77349,13 +77137,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 253 */
+/* 252 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
 	      collection = math.collection,
@@ -77446,17 +77234,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 254 */
+/* 253 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -77576,7 +77364,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 255 */
+/* 254 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -77661,17 +77449,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 256 */
+/* 255 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -77825,17 +77613,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 257 */
+/* 256 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -77952,17 +77740,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 258 */
+/* 257 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -78080,17 +77868,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 259 */
+/* 258 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -78207,17 +77995,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 260 */
+/* 259 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -78334,17 +78122,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 261 */
+/* 260 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -78497,7 +78285,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 262 */
+/* 261 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -78592,7 +78380,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 263 */
+/* 262 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -78687,7 +78475,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 264 */
+/* 263 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -78698,7 +78486,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      isCollection = collection.isCollection,
 
-	      size = __webpack_require__(342).size,
+	      size = __webpack_require__(340).size,
 	      isArray = Array.isArray;
 
 	  /**
@@ -78791,21 +78579,21 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 265 */
+/* 264 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
 	  var Matrix = math.type.Matrix,
-	      Unit = __webpack_require__(139),
+	      Unit = __webpack_require__(135),
 	      BigNumber = math.type.BigNumber,
 	      collection = math.collection,
 
-	      isNumber = __webpack_require__(131).isNumber,
+	      isNumber = __webpack_require__(127).isNumber,
 	      isCollection = collection.isCollection,
 
-	      flatten = __webpack_require__(342).flatten;
+	      flatten = __webpack_require__(340).flatten;
 
 	  /**
 	   * Compute the median of a matrix or a list with values. The values are
@@ -78905,7 +78693,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 266 */
+/* 265 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -78990,7 +78778,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 267 */
+/* 266 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -79050,7 +78838,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 268 */
+/* 267 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -79133,7 +78921,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 269 */
+/* 268 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -79144,7 +78932,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      collection = math.collection,
 
 	      isCollection = collection.isCollection,
-	      isString = __webpack_require__(349).isString,
+	      isString = __webpack_require__(347).isString,
 
 	      DEFAULT_NORMALIZATION = 'unbiased';
 
@@ -79277,16 +79065,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 270 */
+/* 269 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -79371,17 +79159,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 271 */
+/* 270 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -79464,16 +79252,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 272 */
+/* 271 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -79552,17 +79340,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 273 */
+/* 272 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -79646,16 +79434,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 274 */
+/* 273 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -79737,17 +79525,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 275 */
+/* 274 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -79830,16 +79618,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 276 */
+/* 275 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -79919,17 +79707,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 277 */
+/* 276 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -80019,16 +79807,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 278 */
+/* 277 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -80112,17 +79900,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 279 */
+/* 278 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -80201,16 +79989,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 280 */
+/* 279 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -80298,16 +80086,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 281 */
+/* 280 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -80399,17 +80187,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 282 */
+/* 281 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -80499,17 +80287,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 283 */
+/* 282 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -80588,17 +80376,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 284 */
+/* 283 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -80670,17 +80458,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 285 */
+/* 284 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -80756,17 +80544,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 286 */
+/* 285 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -80846,17 +80634,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 287 */
+/* 286 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -80933,17 +80721,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 288 */
+/* 287 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 	      number = util.number,
 	      
@@ -81024,17 +80812,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 289 */
+/* 288 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -81111,17 +80899,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 290 */
+/* 289 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -81198,17 +80986,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 291 */
+/* 290 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -81287,17 +81075,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 292 */
+/* 291 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -81376,17 +81164,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 293 */
+/* 292 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math, config) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -81466,17 +81254,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 294 */
+/* 293 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      BigNumber = math.type.BigNumber,
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isNumber = util.number.isNumber,
@@ -81558,15 +81346,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 295 */
+/* 294 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
-	      Unit = __webpack_require__(139),
+	      Unit = __webpack_require__(135),
 	      collection = math.collection,
 
 	      isString = util.string.isString,
@@ -81620,13 +81408,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 296 */
+/* 295 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 	      object = util.object;
 
 	  /**
@@ -81658,7 +81446,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 297 */
+/* 296 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -81738,13 +81526,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 298 */
+/* 297 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 	      string = util.string;
 
 	  /**
@@ -81823,16 +81611,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 299 */
+/* 298 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
-	      Complex = __webpack_require__(135),
-	      Unit = __webpack_require__(139),
+	      Complex = __webpack_require__(131),
+	      Unit = __webpack_require__(135),
 
 	      isNumber = util.number.isNumber,
 	      isString = util.string.isString,
@@ -81902,7 +81690,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      // istanbul ignore else (we cannot unit test the else case in a node.js environment)
 	      if (true) {
 	        // load the file using require
-	        var _module = __webpack_require__(380)(object);
+	        var _module = __webpack_require__(378)(object);
 	        math_import(_module, options);
 	      }
 	      else {
@@ -81983,7 +81771,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 300 */
+/* 299 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -82049,13 +81837,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 301 */
+/* 300 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var util = __webpack_require__(344),
+	  var util = __webpack_require__(346),
 
 	      isString = util.string.isString;
 
@@ -82133,7 +81921,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 302 */
+/* 301 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -82213,20 +82001,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 303 */
+/* 302 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	module.exports = function (math) {
-	  var types = __webpack_require__(519),
+	  var types = __webpack_require__(518),
 
-	      Complex = __webpack_require__(135),
+	      Complex = __webpack_require__(131),
 	      Matrix = math.type.Matrix,
-	      Unit = __webpack_require__(139),
-	      Index = __webpack_require__(137),
-	      Range = __webpack_require__(136),
-	      Help = __webpack_require__(140);
+	      Unit = __webpack_require__(135),
+	      Index = __webpack_require__(133),
+	      Range = __webpack_require__(132),
+	      Help = __webpack_require__(136);
 
 	  /**
 	   * Determine the type of a variable.
@@ -82295,7 +82083,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 304 */
+/* 303 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -82357,7 +82145,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 305 */
+/* 304 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(setImmediate) {
@@ -82365,13 +82153,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var Route = __webpack_require__(163);
-	var Layer = __webpack_require__(386);
-	var methods = __webpack_require__(532);
-	var mixin = __webpack_require__(534);
-	var debug = __webpack_require__(576)('express:router');
-	var deprecate = __webpack_require__(533)('express');
-	var parseUrl = __webpack_require__(539);
+	var Route = __webpack_require__(162);
+	var Layer = __webpack_require__(382);
+	var methods = __webpack_require__(530);
+	var mixin = __webpack_require__(533);
+	var debug = __webpack_require__(574)('express:router');
+	var deprecate = __webpack_require__(532)('express');
+	var parseUrl = __webpack_require__(538);
 	var utils = __webpack_require__(383);
 
 	/**
@@ -82991,14 +82779,152 @@ return /******/ (function(modules) { // webpackBootstrap
 	  };
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(62).setImmediate))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(61).setImmediate))
+
+/***/ },
+/* 305 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global, Buffer) {(function() {
+	  var g = ('undefined' === typeof window ? global : window) || {}
+	  _crypto = (
+	    g.crypto || g.msCrypto || __webpack_require__(387)
+	  )
+	  module.exports = function(size) {
+	    // Modern Browsers
+	    if(_crypto.getRandomValues) {
+	      var bytes = new Buffer(size); //in browserify, this is an extended Uint8Array
+	      /* This will not work in older browsers.
+	       * See https://developer.mozilla.org/en-US/docs/Web/API/window.crypto.getRandomValues
+	       */
+	    
+	      _crypto.getRandomValues(bytes);
+	      return bytes;
+	    }
+	    else if (_crypto.randomBytes) {
+	      return _crypto.randomBytes(size)
+	    }
+	    else
+	      throw new Error(
+	        'secure random number generation not supported by this browser\n'+
+	        'use chrome, FireFox or Internet Explorer 11'
+	      )
+	  }
+	}())
+
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(53).Buffer))
 
 /***/ },
 /* 306 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Stream = __webpack_require__(317);
-	var util = __webpack_require__(53);
+	/* WEBPACK VAR INJECTION */(function(Buffer) {var createHash = __webpack_require__(588)
+
+	var md5 = toConstructor(__webpack_require__(529))
+	var rmd160 = toConstructor(__webpack_require__(597))
+
+	function toConstructor (fn) {
+	  return function () {
+	    var buffers = []
+	    var m= {
+	      update: function (data, enc) {
+	        if(!Buffer.isBuffer(data)) data = new Buffer(data, enc)
+	        buffers.push(data)
+	        return this
+	      },
+	      digest: function (enc) {
+	        var buf = Buffer.concat(buffers)
+	        var r = fn(buf)
+	        buffers = null
+	        return enc ? r.toString(enc) : r
+	      }
+	    }
+	    return m
+	  }
+	}
+
+	module.exports = function (alg) {
+	  if('md5' === alg) return new md5()
+	  if('rmd160' === alg) return new rmd160()
+	  return createHash(alg)
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
+
+/***/ },
+/* 307 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(Buffer) {var createHash = __webpack_require__(306)
+
+	var zeroBuffer = new Buffer(128)
+	zeroBuffer.fill(0)
+
+	module.exports = Hmac
+
+	function Hmac (alg, key) {
+	  if(!(this instanceof Hmac)) return new Hmac(alg, key)
+	  this._opad = opad
+	  this._alg = alg
+
+	  var blocksize = (alg === 'sha512') ? 128 : 64
+
+	  key = this._key = !Buffer.isBuffer(key) ? new Buffer(key) : key
+
+	  if(key.length > blocksize) {
+	    key = createHash(alg).update(key).digest()
+	  } else if(key.length < blocksize) {
+	    key = Buffer.concat([key, zeroBuffer], blocksize)
+	  }
+
+	  var ipad = this._ipad = new Buffer(blocksize)
+	  var opad = this._opad = new Buffer(blocksize)
+
+	  for(var i = 0; i < blocksize; i++) {
+	    ipad[i] = key[i] ^ 0x36
+	    opad[i] = key[i] ^ 0x5C
+	  }
+
+	  this._hash = createHash(alg).update(ipad)
+	}
+
+	Hmac.prototype.update = function (data, enc) {
+	  this._hash.update(data, enc)
+	  return this
+	}
+
+	Hmac.prototype.digest = function (enc) {
+	  var h = this._hash.digest()
+	  return createHash(this._alg).update(this._opad).update(h).digest(enc)
+	}
+
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
+
+/***/ },
+/* 308 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var pbkdf2Export = __webpack_require__(596)
+
+	module.exports = function (crypto, exports) {
+	  exports = exports || {}
+
+	  var exported = pbkdf2Export(crypto)
+
+	  exports.pbkdf2 = exported.pbkdf2
+	  exports.pbkdf2Sync = exported.pbkdf2Sync
+
+	  return exports
+	}
+
+
+/***/ },
+/* 309 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Stream = __webpack_require__(316);
+	var util = __webpack_require__(52);
 
 	var Response = module.exports = function (res) {
 	    this.offset = 0;
@@ -83120,145 +83046,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 307 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(global, Buffer) {(function() {
-	  var g = ('undefined' === typeof window ? global : window) || {}
-	  _crypto = (
-	    g.crypto || g.msCrypto || __webpack_require__(388)
-	  )
-	  module.exports = function(size) {
-	    // Modern Browsers
-	    if(_crypto.getRandomValues) {
-	      var bytes = new Buffer(size); //in browserify, this is an extended Uint8Array
-	      /* This will not work in older browsers.
-	       * See https://developer.mozilla.org/en-US/docs/Web/API/window.crypto.getRandomValues
-	       */
-	    
-	      _crypto.getRandomValues(bytes);
-	      return bytes;
-	    }
-	    else if (_crypto.randomBytes) {
-	      return _crypto.randomBytes(size)
-	    }
-	    else
-	      throw new Error(
-	        'secure random number generation not supported by this browser\n'+
-	        'use chrome, FireFox or Internet Explorer 11'
-	      )
-	  }
-	}())
-
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }()), __webpack_require__(54).Buffer))
-
-/***/ },
-/* 308 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(Buffer) {var createHash = __webpack_require__(589)
-
-	var md5 = toConstructor(__webpack_require__(530))
-	var rmd160 = toConstructor(__webpack_require__(598))
-
-	function toConstructor (fn) {
-	  return function () {
-	    var buffers = []
-	    var m= {
-	      update: function (data, enc) {
-	        if(!Buffer.isBuffer(data)) data = new Buffer(data, enc)
-	        buffers.push(data)
-	        return this
-	      },
-	      digest: function (enc) {
-	        var buf = Buffer.concat(buffers)
-	        var r = fn(buf)
-	        buffers = null
-	        return enc ? r.toString(enc) : r
-	      }
-	    }
-	    return m
-	  }
-	}
-
-	module.exports = function (alg) {
-	  if('md5' === alg) return new md5()
-	  if('rmd160' === alg) return new rmd160()
-	  return createHash(alg)
-	}
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
-
-/***/ },
-/* 309 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(Buffer) {var createHash = __webpack_require__(308)
-
-	var zeroBuffer = new Buffer(128)
-	zeroBuffer.fill(0)
-
-	module.exports = Hmac
-
-	function Hmac (alg, key) {
-	  if(!(this instanceof Hmac)) return new Hmac(alg, key)
-	  this._opad = opad
-	  this._alg = alg
-
-	  var blocksize = (alg === 'sha512') ? 128 : 64
-
-	  key = this._key = !Buffer.isBuffer(key) ? new Buffer(key) : key
-
-	  if(key.length > blocksize) {
-	    key = createHash(alg).update(key).digest()
-	  } else if(key.length < blocksize) {
-	    key = Buffer.concat([key, zeroBuffer], blocksize)
-	  }
-
-	  var ipad = this._ipad = new Buffer(blocksize)
-	  var opad = this._opad = new Buffer(blocksize)
-
-	  for(var i = 0; i < blocksize; i++) {
-	    ipad[i] = key[i] ^ 0x36
-	    opad[i] = key[i] ^ 0x5C
-	  }
-
-	  this._hash = createHash(alg).update(ipad)
-	}
-
-	Hmac.prototype.update = function (data, enc) {
-	  this._hash.update(data, enc)
-	  return this
-	}
-
-	Hmac.prototype.digest = function (enc) {
-	  var h = this._hash.digest()
-	  return createHash(this._alg).update(this._opad).update(h).digest(enc)
-	}
-
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
-
-/***/ },
 /* 310 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var pbkdf2Export = __webpack_require__(597)
-
-	module.exports = function (crypto, exports) {
-	  exports = exports || {}
-
-	  var exported = pbkdf2Export(crypto)
-
-	  exports.pbkdf2 = exported.pbkdf2
-	  exports.pbkdf2Sync = exported.pbkdf2Sync
-
-	  return exports
-	}
-
-
-/***/ },
-/* 311 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Support for very old versions of node where the module was called "sys".  At some point, we should abandon this.
@@ -83266,19 +83054,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	var util;
 
 	try {
-	    util = __webpack_require__(53);
+	    util = __webpack_require__(52);
 	} catch (err) {
-	    util = __webpack_require__(53);
+	    util = __webpack_require__(52);
 	}
 
 	module.exports = util;
 
 
 /***/ },
-/* 312 */
+/* 311 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var to_array = __webpack_require__(313);
+	var to_array = __webpack_require__(312);
 
 	// Queue class adapted from Tim Caswell's pattern library
 	// http://github.com/creationix/pattern/blob/master/lib/pattern/queue.js
@@ -83342,7 +83130,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 313 */
+/* 312 */
 /***/ function(module, exports, __webpack_require__) {
 
 	function to_array(args) {
@@ -83360,13 +83148,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 314 */
+/* 313 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*global Buffer require exports console setTimeout */
 
-	var events = __webpack_require__(121),
-	    util = __webpack_require__(311),
+	var events = __webpack_require__(120),
+	    util = __webpack_require__(310),
 	    hiredis = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"hiredis\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
 
 	exports.debug_mode = false;
@@ -83412,7 +83200,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 315 */
+/* 314 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {/*global Buffer require exports console setTimeout */
@@ -83422,8 +83210,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	//    do not use delete
 	//    use numbers for parser state
 
-	var events = __webpack_require__(121),
-	    util = __webpack_require__(311);
+	var events = __webpack_require__(120),
+	    util = __webpack_require__(310);
 
 	exports.debug_mode = false;
 	exports.name = "javascript";
@@ -83733,10 +83521,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 316 */
+/* 315 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// This file was generated by ./generate_commands.js on Mon Aug 06 2012 15:04:06 GMT-0700 (PDT)
@@ -83889,7 +83677,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 317 */
+/* 316 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -83915,15 +83703,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = Stream;
 
-	var EE = __webpack_require__(121).EventEmitter;
-	var inherits = __webpack_require__(600);
+	var EE = __webpack_require__(120).EventEmitter;
+	var inherits = __webpack_require__(599);
 
 	inherits(Stream, EE);
-	Stream.Readable = __webpack_require__(591);
-	Stream.Writable = __webpack_require__(592);
-	Stream.Duplex = __webpack_require__(593);
-	Stream.Transform = __webpack_require__(594);
-	Stream.PassThrough = __webpack_require__(595);
+	Stream.Readable = __webpack_require__(590);
+	Stream.Writable = __webpack_require__(591);
+	Stream.Duplex = __webpack_require__(592);
+	Stream.Transform = __webpack_require__(593);
+	Stream.PassThrough = __webpack_require__(594);
 
 	// Backwards-compat with node 0.4.x
 	Stream.Stream = Stream;
@@ -84022,20 +83810,20 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 318 */
+/* 317 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {module.exports = globSync
 	globSync.GlobSync = GlobSync
 
 	var fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
-	var minimatch = __webpack_require__(550)
+	var minimatch = __webpack_require__(548)
 	var Minimatch = minimatch.Minimatch
-	var Glob = __webpack_require__(114).Glob
-	var util = __webpack_require__(53)
+	var Glob = __webpack_require__(113).Glob
+	var util = __webpack_require__(52)
 	var path = __webpack_require__(8)
-	var assert = __webpack_require__(108)
-	var common = __webpack_require__(319)
+	var assert = __webpack_require__(107)
+	var common = __webpack_require__(318)
 	var alphasort = common.alphasort
 	var alphasorti = common.alphasorti
 	var isAbsolute = common.isAbsolute
@@ -84486,7 +84274,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 319 */
+/* 318 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {exports.alphasort = alphasort
@@ -84505,7 +84293,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 	var path = __webpack_require__(8)
-	var minimatch = __webpack_require__(550)
+	var minimatch = __webpack_require__(548)
 	var Minimatch = minimatch.Minimatch
 
 	function absWin (p) {
@@ -84730,7 +84518,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 320 */
+/* 319 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -84780,36 +84568,36 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 321 */
+/* 320 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) { "use strict";
 
-	var inherits = __webpack_require__(53).inherits
-	  , f = __webpack_require__(53).format
-	  , bindToCurrentDomain = __webpack_require__(555).bindToCurrentDomain
-	  , EventEmitter = __webpack_require__(121).EventEmitter
-	  , Pool = __webpack_require__(556)
-	  , b = __webpack_require__(569)
-	  , Query = __webpack_require__(327).Query
-	  , MongoError = __webpack_require__(320)
-	  , ReadPreference = __webpack_require__(326)
-	  , BasicCursor = __webpack_require__(325)
-	  , CommandResult = __webpack_require__(557)
-	  , getSingleProperty = __webpack_require__(555).getSingleProperty
-	  , getProperty = __webpack_require__(555).getProperty
-	  , debugOptions = __webpack_require__(555).debugOptions
-	  , BSON = __webpack_require__(569).native().BSON
-	  , PreTwoSixWireProtocolSupport = __webpack_require__(558)
-	  , TwoSixWireProtocolSupport = __webpack_require__(559)
-	  , Session = __webpack_require__(560)
-	  , Logger = __webpack_require__(324)
-	  , MongoCR = __webpack_require__(328)
-	  , X509 = __webpack_require__(329)
-	  , Plain = __webpack_require__(330)
-	  , GSSAPI = __webpack_require__(331)
-	  , SSPI = __webpack_require__(561)
-	  , ScramSHA1 = __webpack_require__(562);
+	var inherits = __webpack_require__(52).inherits
+	  , f = __webpack_require__(52).format
+	  , bindToCurrentDomain = __webpack_require__(554).bindToCurrentDomain
+	  , EventEmitter = __webpack_require__(120).EventEmitter
+	  , Pool = __webpack_require__(555)
+	  , b = __webpack_require__(568)
+	  , Query = __webpack_require__(326).Query
+	  , MongoError = __webpack_require__(319)
+	  , ReadPreference = __webpack_require__(325)
+	  , BasicCursor = __webpack_require__(324)
+	  , CommandResult = __webpack_require__(556)
+	  , getSingleProperty = __webpack_require__(554).getSingleProperty
+	  , getProperty = __webpack_require__(554).getProperty
+	  , debugOptions = __webpack_require__(554).debugOptions
+	  , BSON = __webpack_require__(568).native().BSON
+	  , PreTwoSixWireProtocolSupport = __webpack_require__(557)
+	  , TwoSixWireProtocolSupport = __webpack_require__(558)
+	  , Session = __webpack_require__(559)
+	  , Logger = __webpack_require__(323)
+	  , MongoCR = __webpack_require__(327)
+	  , X509 = __webpack_require__(328)
+	  , Plain = __webpack_require__(329)
+	  , GSSAPI = __webpack_require__(330)
+	  , SSPI = __webpack_require__(560)
+	  , ScramSHA1 = __webpack_require__(561);
 
 	/**
 	 * @fileOverview The **Server** class is a class that represents a single server topology and is
@@ -85338,9 +85126,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var nBSON = null;
 
 	  if(type == 'c++') {
-	    nBSON = __webpack_require__(569).native().BSON;
+	    nBSON = __webpack_require__(568).native().BSON;
 	  } else if(type == 'js') {
-	    nBSON = __webpack_require__(569).pure().BSON;
+	    nBSON = __webpack_require__(568).pure().BSON;
 	  } else {
 	    throw new MongoError(f("% parser not supported", type));
 	  }
@@ -85861,26 +85649,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 322 */
+/* 321 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var inherits = __webpack_require__(53).inherits
-	  , f = __webpack_require__(53).format
-	  , b = __webpack_require__(569)
-	  , bindToCurrentDomain = __webpack_require__(555).bindToCurrentDomain
-	  , debugOptions = __webpack_require__(555).debugOptions
-	  , EventEmitter = __webpack_require__(121).EventEmitter
-	  , Server = __webpack_require__(321)
-	  , ReadPreference = __webpack_require__(326)
-	  , MongoError = __webpack_require__(320)
-	  , Ping = __webpack_require__(563)
-	  , Session = __webpack_require__(560)
-	  , BasicCursor = __webpack_require__(325)
-	  , BSON = __webpack_require__(569).native().BSON
-	  , State = __webpack_require__(564)
-	  , Logger = __webpack_require__(324);
+	var inherits = __webpack_require__(52).inherits
+	  , f = __webpack_require__(52).format
+	  , b = __webpack_require__(568)
+	  , bindToCurrentDomain = __webpack_require__(554).bindToCurrentDomain
+	  , debugOptions = __webpack_require__(554).debugOptions
+	  , EventEmitter = __webpack_require__(120).EventEmitter
+	  , Server = __webpack_require__(320)
+	  , ReadPreference = __webpack_require__(325)
+	  , MongoError = __webpack_require__(319)
+	  , Ping = __webpack_require__(562)
+	  , Session = __webpack_require__(559)
+	  , BasicCursor = __webpack_require__(324)
+	  , BSON = __webpack_require__(568).native().BSON
+	  , State = __webpack_require__(563)
+	  , Logger = __webpack_require__(323);
 
 	/**
 	 * @fileOverview The **ReplSet** class is a class that represents a Replicaset topology and is
@@ -86134,9 +85922,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var nBSON = null;
 
 	  if(type == 'c++') {
-	    nBSON = __webpack_require__(569).native().BSON;
+	    nBSON = __webpack_require__(568).native().BSON;
 	  } else if(type == 'js') {
-	    nBSON = __webpack_require__(569).pure().BSON;
+	    nBSON = __webpack_require__(568).pure().BSON;
 	  } else {
 	    throw new MongoError(f("% parser not supported", type));
 	  }
@@ -87132,24 +86920,24 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 323 */
+/* 322 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var inherits = __webpack_require__(53).inherits
-	  , f = __webpack_require__(53).format
-	  , b = __webpack_require__(569)
-	  , bindToCurrentDomain = __webpack_require__(555).bindToCurrentDomain
-	  , EventEmitter = __webpack_require__(121).EventEmitter
-	  , BasicCursor = __webpack_require__(325)
-	  , BSON = __webpack_require__(569).native().BSON
-	  , BasicCursor = __webpack_require__(325)
-	  , Server = __webpack_require__(321)
-	  , Logger = __webpack_require__(324)
-	  , ReadPreference = __webpack_require__(326)
-	  , Session = __webpack_require__(560)
-	  , MongoError = __webpack_require__(320);
+	var inherits = __webpack_require__(52).inherits
+	  , f = __webpack_require__(52).format
+	  , b = __webpack_require__(568)
+	  , bindToCurrentDomain = __webpack_require__(554).bindToCurrentDomain
+	  , EventEmitter = __webpack_require__(120).EventEmitter
+	  , BasicCursor = __webpack_require__(324)
+	  , BSON = __webpack_require__(568).native().BSON
+	  , BasicCursor = __webpack_require__(324)
+	  , Server = __webpack_require__(320)
+	  , Logger = __webpack_require__(323)
+	  , ReadPreference = __webpack_require__(325)
+	  , Session = __webpack_require__(559)
+	  , MongoError = __webpack_require__(319);
 
 	/**
 	 * @fileOverview The **Mongos** class is a class that represents a Mongos Proxy topology and is
@@ -87437,9 +87225,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var nBSON = null;
 
 	  if(type == 'c++') {
-	    nBSON = __webpack_require__(569).native().BSON;
+	    nBSON = __webpack_require__(568).native().BSON;
 	  } else if(type == 'js') {
-	    nBSON = __webpack_require__(569).pure().BSON;
+	    nBSON = __webpack_require__(568).pure().BSON;
 	  } else {
 	    throw new MongoError(f("% parser not supported", type));
 	  }
@@ -88068,13 +87856,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Mongos;
 
 /***/ },
-/* 324 */
+/* 323 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
 
-	var f = __webpack_require__(53).format
-	  , MongoError = __webpack_require__(320);
+	var f = __webpack_require__(52).format
+	  , MongoError = __webpack_require__(319);
 
 	// Filters for classes
 	var classFilters = {};
@@ -88267,15 +88055,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 325 */
+/* 324 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
 
-	var Long = __webpack_require__(569).Long
-	  , Logger = __webpack_require__(324)
-	  , MongoError = __webpack_require__(320)
-	  , f = __webpack_require__(53).format;  
+	var Long = __webpack_require__(568).Long
+	  , Logger = __webpack_require__(323)
+	  , MongoError = __webpack_require__(319)
+	  , f = __webpack_require__(52).format;  
 
 	/**
 	 * This is a cursor results callback
@@ -88881,7 +88669,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 326 */
+/* 325 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -88992,16 +88780,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = ReadPreference;
 
 /***/ },
-/* 327 */
+/* 326 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {"use strict";
 
-	var f = __webpack_require__(53).format
-	  , Long = __webpack_require__(569).Long
-	  , setProperty = __webpack_require__(555).setProperty
-	  , getProperty = __webpack_require__(555).getProperty
-	  , getSingleProperty = __webpack_require__(555).getSingleProperty;
+	var f = __webpack_require__(52).format
+	  , Long = __webpack_require__(568).Long
+	  , setProperty = __webpack_require__(554).setProperty
+	  , getProperty = __webpack_require__(554).getProperty
+	  , getSingleProperty = __webpack_require__(554).getSingleProperty;
 
 	// Incrementing request id
 	var _requestId = 0;
@@ -89477,17 +89265,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	  , Response: Response
 	  , KillCursor: KillCursor
 	}
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 328 */
+/* 327 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var f = __webpack_require__(53).format
-	  , crypto = __webpack_require__(112)
-	  , MongoError = __webpack_require__(320);
+	var f = __webpack_require__(52).format
+	  , crypto = __webpack_require__(110)
+	  , MongoError = __webpack_require__(319);
 
 	var AuthSession = function(db, username, password) {
 	  this.db = db;
@@ -89645,14 +89433,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = MongoCR;
 
 /***/ },
-/* 329 */
+/* 328 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var f = __webpack_require__(53).format
-	  , crypto = __webpack_require__(112)
-	  , MongoError = __webpack_require__(320);
+	var f = __webpack_require__(52).format
+	  , crypto = __webpack_require__(110)
+	  , MongoError = __webpack_require__(319);
 
 	var AuthSession = function(db, username, password) {
 	  this.db = db;
@@ -89795,15 +89583,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = X509;
 
 /***/ },
-/* 330 */
+/* 329 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var f = __webpack_require__(53).format
-	  , crypto = __webpack_require__(112)
-	  , Binary = __webpack_require__(569).Binary
-	  , MongoError = __webpack_require__(320);
+	var f = __webpack_require__(52).format
+	  , crypto = __webpack_require__(110)
+	  , Binary = __webpack_require__(568).Binary
+	  , MongoError = __webpack_require__(319);
 
 	var AuthSession = function(db, username, password) {
 	  this.db = db;
@@ -89950,14 +89738,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Plain;
 
 /***/ },
-/* 331 */
+/* 330 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var f = __webpack_require__(53).format
-	  , crypto = __webpack_require__(112)
-	  , MongoError = __webpack_require__(320);
+	var f = __webpack_require__(52).format
+	  , crypto = __webpack_require__(110)
+	  , MongoError = __webpack_require__(319);
 
 	var AuthSession = function(db, username, password, options) {
 	  this.db = db;
@@ -89978,9 +89766,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	// Try to grab the Kerberos class
 	try {
-	  Kerberos = __webpack_require__(590).Kerberos
+	  Kerberos = __webpack_require__(589).Kerberos
 	  // Authentication process for Mongo
-	  MongoAuthProcess = __webpack_require__(590).processes.MongoAuthProcess
+	  MongoAuthProcess = __webpack_require__(589).processes.MongoAuthProcess
 	} catch(err) {}
 
 	/**
@@ -90199,7 +89987,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = GSSAPI;
 
 /***/ },
-/* 332 */
+/* 331 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -90262,7 +90050,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 333 */
+/* 332 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -90271,27 +90059,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	module.exports = {
-	  7: __webpack_require__(566),
-	  8: __webpack_require__(566),
-	  13: __webpack_require__(567),
-	  default: __webpack_require__(568)
+	  7: __webpack_require__(565),
+	  8: __webpack_require__(565),
+	  13: __webpack_require__(566),
+	  default: __webpack_require__(567)
 	};
 
 
 /***/ },
-/* 334 */
+/* 333 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(570);
+	exports = module.exports = __webpack_require__(569);
 	exports.Readable = exports;
-	exports.Writable = __webpack_require__(571);
-	exports.Duplex = __webpack_require__(572);
-	exports.Transform = __webpack_require__(573);
-	exports.PassThrough = __webpack_require__(574);
+	exports.Writable = __webpack_require__(570);
+	exports.Duplex = __webpack_require__(571);
+	exports.Transform = __webpack_require__(572);
+	exports.PassThrough = __webpack_require__(573);
 
 
 /***/ },
-/* 335 */
+/* 334 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {'use strict';
@@ -90358,7 +90146,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 336 */
+/* 335 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {module.exports = globSync
@@ -90367,11 +90155,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	var fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
 	var minimatch = __webpack_require__(578)
 	var Minimatch = minimatch.Minimatch
-	var Glob = __webpack_require__(120).Glob
-	var util = __webpack_require__(53)
+	var Glob = __webpack_require__(119).Glob
+	var util = __webpack_require__(52)
 	var path = __webpack_require__(8)
-	var assert = __webpack_require__(108)
-	var common = __webpack_require__(337)
+	var assert = __webpack_require__(107)
+	var common = __webpack_require__(336)
 	var alphasort = common.alphasort
 	var alphasorti = common.alphasorti
 	var isAbsolute = common.isAbsolute
@@ -90822,7 +90610,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 337 */
+/* 336 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {exports.alphasort = alphasort
@@ -91066,7 +90854,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 338 */
+/* 337 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/* WEBPACK VAR INJECTION */(function(module, global) {/*! https://mths.be/punycode v1.3.2 by @mathias */
@@ -91598,408 +91386,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	}(this));
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(56)(module), (function() { return this; }())))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(55)(module), (function() { return this; }())))
 
 /***/ },
-/* 339 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var utils = __webpack_require__(123);
-
-	// Error codes
-	var UNKNOWN_ERROR = 8;
-	var INVALID_BSON_ERROR = 22;
-	var WRITE_CONCERN_ERROR = 64;
-	var MULTIPLE_ERROR = 65;
-
-	// Insert types
-	var INSERT = 1;
-	var UPDATE = 2;
-	var REMOVE = 3
-
-
-	// Get write concern
-	var writeConcern = function(target, col, options) {
-	  if(options.w != null || options.j != null || options.fsync != null) {
-	    target.writeConcern = options;
-	  } else if(col.writeConcern.w != null || col.writeConcern.j != null || col.writeConcern.fsync != null) {      
-	    target.writeConcern = col.writeConcern;
-	  }
-
-	  return target
-	}
-
-	/**
-	 * Helper function to define properties
-	 * @ignore
-	 */
-	var defineReadOnlyProperty = function(self, name, value) {
-	  Object.defineProperty(self, name, {
-	      enumerable: true
-	    , get: function() {
-	      return value;
-	    }
-	  });
-	}
-
-	/**
-	 * Keeps the state of a unordered batch so we can rewrite the results
-	 * correctly after command execution
-	 * @ignore
-	 */
-	var Batch = function(batchType, originalZeroIndex) {  
-	  this.originalZeroIndex = originalZeroIndex;
-	  this.currentIndex = 0;
-	  this.originalIndexes = [];
-	  this.batchType = batchType;
-	  this.operations = [];
-	  this.size = 0;
-	  this.sizeBytes = 0;
-	}
-
-	/**
-	 * Wraps a legacy operation so we can correctly rewrite it's error
-	 * @ignore
-	 */
-	var LegacyOp = function(batchType, operation, index) {
-	  this.batchType = batchType;
-	  this.index = index;
-	  this.operation = operation;
-	}
-
-	/**
-	 * Create a new BulkWriteResult instance (INTERNAL TYPE, do not instantiate directly)
-	 *
-	 * @class
-	 * @property {boolean} ok Did bulk operation correctly execute
-	 * @property {number} nInserted number of inserted documents
-	 * @property {number} nUpdated number of documents updated logically
-	 * @property {number} nUpserted Number of upserted documents
-	 * @property {number} nModified Number of documents updated physically on disk
-	 * @property {number} nRemoved Number of removed documents
-	 * @return {BulkWriteResult} a BulkWriteResult instance
-	 */
-	var BulkWriteResult = function(bulkResult) {
-	  defineReadOnlyProperty(this, "ok", bulkResult.ok);
-	  defineReadOnlyProperty(this, "nInserted", bulkResult.nInserted);
-	  defineReadOnlyProperty(this, "nUpserted", bulkResult.nUpserted);
-	  defineReadOnlyProperty(this, "nMatched", bulkResult.nMatched);
-	  defineReadOnlyProperty(this, "nModified", bulkResult.nModified);
-	  defineReadOnlyProperty(this, "nRemoved", bulkResult.nRemoved);
-
-	  /**
-	   * Return an array of inserted ids
-	   *
-	   * @return {object[]}
-	   */
-	  this.getInsertedIds = function() {
-	    return bulkResult.insertedIds;
-	  }
-
-	  /**
-	   * Return an array of upserted ids
-	   *
-	   * @return {object[]}
-	   */
-	  this.getUpsertedIds = function() {
-	    return bulkResult.upserted;
-	  }
-
-	  /**
-	   * Return the upserted id at position x
-	   *
-	   * @param {number} index the number of the upserted id to return, returns undefined if no result for passed in index
-	   * @return {object}
-	   */
-	  this.getUpsertedIdAt = function(index) {
-	    return bulkResult.upserted[index]; 
-	  }
-
-	  /**
-	   * Return raw internal result
-	   *
-	   * @return {object}
-	   */
-	  this.getRawResponse = function() {
-	    return bulkResult;
-	  }
-
-	  /**
-	   * Returns true if the bulk operation contains a write error
-	   *
-	   * @return {boolean}
-	   */
-	  this.hasWriteErrors = function() {
-	    return bulkResult.writeErrors.length > 0;
-	  }
-
-	  /**
-	   * Returns the number of write errors off the bulk operation
-	   *
-	   * @return {number}
-	   */
-	  this.getWriteErrorCount = function() {
-	    return bulkResult.writeErrors.length;
-	  }
-
-	  /**
-	   * Returns a specific write error object
-	   *
-	   * @return {WriteError}
-	   */
-	  this.getWriteErrorAt = function(index) {
-	    if(index < bulkResult.writeErrors.length) {
-	      return bulkResult.writeErrors[index];
-	    }
-	    return null;
-	  }
-
-	  /**
-	   * Retrieve all write errors
-	   *
-	   * @return {object[]}
-	   */
-	  this.getWriteErrors = function() {
-	    return bulkResult.writeErrors;
-	  }
-
-	  /**
-	   * Retrieve lastOp if available
-	   *
-	   * @return {object}
-	   */
-	  this.getLastOp = function() {
-	    return bulkResult.lastOp;
-	  }
-
-	  /**
-	   * Retrieve the write concern error if any
-	   *
-	   * @return {WriteConcernError}
-	   */
-	  this.getWriteConcernError = function() {
-	    if(bulkResult.writeConcernErrors.length == 0) {
-	      return null;
-	    } else if(bulkResult.writeConcernErrors.length == 1) {
-	      // Return the error
-	      return bulkResult.writeConcernErrors[0];
-	    } else {
-
-	      // Combine the errors
-	      var errmsg = "";
-	      for(var i = 0; i < bulkResult.writeConcernErrors.length; i++) {
-	        var err = bulkResult.writeConcernErrors[i];
-	        errmsg = errmsg + err.errmsg;
-	        
-	        // TODO: Something better
-	        if(i == 0) errmsg = errmsg + " and ";
-	      }
-
-	      return new WriteConcernError({ errmsg : errmsg, code : WRITE_CONCERN_ERROR });
-	    }
-	  }
-
-	  this.toJSON = function() {
-	    return bulkResult;
-	  }
-
-	  this.toString = function() {
-	    return "BulkWriteResult(" + this.toJSON(bulkResult) + ")";
-	  }
-
-	  this.isOk = function() {
-	    return bulkResult.ok == 1;
-	  }
-	}
-
-	/**
-	 * Create a new WriteConcernError instance (INTERNAL TYPE, do not instantiate directly)
-	 *
-	 * @class
-	 * @property {number} code Write concern error code.
-	 * @property {string} errmsg Write concern error message.
-	 * @return {WriteConcernError} a WriteConcernError instance
-	 */
-	var WriteConcernError = function(err) {
-	  if(!(this instanceof WriteConcernError)) return new WriteConcernError(err);
-
-	  // Define properties
-	  defineReadOnlyProperty(this, "code", err.code);
-	  defineReadOnlyProperty(this, "errmsg", err.errmsg);
-
-	  this.toJSON = function() {
-	    return {code: err.code, errmsg: err.errmsg};
-	  }
-
-	  this.toString = function() {
-	    return "WriteConcernError(" + err.errmsg + ")";
-	  }
-	}
-
-	/**
-	 * Create a new WriteError instance (INTERNAL TYPE, do not instantiate directly)
-	 *
-	 * @class
-	 * @property {number} code Write concern error code.
-	 * @property {number} index Write concern error original bulk operation index.
-	 * @property {string} errmsg Write concern error message.
-	 * @return {WriteConcernError} a WriteConcernError instance
-	 */
-	var WriteError = function(err) {
-	  if(!(this instanceof WriteError)) return new WriteError(err);
-
-	  // Define properties
-	  defineReadOnlyProperty(this, "code", err.code);
-	  defineReadOnlyProperty(this, "index", err.index);
-	  defineReadOnlyProperty(this, "errmsg", err.errmsg);
-
-	  //
-	  // Define access methods
-	  this.getOperation = function() {
-	    return err.op;
-	  }
-
-	  this.toJSON = function() {
-	    return {code: err.code, index: err.index, errmsg: err.errmsg, op: err.op};
-	  }
-
-	  this.toString = function() {
-	    return "WriteError(" + JSON.stringify(this.toJSON()) + ")";
-	  }
-	}
-
-	/**
-	 * Merges results into shared data structure
-	 * @ignore
-	 */
-	var mergeBatchResults = function(ordered, batch, bulkResult, err, result) {
-	  // If we have an error set the result to be the err object
-	  if(err) {
-	    result = err;
-	  } else if(result && result.result) {
-	    result = result.result;
-	  } else if(result == null) {
-	    return;
-	  }
-
-	  // Do we have a top level error stop processing and return
-	  if(result.ok == 0 && bulkResult.ok == 1) {
-	    bulkResult.ok = 0;
-	    // bulkResult.error = utils.toError(result);
-	    var writeError = {
-	        index: 0
-	      , code: result.code || 0
-	      , errmsg: result.message
-	      , op: batch.operations[0]
-	    };
-
-	    bulkResult.writeErrors.push(new WriteError(writeError));    
-	    return;
-	  } else if(result.ok == 0 && bulkResult.ok == 0) {
-	    return;
-	  }
-
-	  // Add lastop if available
-	  if(result.lastOp) {
-	    bulkResult.lastOp = result.lastOp;
-	  }
-
-	  // If we have an insert Batch type
-	  if(batch.batchType == INSERT && result.n) {
-	    bulkResult.nInserted = bulkResult.nInserted + result.n;
-	  }
-
-	  // If we have an insert Batch type
-	  if(batch.batchType == REMOVE && result.n) {
-	    bulkResult.nRemoved = bulkResult.nRemoved + result.n;
-	  }
-
-	  var nUpserted = 0;
-
-	  // We have an array of upserted values, we need to rewrite the indexes
-	  if(Array.isArray(result.upserted)) {
-	    nUpserted = result.upserted.length;
-
-	    for(var i = 0; i < result.upserted.length; i++) {
-	      bulkResult.upserted.push({
-	          index: result.upserted[i].index + batch.originalZeroIndex
-	        , _id: result.upserted[i]._id
-	      });
-	    }
-	  } else if(result.upserted) {
-
-	    nUpserted = 1;
-
-	    bulkResult.upserted.push({
-	        index: batch.originalZeroIndex
-	      , _id: result.upserted
-	    });
-	  }
-
-	  // If we have an update Batch type
-	  if(batch.batchType == UPDATE && result.n) {
-	    var nModified = result.nModified;
-	    bulkResult.nUpserted = bulkResult.nUpserted + nUpserted;
-	    bulkResult.nMatched = bulkResult.nMatched + (result.n - nUpserted);
-	    
-	    if(typeof nModified == 'number') {
-	      bulkResult.nModified = bulkResult.nModified + nModified;
-	    } else {
-	      bulkResult.nModified = null;
-	    }
-	  }
-
-	  if(Array.isArray(result.writeErrors)) {
-	    for(var i = 0; i < result.writeErrors.length; i++) {
-
-	      var writeError = {
-	          index: batch.originalZeroIndex + result.writeErrors[i].index
-	        , code: result.writeErrors[i].code
-	        , errmsg: result.writeErrors[i].errmsg
-	        , op: batch.operations[result.writeErrors[i].index]
-	      };
-
-	      bulkResult.writeErrors.push(new WriteError(writeError));
-	    }
-	  }
-
-	  if(result.writeConcernError) {
-	    bulkResult.writeConcernErrors.push(new WriteConcernError(result.writeConcernError));
-	  }
-	}
-
-	//
-	// Clone the options
-	var cloneOptions = function(options) {
-	  var clone = {};
-	  var keys = Object.keys(options);
-	  for(var i = 0; i < keys.length; i++) {
-	    clone[keys[i]] = options[keys[i]];
-	  }
-
-	  return clone;
-	}
-
-	// Exports symbols
-	exports.BulkWriteResult = BulkWriteResult;
-	exports.WriteError = WriteError;
-	exports.Batch = Batch;
-	exports.LegacyOp = LegacyOp;
-	exports.mergeBatchResults = mergeBatchResults;
-	exports.cloneOptions = cloneOptions;
-	exports.writeConcern = writeConcern;
-	exports.INVALID_BSON_ERROR = INVALID_BSON_ERROR;
-	exports.WRITE_CONCERN_ERROR = WRITE_CONCERN_ERROR;
-	exports.MULTIPLE_ERROR = MULTIPLE_ERROR;
-	exports.UNKNOWN_ERROR = UNKNOWN_ERROR;
-	exports.INSERT = INSERT;
-	exports.UPDATE = UPDATE;
-	exports.REMOVE = REMOVE;
-
-/***/ },
-/* 340 */
+/* 338 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -92212,14 +91602,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 341 */
+/* 339 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var BigNumber = __webpack_require__(133);
-	var isNumber = __webpack_require__(131).isNumber;
-	var digits = __webpack_require__(131).digits;
+	var BigNumber = __webpack_require__(129);
+	var isNumber = __webpack_require__(127).isNumber;
+	var digits = __webpack_require__(127).digits;
 	var memoize = __webpack_require__(582).memoize;
 
 	/**
@@ -93626,18 +93016,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 342 */
+/* 340 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var number = __webpack_require__(131),
-	    string = __webpack_require__(349),
-	    object = __webpack_require__(130),
-	    types = __webpack_require__(519),
+	var number = __webpack_require__(127),
+	    string = __webpack_require__(347),
+	    object = __webpack_require__(126),
+	    types = __webpack_require__(518),
 
-	    DimensionError = __webpack_require__(346),
-	    IndexError = __webpack_require__(347),
+	    DimensionError = __webpack_require__(343),
+	    IndexError = __webpack_require__(344),
 
 	    isArray = Array.isArray;
 
@@ -94008,7 +93398,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.isArray = isArray;
 
 /***/ },
-/* 343 */
+/* 341 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = '1.6.0';
@@ -94017,22 +93407,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 344 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	exports.array = __webpack_require__(342);
-	exports['boolean'] = __webpack_require__(382);
-	exports.number = __webpack_require__(131);
-	exports.bignumber = __webpack_require__(341);
-	exports.object = __webpack_require__(130);
-	exports.string = __webpack_require__(349);
-	exports.types = __webpack_require__(519);
-
-
-/***/ },
-/* 345 */
+/* 342 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -94071,7 +93446,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 346 */
+/* 343 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -94111,7 +93486,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 347 */
+/* 344 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -94162,7 +93537,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 348 */
+/* 345 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -94205,14 +93580,29 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 349 */
+/* 346 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var number = __webpack_require__(131);
-	var bignumber = __webpack_require__(341);
-	var BigNumber = __webpack_require__(133);
+	exports.array = __webpack_require__(340);
+	exports['boolean'] = __webpack_require__(379);
+	exports.number = __webpack_require__(127);
+	exports.bignumber = __webpack_require__(339);
+	exports.object = __webpack_require__(126);
+	exports.string = __webpack_require__(347);
+	exports.types = __webpack_require__(518);
+
+
+/***/ },
+/* 347 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var number = __webpack_require__(127);
+	var bignumber = __webpack_require__(339);
+	var BigNumber = __webpack_require__(129);
 
 	/**
 	 * Test whether value is a String
@@ -94320,13 +93710,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 350 */
+/* 348 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Node = __webpack_require__(358),
-	    string = __webpack_require__(349),
+	var Node = __webpack_require__(356),
+	    string = __webpack_require__(347),
 
 	    isArray = Array.isArray,
 	    isNode = Node.isNode;
@@ -94446,19 +93836,19 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 351 */
+/* 349 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Node = __webpack_require__(358),
-	    ArrayNode = __webpack_require__(350),
+	var Node = __webpack_require__(356),
+	    ArrayNode = __webpack_require__(348),
 
-	    keywords = __webpack_require__(584),
-	    operators = __webpack_require__(585),
+	    keywords = __webpack_require__(583),
+	    operators = __webpack_require__(584),
 
-	    latex = __webpack_require__(586),
-	    isString = __webpack_require__(349).isString;
+	    latex = __webpack_require__(585),
+	    isString = __webpack_require__(347).isString;
 
 	/**
 	 * @constructor AssignmentNode
@@ -94559,14 +93949,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 352 */
+/* 350 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Node = __webpack_require__(358);
-	var ResultSet = __webpack_require__(141);
-	var isBoolean = __webpack_require__(382).isBoolean;
+	var Node = __webpack_require__(356);
+	var ResultSet = __webpack_require__(137);
+	var isBoolean = __webpack_require__(379).isBoolean;
 
 	/**
 	 * @constructor BlockNode
@@ -94699,18 +94089,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 353 */
+/* 351 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Node = __webpack_require__(358);
-	var latex = __webpack_require__(586);
-	var BigNumber = __webpack_require__(133);
-	var Complex = __webpack_require__(135);
-	var Unit = __webpack_require__(139);
-	var util = __webpack_require__(344);
-	var operators = __webpack_require__(585);
+	var Node = __webpack_require__(356);
+	var latex = __webpack_require__(585);
+	var BigNumber = __webpack_require__(129);
+	var Complex = __webpack_require__(131);
+	var Unit = __webpack_require__(135);
+	var util = __webpack_require__(346);
+	var operators = __webpack_require__(584);
 	var isString = util.string.isString;
 	var isNumber = util.number.isNumber;
 	var isBoolean = util['boolean'].isBoolean;
@@ -94870,15 +94260,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 354 */
+/* 352 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Node = __webpack_require__(358);
-	var BigNumber = __webpack_require__(133);
-	var type = __webpack_require__(519).type;
-	var isString = __webpack_require__(349).isString;
+	var Node = __webpack_require__(356);
+	var BigNumber = __webpack_require__(129);
+	var type = __webpack_require__(518).type;
+	var isString = __webpack_require__(347).isString;
 
 	/**
 	 * A ConstantNode holds a constant value like a number or string. A ConstantNode
@@ -95058,17 +94448,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 355 */
+/* 353 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Node = __webpack_require__(358);
-	var RangeNode = __webpack_require__(360);
-	var SymbolNode = __webpack_require__(361);
+	var Node = __webpack_require__(356);
+	var RangeNode = __webpack_require__(358);
+	var SymbolNode = __webpack_require__(359);
 
-	var BigNumber = __webpack_require__(133);
-	var Range = __webpack_require__(136);
+	var BigNumber = __webpack_require__(129);
+	var Range = __webpack_require__(132);
 
 	var isNode = Node.isNode;
 	var isArray = Array.isArray;
@@ -95288,16 +94678,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 356 */
+/* 354 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Node = __webpack_require__(358);
-	var keywords = __webpack_require__(584);
-	var latex = __webpack_require__(586);
-	var operators = __webpack_require__(585);
-	var isString = __webpack_require__(349).isString;
+	var Node = __webpack_require__(356);
+	var keywords = __webpack_require__(583);
+	var latex = __webpack_require__(585);
+	var operators = __webpack_require__(584);
+	var isString = __webpack_require__(347).isString;
 	var isArray = Array.isArray;
 
 	/**
@@ -95424,15 +94814,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 357 */
+/* 355 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Node = __webpack_require__(358);
-	var SymbolNode = __webpack_require__(361);
+	var Node = __webpack_require__(356);
+	var SymbolNode = __webpack_require__(359);
 
-	var latex = __webpack_require__(586);
+	var latex = __webpack_require__(585);
 	var isNode = Node.isNode;
 	var isArray = Array.isArray;
 
@@ -95561,12 +94951,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 358 */
+/* 356 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var keywords = __webpack_require__(584);
+	var keywords = __webpack_require__(583);
 
 	/**
 	 * Node
@@ -95903,17 +95293,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 359 */
+/* 357 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Node = __webpack_require__(358),
-	    ConstantNode = __webpack_require__(354),
-	    SymbolNode = __webpack_require__(361),
-	    FunctionNode = __webpack_require__(357),
-	    latex = __webpack_require__(586),
-	    operators = __webpack_require__(585),
+	var Node = __webpack_require__(356),
+	    ConstantNode = __webpack_require__(352),
+	    SymbolNode = __webpack_require__(359),
+	    FunctionNode = __webpack_require__(355),
+	    latex = __webpack_require__(585),
+	    operators = __webpack_require__(584),
 	    isArray = Array.isArray,
 	    isNode = Node.isNode;
 
@@ -96266,13 +95656,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 360 */
+/* 358 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Node = __webpack_require__(358);
-	var operators = __webpack_require__(585);
+	var Node = __webpack_require__(356);
+	var operators = __webpack_require__(584);
 
 	var isNode = Node.isNode;
 
@@ -96409,16 +95799,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 361 */
+/* 359 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Node = __webpack_require__(358),
-	    Unit = __webpack_require__(139),
+	var Node = __webpack_require__(356),
+	    Unit = __webpack_require__(135),
 
-	    latex = __webpack_require__(586),
-	    isString = __webpack_require__(349).isString;
+	    latex = __webpack_require__(585),
+	    isString = __webpack_require__(347).isString;
 
 	/**
 	 * @constructor SymbolNode
@@ -96536,13 +95926,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 362 */
+/* 360 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Node = __webpack_require__(358),
-	    IndexNode = __webpack_require__(355);
+	var Node = __webpack_require__(356),
+	    IndexNode = __webpack_require__(353);
 
 	/**
 	 * @constructor UpdateNode
@@ -96641,7 +96031,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 363 */
+/* 361 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96662,7 +96052,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 364 */
+/* 362 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96680,7 +96070,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 365 */
+/* 363 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96700,7 +96090,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 366 */
+/* 364 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96719,7 +96109,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 367 */
+/* 365 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96738,7 +96128,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 368 */
+/* 366 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96757,7 +96147,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 369 */
+/* 367 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96776,7 +96166,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 370 */
+/* 368 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96795,7 +96185,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 371 */
+/* 369 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96814,7 +96204,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 372 */
+/* 370 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96832,7 +96222,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 373 */
+/* 371 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96851,7 +96241,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 374 */
+/* 372 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96869,7 +96259,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 375 */
+/* 373 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96888,7 +96278,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 376 */
+/* 374 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96907,7 +96297,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 377 */
+/* 375 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96926,7 +96316,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 378 */
+/* 376 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96944,7 +96334,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 379 */
+/* 377 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -96962,28 +96352,28 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 380 */
+/* 378 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var map = {
-		"./clone": 296,
-		"./clone.js": 296,
-		"./filter": 297,
-		"./filter.js": 297,
-		"./forEach": 304,
-		"./forEach.js": 304,
-		"./format": 298,
-		"./format.js": 298,
-		"./import": 299,
-		"./import.js": 299,
-		"./map": 300,
-		"./map.js": 300,
-		"./print": 301,
-		"./print.js": 301,
-		"./sort": 302,
-		"./sort.js": 302,
-		"./typeof": 303,
-		"./typeof.js": 303
+		"./clone": 295,
+		"./clone.js": 295,
+		"./filter": 296,
+		"./filter.js": 296,
+		"./forEach": 303,
+		"./forEach.js": 303,
+		"./format": 297,
+		"./format.js": 297,
+		"./import": 298,
+		"./import.js": 298,
+		"./map": 299,
+		"./map.js": 299,
+		"./print": 300,
+		"./print.js": 300,
+		"./sort": 301,
+		"./sort.js": 301,
+		"./typeof": 302,
+		"./typeof.js": 302
 	};
 	function webpackContext(req) {
 		return __webpack_require__(webpackContextResolve(req));
@@ -96996,15 +96386,31 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	webpackContext.resolve = webpackContextResolve;
 	module.exports = webpackContext;
-	webpackContext.id = 380;
+	webpackContext.id = 378;
 
 
 /***/ },
-/* 381 */
+/* 379 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var DimensionError = __webpack_require__(346);
-	var IndexError = __webpack_require__(347);
+	'use strict';
+
+	/**
+	 * Test whether value is a Boolean
+	 * @param {*} value
+	 * @return {Boolean} isBoolean
+	 */
+	exports.isBoolean = function(value) {
+	  return (value instanceof Boolean) || (typeof value == 'boolean');
+	};
+
+
+/***/ },
+/* 380 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var DimensionError = __webpack_require__(343);
+	var IndexError = __webpack_require__(344);
 
 	/**
 	 * Transform zero-based indices to one-based indices in errors
@@ -97021,19 +96427,573 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
+/* 381 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var utils = __webpack_require__(122);
+
+	// Error codes
+	var UNKNOWN_ERROR = 8;
+	var INVALID_BSON_ERROR = 22;
+	var WRITE_CONCERN_ERROR = 64;
+	var MULTIPLE_ERROR = 65;
+
+	// Insert types
+	var INSERT = 1;
+	var UPDATE = 2;
+	var REMOVE = 3
+
+
+	// Get write concern
+	var writeConcern = function(target, col, options) {
+	  if(options.w != null || options.j != null || options.fsync != null) {
+	    target.writeConcern = options;
+	  } else if(col.writeConcern.w != null || col.writeConcern.j != null || col.writeConcern.fsync != null) {      
+	    target.writeConcern = col.writeConcern;
+	  }
+
+	  return target
+	}
+
+	/**
+	 * Helper function to define properties
+	 * @ignore
+	 */
+	var defineReadOnlyProperty = function(self, name, value) {
+	  Object.defineProperty(self, name, {
+	      enumerable: true
+	    , get: function() {
+	      return value;
+	    }
+	  });
+	}
+
+	/**
+	 * Keeps the state of a unordered batch so we can rewrite the results
+	 * correctly after command execution
+	 * @ignore
+	 */
+	var Batch = function(batchType, originalZeroIndex) {  
+	  this.originalZeroIndex = originalZeroIndex;
+	  this.currentIndex = 0;
+	  this.originalIndexes = [];
+	  this.batchType = batchType;
+	  this.operations = [];
+	  this.size = 0;
+	  this.sizeBytes = 0;
+	}
+
+	/**
+	 * Wraps a legacy operation so we can correctly rewrite it's error
+	 * @ignore
+	 */
+	var LegacyOp = function(batchType, operation, index) {
+	  this.batchType = batchType;
+	  this.index = index;
+	  this.operation = operation;
+	}
+
+	/**
+	 * Create a new BulkWriteResult instance (INTERNAL TYPE, do not instantiate directly)
+	 *
+	 * @class
+	 * @property {boolean} ok Did bulk operation correctly execute
+	 * @property {number} nInserted number of inserted documents
+	 * @property {number} nUpdated number of documents updated logically
+	 * @property {number} nUpserted Number of upserted documents
+	 * @property {number} nModified Number of documents updated physically on disk
+	 * @property {number} nRemoved Number of removed documents
+	 * @return {BulkWriteResult} a BulkWriteResult instance
+	 */
+	var BulkWriteResult = function(bulkResult) {
+	  defineReadOnlyProperty(this, "ok", bulkResult.ok);
+	  defineReadOnlyProperty(this, "nInserted", bulkResult.nInserted);
+	  defineReadOnlyProperty(this, "nUpserted", bulkResult.nUpserted);
+	  defineReadOnlyProperty(this, "nMatched", bulkResult.nMatched);
+	  defineReadOnlyProperty(this, "nModified", bulkResult.nModified);
+	  defineReadOnlyProperty(this, "nRemoved", bulkResult.nRemoved);
+
+	  /**
+	   * Return an array of inserted ids
+	   *
+	   * @return {object[]}
+	   */
+	  this.getInsertedIds = function() {
+	    return bulkResult.insertedIds;
+	  }
+
+	  /**
+	   * Return an array of upserted ids
+	   *
+	   * @return {object[]}
+	   */
+	  this.getUpsertedIds = function() {
+	    return bulkResult.upserted;
+	  }
+
+	  /**
+	   * Return the upserted id at position x
+	   *
+	   * @param {number} index the number of the upserted id to return, returns undefined if no result for passed in index
+	   * @return {object}
+	   */
+	  this.getUpsertedIdAt = function(index) {
+	    return bulkResult.upserted[index]; 
+	  }
+
+	  /**
+	   * Return raw internal result
+	   *
+	   * @return {object}
+	   */
+	  this.getRawResponse = function() {
+	    return bulkResult;
+	  }
+
+	  /**
+	   * Returns true if the bulk operation contains a write error
+	   *
+	   * @return {boolean}
+	   */
+	  this.hasWriteErrors = function() {
+	    return bulkResult.writeErrors.length > 0;
+	  }
+
+	  /**
+	   * Returns the number of write errors off the bulk operation
+	   *
+	   * @return {number}
+	   */
+	  this.getWriteErrorCount = function() {
+	    return bulkResult.writeErrors.length;
+	  }
+
+	  /**
+	   * Returns a specific write error object
+	   *
+	   * @return {WriteError}
+	   */
+	  this.getWriteErrorAt = function(index) {
+	    if(index < bulkResult.writeErrors.length) {
+	      return bulkResult.writeErrors[index];
+	    }
+	    return null;
+	  }
+
+	  /**
+	   * Retrieve all write errors
+	   *
+	   * @return {object[]}
+	   */
+	  this.getWriteErrors = function() {
+	    return bulkResult.writeErrors;
+	  }
+
+	  /**
+	   * Retrieve lastOp if available
+	   *
+	   * @return {object}
+	   */
+	  this.getLastOp = function() {
+	    return bulkResult.lastOp;
+	  }
+
+	  /**
+	   * Retrieve the write concern error if any
+	   *
+	   * @return {WriteConcernError}
+	   */
+	  this.getWriteConcernError = function() {
+	    if(bulkResult.writeConcernErrors.length == 0) {
+	      return null;
+	    } else if(bulkResult.writeConcernErrors.length == 1) {
+	      // Return the error
+	      return bulkResult.writeConcernErrors[0];
+	    } else {
+
+	      // Combine the errors
+	      var errmsg = "";
+	      for(var i = 0; i < bulkResult.writeConcernErrors.length; i++) {
+	        var err = bulkResult.writeConcernErrors[i];
+	        errmsg = errmsg + err.errmsg;
+	        
+	        // TODO: Something better
+	        if(i == 0) errmsg = errmsg + " and ";
+	      }
+
+	      return new WriteConcernError({ errmsg : errmsg, code : WRITE_CONCERN_ERROR });
+	    }
+	  }
+
+	  this.toJSON = function() {
+	    return bulkResult;
+	  }
+
+	  this.toString = function() {
+	    return "BulkWriteResult(" + this.toJSON(bulkResult) + ")";
+	  }
+
+	  this.isOk = function() {
+	    return bulkResult.ok == 1;
+	  }
+	}
+
+	/**
+	 * Create a new WriteConcernError instance (INTERNAL TYPE, do not instantiate directly)
+	 *
+	 * @class
+	 * @property {number} code Write concern error code.
+	 * @property {string} errmsg Write concern error message.
+	 * @return {WriteConcernError} a WriteConcernError instance
+	 */
+	var WriteConcernError = function(err) {
+	  if(!(this instanceof WriteConcernError)) return new WriteConcernError(err);
+
+	  // Define properties
+	  defineReadOnlyProperty(this, "code", err.code);
+	  defineReadOnlyProperty(this, "errmsg", err.errmsg);
+
+	  this.toJSON = function() {
+	    return {code: err.code, errmsg: err.errmsg};
+	  }
+
+	  this.toString = function() {
+	    return "WriteConcernError(" + err.errmsg + ")";
+	  }
+	}
+
+	/**
+	 * Create a new WriteError instance (INTERNAL TYPE, do not instantiate directly)
+	 *
+	 * @class
+	 * @property {number} code Write concern error code.
+	 * @property {number} index Write concern error original bulk operation index.
+	 * @property {string} errmsg Write concern error message.
+	 * @return {WriteConcernError} a WriteConcernError instance
+	 */
+	var WriteError = function(err) {
+	  if(!(this instanceof WriteError)) return new WriteError(err);
+
+	  // Define properties
+	  defineReadOnlyProperty(this, "code", err.code);
+	  defineReadOnlyProperty(this, "index", err.index);
+	  defineReadOnlyProperty(this, "errmsg", err.errmsg);
+
+	  //
+	  // Define access methods
+	  this.getOperation = function() {
+	    return err.op;
+	  }
+
+	  this.toJSON = function() {
+	    return {code: err.code, index: err.index, errmsg: err.errmsg, op: err.op};
+	  }
+
+	  this.toString = function() {
+	    return "WriteError(" + JSON.stringify(this.toJSON()) + ")";
+	  }
+	}
+
+	/**
+	 * Merges results into shared data structure
+	 * @ignore
+	 */
+	var mergeBatchResults = function(ordered, batch, bulkResult, err, result) {
+	  // If we have an error set the result to be the err object
+	  if(err) {
+	    result = err;
+	  } else if(result && result.result) {
+	    result = result.result;
+	  } else if(result == null) {
+	    return;
+	  }
+
+	  // Do we have a top level error stop processing and return
+	  if(result.ok == 0 && bulkResult.ok == 1) {
+	    bulkResult.ok = 0;
+	    // bulkResult.error = utils.toError(result);
+	    var writeError = {
+	        index: 0
+	      , code: result.code || 0
+	      , errmsg: result.message
+	      , op: batch.operations[0]
+	    };
+
+	    bulkResult.writeErrors.push(new WriteError(writeError));    
+	    return;
+	  } else if(result.ok == 0 && bulkResult.ok == 0) {
+	    return;
+	  }
+
+	  // Add lastop if available
+	  if(result.lastOp) {
+	    bulkResult.lastOp = result.lastOp;
+	  }
+
+	  // If we have an insert Batch type
+	  if(batch.batchType == INSERT && result.n) {
+	    bulkResult.nInserted = bulkResult.nInserted + result.n;
+	  }
+
+	  // If we have an insert Batch type
+	  if(batch.batchType == REMOVE && result.n) {
+	    bulkResult.nRemoved = bulkResult.nRemoved + result.n;
+	  }
+
+	  var nUpserted = 0;
+
+	  // We have an array of upserted values, we need to rewrite the indexes
+	  if(Array.isArray(result.upserted)) {
+	    nUpserted = result.upserted.length;
+
+	    for(var i = 0; i < result.upserted.length; i++) {
+	      bulkResult.upserted.push({
+	          index: result.upserted[i].index + batch.originalZeroIndex
+	        , _id: result.upserted[i]._id
+	      });
+	    }
+	  } else if(result.upserted) {
+
+	    nUpserted = 1;
+
+	    bulkResult.upserted.push({
+	        index: batch.originalZeroIndex
+	      , _id: result.upserted
+	    });
+	  }
+
+	  // If we have an update Batch type
+	  if(batch.batchType == UPDATE && result.n) {
+	    var nModified = result.nModified;
+	    bulkResult.nUpserted = bulkResult.nUpserted + nUpserted;
+	    bulkResult.nMatched = bulkResult.nMatched + (result.n - nUpserted);
+	    
+	    if(typeof nModified == 'number') {
+	      bulkResult.nModified = bulkResult.nModified + nModified;
+	    } else {
+	      bulkResult.nModified = null;
+	    }
+	  }
+
+	  if(Array.isArray(result.writeErrors)) {
+	    for(var i = 0; i < result.writeErrors.length; i++) {
+
+	      var writeError = {
+	          index: batch.originalZeroIndex + result.writeErrors[i].index
+	        , code: result.writeErrors[i].code
+	        , errmsg: result.writeErrors[i].errmsg
+	        , op: batch.operations[result.writeErrors[i].index]
+	      };
+
+	      bulkResult.writeErrors.push(new WriteError(writeError));
+	    }
+	  }
+
+	  if(result.writeConcernError) {
+	    bulkResult.writeConcernErrors.push(new WriteConcernError(result.writeConcernError));
+	  }
+	}
+
+	//
+	// Clone the options
+	var cloneOptions = function(options) {
+	  var clone = {};
+	  var keys = Object.keys(options);
+	  for(var i = 0; i < keys.length; i++) {
+	    clone[keys[i]] = options[keys[i]];
+	  }
+
+	  return clone;
+	}
+
+	// Exports symbols
+	exports.BulkWriteResult = BulkWriteResult;
+	exports.WriteError = WriteError;
+	exports.Batch = Batch;
+	exports.LegacyOp = LegacyOp;
+	exports.mergeBatchResults = mergeBatchResults;
+	exports.cloneOptions = cloneOptions;
+	exports.writeConcern = writeConcern;
+	exports.INVALID_BSON_ERROR = INVALID_BSON_ERROR;
+	exports.WRITE_CONCERN_ERROR = WRITE_CONCERN_ERROR;
+	exports.MULTIPLE_ERROR = MULTIPLE_ERROR;
+	exports.UNKNOWN_ERROR = UNKNOWN_ERROR;
+	exports.INSERT = INSERT;
+	exports.UPDATE = UPDATE;
+	exports.REMOVE = REMOVE;
+
+/***/ },
 /* 382 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	/**
+	 * Module dependencies.
+	 */
+
+	var pathRegexp = __webpack_require__(600);
+	var debug = __webpack_require__(574)('express:router:layer');
 
 	/**
-	 * Test whether value is a Boolean
-	 * @param {*} value
-	 * @return {Boolean} isBoolean
+	 * Module variables.
 	 */
-	exports.isBoolean = function(value) {
-	  return (value instanceof Boolean) || (typeof value == 'boolean');
+
+	var hasOwnProperty = Object.prototype.hasOwnProperty;
+
+	/**
+	 * Expose `Layer`.
+	 */
+
+	module.exports = Layer;
+
+	function Layer(path, options, fn) {
+	  if (!(this instanceof Layer)) {
+	    return new Layer(path, options, fn);
+	  }
+
+	  debug('new %s', path);
+	  options = options || {};
+
+	  this.handle = fn;
+	  this.name = fn.name || '<anonymous>';
+	  this.params = undefined;
+	  this.path = undefined;
+	  this.regexp = pathRegexp(path, this.keys = [], options);
+
+	  if (path === '/' && options.end === false) {
+	    this.regexp.fast_slash = true;
+	  }
+	}
+
+	/**
+	 * Handle the error for the layer.
+	 *
+	 * @param {Error} error
+	 * @param {Request} req
+	 * @param {Response} res
+	 * @param {function} next
+	 * @api private
+	 */
+
+	Layer.prototype.handle_error = function handle_error(error, req, res, next) {
+	  var fn = this.handle;
+
+	  if (fn.length !== 4) {
+	    // not a standard error handler
+	    return next(error);
+	  }
+
+	  try {
+	    fn(error, req, res, next);
+	  } catch (err) {
+	    next(err);
+	  }
 	};
+
+	/**
+	 * Handle the request for the layer.
+	 *
+	 * @param {Request} req
+	 * @param {Response} res
+	 * @param {function} next
+	 * @api private
+	 */
+
+	Layer.prototype.handle_request = function handle(req, res, next) {
+	  var fn = this.handle;
+
+	  if (fn.length > 3) {
+	    // not a standard request handler
+	    return next();
+	  }
+
+	  try {
+	    fn(req, res, next);
+	  } catch (err) {
+	    next(err);
+	  }
+	};
+
+	/**
+	 * Check if this route matches `path`, if so
+	 * populate `.params`.
+	 *
+	 * @param {String} path
+	 * @return {Boolean}
+	 * @api private
+	 */
+
+	Layer.prototype.match = function match(path) {
+	  if (path == null) {
+	    // no path, nothing matches
+	    this.params = undefined;
+	    this.path = undefined;
+	    return false;
+	  }
+
+	  if (this.regexp.fast_slash) {
+	    // fast path non-ending match for / (everything matches)
+	    this.params = {};
+	    this.path = '';
+	    return true;
+	  }
+
+	  var m = this.regexp.exec(path);
+
+	  if (!m) {
+	    this.params = undefined;
+	    this.path = undefined;
+	    return false;
+	  }
+
+	  // store values
+	  this.params = {};
+	  this.path = m[0];
+
+	  var keys = this.keys;
+	  var params = this.params;
+	  var prop;
+	  var n = 0;
+	  var key;
+	  var val;
+
+	  for (var i = 1, len = m.length; i < len; ++i) {
+	    key = keys[i - 1];
+	    prop = key
+	      ? key.name
+	      : n++;
+	    val = decode_param(m[i]);
+
+	    if (val !== undefined || !(hasOwnProperty.call(params, prop))) {
+	      params[prop] = val;
+	    }
+	  }
+
+	  return true;
+	};
+
+	/**
+	 * Decode param value.
+	 *
+	 * @param {string} val
+	 * @return {string}
+	 * @api private
+	 */
+
+	function decode_param(val){
+	  if (typeof val !== 'string') {
+	    return val;
+	  }
+
+	  try {
+	    return decodeURIComponent(val);
+	  } catch (e) {
+	    var err = new TypeError("Failed to decode param '" + val + "'");
+	    err.status = 400;
+	    throw err;
+	  }
+	}
 
 
 /***/ },
@@ -97053,13 +97013,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	var contentDisposition = __webpack_require__(541);
-	var contentType = __webpack_require__(601);
-	var deprecate = __webpack_require__(533)('express');
+	var contentType = __webpack_require__(602);
+	var deprecate = __webpack_require__(532)('express');
 	var mime = __webpack_require__(546).mime;
 	var basename = __webpack_require__(8).basename;
-	var etag = __webpack_require__(602);
-	var proxyaddr = __webpack_require__(540);
-	var qs = __webpack_require__(548);
+	var etag = __webpack_require__(601);
+	var proxyaddr = __webpack_require__(539);
+	var qs = __webpack_require__(540);
 	var querystring = __webpack_require__(575);
 
 	/**
@@ -97334,7 +97294,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return {};
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
 /* 384 */
@@ -97376,7 +97336,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var debug = __webpack_require__(576)('express:view');
+	var debug = __webpack_require__(574)('express:view');
 	var path = __webpack_require__(8);
 	var fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
 	var utils = __webpack_require__(383);
@@ -97421,7 +97381,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var ext = this.ext = extname(name);
 	  if (!ext && !this.defaultEngine) throw new Error('No default engine was specified and no extension was provided.');
 	  if (!ext) name += (ext = this.ext = ('.' != this.defaultEngine[0] ? '.' : '') + this.defaultEngine);
-	  this.engine = engines[ext] || (engines[ext] = __webpack_require__(577)(ext.slice(1)).__express);
+	  this.engine = engines[ext] || (engines[ext] = __webpack_require__(576)(ext.slice(1)).__express);
 	  this.path = this.lookup(name);
 	}
 
@@ -97520,192 +97480,20 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 386 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/**
-	 * Module dependencies.
-	 */
+	'use strict';
 
-	var pathRegexp = __webpack_require__(603);
-	var debug = __webpack_require__(576)('express:router:layer');
-
-	/**
-	 * Module variables.
-	 */
-
-	var hasOwnProperty = Object.prototype.hasOwnProperty;
-
-	/**
-	 * Expose `Layer`.
-	 */
-
-	module.exports = Layer;
-
-	function Layer(path, options, fn) {
-	  if (!(this instanceof Layer)) {
-	    return new Layer(path, options, fn);
-	  }
-
-	  debug('new %s', path);
-	  options = options || {};
-
-	  this.handle = fn;
-	  this.name = fn.name || '<anonymous>';
-	  this.params = undefined;
-	  this.path = undefined;
-	  this.regexp = pathRegexp(path, this.keys = [], options);
-
-	  if (path === '/' && options.end === false) {
-	    this.regexp.fast_slash = true;
-	  }
-	}
-
-	/**
-	 * Handle the error for the layer.
-	 *
-	 * @param {Error} error
-	 * @param {Request} req
-	 * @param {Response} res
-	 * @param {function} next
-	 * @api private
-	 */
-
-	Layer.prototype.handle_error = function handle_error(error, req, res, next) {
-	  var fn = this.handle;
-
-	  if (fn.length !== 4) {
-	    // not a standard error handler
-	    return next(error);
-	  }
-
-	  try {
-	    fn(error, req, res, next);
-	  } catch (err) {
-	    next(err);
-	  }
-	};
-
-	/**
-	 * Handle the request for the layer.
-	 *
-	 * @param {Request} req
-	 * @param {Response} res
-	 * @param {function} next
-	 * @api private
-	 */
-
-	Layer.prototype.handle_request = function handle(req, res, next) {
-	  var fn = this.handle;
-
-	  if (fn.length > 3) {
-	    // not a standard request handler
-	    return next();
-	  }
-
-	  try {
-	    fn(req, res, next);
-	  } catch (err) {
-	    next(err);
-	  }
-	};
-
-	/**
-	 * Check if this route matches `path`, if so
-	 * populate `.params`.
-	 *
-	 * @param {String} path
-	 * @return {Boolean}
-	 * @api private
-	 */
-
-	Layer.prototype.match = function match(path) {
-	  if (path == null) {
-	    // no path, nothing matches
-	    this.params = undefined;
-	    this.path = undefined;
-	    return false;
-	  }
-
-	  if (this.regexp.fast_slash) {
-	    // fast path non-ending match for / (everything matches)
-	    this.params = {};
-	    this.path = '';
-	    return true;
-	  }
-
-	  var m = this.regexp.exec(path);
-
-	  if (!m) {
-	    this.params = undefined;
-	    this.path = undefined;
-	    return false;
-	  }
-
-	  // store values
-	  this.params = {};
-	  this.path = m[0];
-
-	  var keys = this.keys;
-	  var params = this.params;
-	  var prop;
-	  var n = 0;
-	  var key;
-	  var val;
-
-	  for (var i = 1, len = m.length; i < len; ++i) {
-	    key = keys[i - 1];
-	    prop = key
-	      ? key.name
-	      : n++;
-	    val = decode_param(m[i]);
-
-	    if (val !== undefined || !(hasOwnProperty.call(params, prop))) {
-	      params[prop] = val;
-	    }
-	  }
-
-	  return true;
-	};
-
-	/**
-	 * Decode param value.
-	 *
-	 * @param {string} val
-	 * @return {string}
-	 * @api private
-	 */
-
-	function decode_param(val){
-	  if (typeof val !== 'string') {
-	    return val;
-	  }
-
-	  try {
-	    return decodeURIComponent(val);
-	  } catch (e) {
-	    var err = new TypeError("Failed to decode param '" + val + "'");
-	    err.status = 400;
-	    throw err;
-	  }
-	}
+	exports.decode = exports.parse = __webpack_require__(586);
+	exports.encode = exports.stringify = __webpack_require__(587);
 
 
 /***/ },
 /* 387 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
-
-	exports.decode = exports.parse = __webpack_require__(587);
-	exports.encode = exports.stringify = __webpack_require__(588);
-
-
-/***/ },
-/* 388 */
-/***/ function(module, exports, __webpack_require__) {
-
 	/* (ignored) */
 
 /***/ },
-/* 389 */
+/* 388 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {
@@ -97719,8 +97507,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module requirements.
 	 */
 
-	var Transport = __webpack_require__(65)
-	  , parser = __webpack_require__(71)
+	var Transport = __webpack_require__(64)
+	  , parser = __webpack_require__(70)
 	  , qs = __webpack_require__(575);
 
 	/**
@@ -97831,10 +97619,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.write(parser.encodePayload(msgs));
 	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 390 */
+/* 389 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -97848,7 +97636,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module requirements.
 	 */
 
-	var HTTPTransport = __webpack_require__(389);
+	var HTTPTransport = __webpack_require__(388);
 
 	/**
 	 * Exports the constructor.
@@ -97987,7 +97775,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 391 */
+/* 390 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98006,7 +97794,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 392 */
+/* 391 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98031,7 +97819,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 393 */
+/* 392 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98052,7 +97840,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 394 */
+/* 393 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98076,7 +97864,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 395 */
+/* 394 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98102,7 +97890,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 396 */
+/* 395 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98127,7 +97915,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 397 */
+/* 396 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98152,7 +97940,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 398 */
+/* 397 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98175,7 +97963,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 399 */
+/* 398 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98200,7 +97988,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 400 */
+/* 399 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98222,7 +98010,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 401 */
+/* 400 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98243,7 +98031,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 402 */
+/* 401 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98264,7 +98052,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 403 */
+/* 402 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98284,7 +98072,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 404 */
+/* 403 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98312,7 +98100,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 405 */
+/* 404 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98337,7 +98125,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 406 */
+/* 405 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98363,7 +98151,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 407 */
+/* 406 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98388,7 +98176,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 408 */
+/* 407 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98414,7 +98202,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 409 */
+/* 408 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98440,7 +98228,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 410 */
+/* 409 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98462,7 +98250,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 411 */
+/* 410 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98487,7 +98275,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 412 */
+/* 411 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98510,7 +98298,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 413 */
+/* 412 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98534,7 +98322,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 414 */
+/* 413 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98561,7 +98349,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 415 */
+/* 414 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98586,7 +98374,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 416 */
+/* 415 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98610,7 +98398,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 417 */
+/* 416 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98633,7 +98421,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 418 */
+/* 417 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98653,7 +98441,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 419 */
+/* 418 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98676,7 +98464,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 420 */
+/* 419 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98699,7 +98487,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 421 */
+/* 420 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98721,7 +98509,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 422 */
+/* 421 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98742,7 +98530,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 423 */
+/* 422 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98764,7 +98552,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 424 */
+/* 423 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98787,7 +98575,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 425 */
+/* 424 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98810,7 +98598,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 426 */
+/* 425 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98836,7 +98624,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 427 */
+/* 426 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98862,7 +98650,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 428 */
+/* 427 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98888,7 +98676,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 429 */
+/* 428 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98914,7 +98702,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 430 */
+/* 429 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98939,7 +98727,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 431 */
+/* 430 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98966,7 +98754,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 432 */
+/* 431 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -98991,7 +98779,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 433 */
+/* 432 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99022,7 +98810,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 434 */
+/* 433 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99050,7 +98838,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 435 */
+/* 434 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99079,7 +98867,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 436 */
+/* 435 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99103,7 +98891,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 437 */
+/* 436 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99129,7 +98917,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 438 */
+/* 437 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99149,7 +98937,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 439 */
+/* 438 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99169,7 +98957,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 440 */
+/* 439 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99192,7 +98980,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 441 */
+/* 440 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99217,7 +99005,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 442 */
+/* 441 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99240,7 +99028,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 443 */
+/* 442 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99264,7 +99052,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 444 */
+/* 443 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99289,7 +99077,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 445 */
+/* 444 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99312,7 +99100,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 446 */
+/* 445 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99333,7 +99121,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 447 */
+/* 446 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99357,7 +99145,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 448 */
+/* 447 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99381,7 +99169,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 449 */
+/* 448 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99407,7 +99195,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 450 */
+/* 449 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99430,7 +99218,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 451 */
+/* 450 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99452,7 +99240,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 452 */
+/* 451 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99482,7 +99270,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 453 */
+/* 452 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99513,7 +99301,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 454 */
+/* 453 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99538,7 +99326,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 455 */
+/* 454 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99562,7 +99350,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 456 */
+/* 455 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99585,7 +99373,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 457 */
+/* 456 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99616,7 +99404,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 458 */
+/* 457 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99637,7 +99425,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 459 */
+/* 458 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99660,7 +99448,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 460 */
+/* 459 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99689,7 +99477,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 461 */
+/* 460 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99707,7 +99495,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 462 */
+/* 461 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99728,7 +99516,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 463 */
+/* 462 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99749,7 +99537,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 464 */
+/* 463 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99769,7 +99557,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 465 */
+/* 464 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99789,7 +99577,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 466 */
+/* 465 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99815,7 +99603,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 467 */
+/* 466 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99840,7 +99628,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 468 */
+/* 467 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99865,7 +99653,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 469 */
+/* 468 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99887,7 +99675,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 470 */
+/* 469 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99914,7 +99702,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 471 */
+/* 470 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99942,7 +99730,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 472 */
+/* 471 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99968,7 +99756,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 473 */
+/* 472 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -99995,7 +99783,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 474 */
+/* 473 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100021,7 +99809,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 475 */
+/* 474 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100049,7 +99837,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 476 */
+/* 475 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100083,7 +99871,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 477 */
+/* 476 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100116,7 +99904,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 478 */
+/* 477 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100144,7 +99932,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 479 */
+/* 478 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100178,7 +99966,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 480 */
+/* 479 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100208,7 +99996,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 481 */
+/* 480 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100241,7 +100029,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 482 */
+/* 481 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100271,7 +100059,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 483 */
+/* 482 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100304,7 +100092,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 484 */
+/* 483 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100327,7 +100115,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 485 */
+/* 484 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100348,7 +100136,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 486 */
+/* 485 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100371,7 +100159,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 487 */
+/* 486 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100391,7 +100179,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 488 */
+/* 487 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100415,7 +100203,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 489 */
+/* 488 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100436,7 +100224,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 490 */
+/* 489 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100460,7 +100248,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 491 */
+/* 490 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100481,7 +100269,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 492 */
+/* 491 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100504,7 +100292,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 493 */
+/* 492 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100525,7 +100313,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 494 */
+/* 493 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100548,7 +100336,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 495 */
+/* 494 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100569,7 +100357,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 496 */
+/* 495 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100596,7 +100384,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 497 */
+/* 496 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100622,7 +100410,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 498 */
+/* 497 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100644,7 +100432,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 499 */
+/* 498 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100667,7 +100455,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 500 */
+/* 499 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100690,7 +100478,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 501 */
+/* 500 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100713,7 +100501,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 502 */
+/* 501 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100736,7 +100524,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 503 */
+/* 502 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100759,7 +100547,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 504 */
+/* 503 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100782,7 +100570,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 505 */
+/* 504 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100808,7 +100596,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 506 */
+/* 505 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100829,7 +100617,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 507 */
+/* 506 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100854,7 +100642,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 508 */
+/* 507 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100876,7 +100664,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 509 */
+/* 508 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100897,7 +100685,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 510 */
+/* 509 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100919,7 +100707,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 511 */
+/* 510 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100937,7 +100725,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 512 */
+/* 511 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100957,7 +100745,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 513 */
+/* 512 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100975,7 +100763,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 514 */
+/* 513 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -100997,7 +100785,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 515 */
+/* 514 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -101016,7 +100804,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 516 */
+/* 515 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -101038,7 +100826,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 517 */
+/* 516 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = {
@@ -101059,7 +100847,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 518 */
+/* 517 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -101069,7 +100857,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = function (math) {
 	  var Matrix = math.type.Matrix;
-	  var array = __webpack_require__(342);
+	  var array = __webpack_require__(340);
 	  var collection = math.collection;
 	  var isCollection = collection.isCollection;
 
@@ -101272,7 +101060,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 519 */
+/* 518 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -101305,7 +101093,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 520 */
+/* 519 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
@@ -101340,7 +101128,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 521 */
+/* 520 */
 /***/ function(module, exports, __webpack_require__) {
 
 	;(function () {
@@ -101406,7 +101194,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 522 */
+/* 521 */
 /***/ function(module, exports, __webpack_require__) {
 
 	if (typeof Object.create === 'function') {
@@ -101435,7 +101223,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 523 */
+/* 522 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {/*!
@@ -101448,8 +101236,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var callSiteToString = __webpack_require__(604).callSiteToString
-	var EventEmitter = __webpack_require__(121).EventEmitter
+	var callSiteToString = __webpack_require__(603).callSiteToString
+	var EventEmitter = __webpack_require__(120).EventEmitter
 	var relative = __webpack_require__(8).relative
 
 	/**
@@ -101971,11 +101759,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 524 */
+/* 523 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var ReadStream = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())).ReadStream
-	var Stream = __webpack_require__(317)
+	var Stream = __webpack_require__(316)
 
 	module.exports = function destroy(stream) {
 	  if (stream instanceof ReadStream) {
@@ -102013,7 +101801,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 525 */
+/* 524 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -102068,7 +101856,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 526 */
+/* 525 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -102126,7 +101914,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 527 */
+/* 526 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {/*!
@@ -102145,8 +101933,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var crc = __webpack_require__(648).crc32
-	var crypto = __webpack_require__(112)
+	var crc = __webpack_require__(647).crc32
+	var crypto = __webpack_require__(110)
 	var Stats = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())).Stats
 
 	/**
@@ -102301,10 +102089,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    .digest('base64')
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 528 */
+/* 527 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -102433,7 +102221,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 529 */
+/* 528 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(setImmediate, process) {/*!
@@ -102454,7 +102242,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	* Module dependencies.
 	*/
 
-	var first = __webpack_require__(627)
+	var first = __webpack_require__(626)
 
 	/**
 	* Variables.
@@ -102628,10 +102416,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(62).setImmediate, __webpack_require__(9)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(61).setImmediate, __webpack_require__(9)))
 
 /***/ },
-/* 530 */
+/* 529 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -102643,7 +102431,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * See http://pajhome.org.uk/crypt/md5 for more info.
 	 */
 
-	var helpers = __webpack_require__(599);
+	var helpers = __webpack_require__(598);
 
 	/*
 	 * Calculate the MD5 of an array of little-endian words, and a bit length
@@ -102792,6 +102580,54 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
+/* 530 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	var http = __webpack_require__(595);
+
+	/* istanbul ignore next: implementation differs on version */
+	if (http.METHODS) {
+
+	  module.exports = http.METHODS.map(function(method){
+	    return method.toLowerCase();
+	  });
+
+	} else {
+
+	  module.exports = [
+	    'get',
+	    'post',
+	    'put',
+	    'head',
+	    'delete',
+	    'options',
+	    'trace',
+	    'copy',
+	    'lock',
+	    'mkcol',
+	    'move',
+	    'purge',
+	    'propfind',
+	    'proppatch',
+	    'unlock',
+	    'report',
+	    'mkactivity',
+	    'checkout',
+	    'merge',
+	    'm-search',
+	    'notify',
+	    'subscribe',
+	    'unsubscribe',
+	    'patch',
+	    'search',
+	    'connect'
+	  ];
+
+	}
+
+
+/***/ },
 /* 531 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -102805,9 +102641,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var debug = __webpack_require__(576)('finalhandler')
+	var debug = __webpack_require__(574)('finalhandler')
 	var escapeHtml = __webpack_require__(542)
-	var http = __webpack_require__(80)
+	var http = __webpack_require__(79)
 	var onFinished = __webpack_require__(543)
 
 	/**
@@ -102967,58 +102803,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(62).setImmediate, __webpack_require__(9), __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(61).setImmediate, __webpack_require__(9), __webpack_require__(53).Buffer))
 
 /***/ },
 /* 532 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
-	var http = __webpack_require__(596);
-
-	/* istanbul ignore next: implementation differs on version */
-	if (http.METHODS) {
-
-	  module.exports = http.METHODS.map(function(method){
-	    return method.toLowerCase();
-	  });
-
-	} else {
-
-	  module.exports = [
-	    'get',
-	    'post',
-	    'put',
-	    'head',
-	    'delete',
-	    'options',
-	    'trace',
-	    'copy',
-	    'lock',
-	    'mkcol',
-	    'move',
-	    'purge',
-	    'propfind',
-	    'proppatch',
-	    'unlock',
-	    'report',
-	    'mkactivity',
-	    'checkout',
-	    'merge',
-	    'm-search',
-	    'notify',
-	    'subscribe',
-	    'unsubscribe',
-	    'patch',
-	    'search',
-	    'connect'
-	  ];
-
-	}
-
-
-/***/ },
-/* 533 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {/*!
@@ -103031,8 +102819,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var callSiteToString = __webpack_require__(609).callSiteToString
-	var EventEmitter = __webpack_require__(121).EventEmitter
+	var callSiteToString = __webpack_require__(608).callSiteToString
+	var EventEmitter = __webpack_require__(120).EventEmitter
 	var relative = __webpack_require__(8).relative
 
 	/**
@@ -103554,7 +103342,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 534 */
+/* 533 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -103583,11 +103371,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 535 */
+/* 534 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Negotiator = __webpack_require__(639)
-	var mime = __webpack_require__(640)
+	var Negotiator = __webpack_require__(638)
+	var mime = __webpack_require__(639)
 
 	var slice = [].slice
 
@@ -103749,12 +103537,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 536 */
+/* 535 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
-	var typer = __webpack_require__(641)
-	var mime = __webpack_require__(642)
+	var typer = __webpack_require__(640)
+	var mime = __webpack_require__(641)
 
 	module.exports = typeofrequest;
 	typeofrequest.is = typeis;
@@ -103979,7 +103767,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 537 */
+/* 536 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -104037,7 +103825,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 538 */
+/* 537 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -104092,7 +103880,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 539 */
+/* 538 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -104106,7 +103894,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var url = __webpack_require__(110)
+	var url = __webpack_require__(109)
 	var parse = url.parse
 	var Url = url.Url
 
@@ -104234,7 +104022,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 540 */
+/* 539 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -104255,8 +104043,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var forwarded = __webpack_require__(643);
-	var ipaddr = __webpack_require__(651);
+	var forwarded = __webpack_require__(642);
+	var ipaddr = __webpack_require__(650);
 
 	/**
 	 * Variables.
@@ -104582,6 +104370,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	      : false;
 	  };
 	}
+
+
+/***/ },
+/* 540 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(609);
 
 
 /***/ },
@@ -105032,7 +104827,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.parameters = parameters
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
 /* 542 */
@@ -105078,7 +104873,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	* Module dependencies.
 	*/
 
-	var first = __webpack_require__(644)
+	var first = __webpack_require__(643)
 
 	/**
 	* Variables.
@@ -105252,7 +105047,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(62).setImmediate, __webpack_require__(9)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(61).setImmediate, __webpack_require__(9)))
 
 /***/ },
 /* 544 */
@@ -105262,7 +105057,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var crypto = __webpack_require__(112);
+	var crypto = __webpack_require__(110);
 
 	/**
 	 * Sign the given `val` with `secret`.
@@ -105407,22 +105202,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module dependencies.
 	 */
 
-	var debug = __webpack_require__(576)('send')
-	var deprecate = __webpack_require__(533)('send')
-	var destroy = __webpack_require__(645)
+	var debug = __webpack_require__(574)('send')
+	var deprecate = __webpack_require__(532)('send')
+	var destroy = __webpack_require__(644)
 	var escapeHtml = __webpack_require__(542)
-	  , parseRange = __webpack_require__(538)
-	  , Stream = __webpack_require__(317)
-	  , mime = __webpack_require__(549)
-	  , fresh = __webpack_require__(537)
+	  , parseRange = __webpack_require__(537)
+	  , Stream = __webpack_require__(316)
+	  , mime = __webpack_require__(552)
+	  , fresh = __webpack_require__(536)
 	  , path = __webpack_require__(8)
-	  , http = __webpack_require__(80)
+	  , http = __webpack_require__(79)
 	  , fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
 	  , normalize = path.normalize
 	  , join = path.join
-	var etag = __webpack_require__(602)
-	var EventEmitter = __webpack_require__(121).EventEmitter;
-	var ms = __webpack_require__(646);
+	var etag = __webpack_require__(601)
+	var EventEmitter = __webpack_require__(120).EventEmitter;
+	var ms = __webpack_require__(645);
 	var onFinished = __webpack_require__(543)
 
 	/**
@@ -106317,128 +106112,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 548 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(610);
-
-
-/***/ },
-/* 549 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {var path = __webpack_require__(8);
-	var fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
-
-	function Mime() {
-	  // Map of extension -> mime type
-	  this.types = Object.create(null);
-
-	  // Map of mime type -> extension
-	  this.extensions = Object.create(null);
-	}
-
-	/**
-	 * Define mimetype -> extension mappings.  Each key is a mime-type that maps
-	 * to an array of extensions associated with the type.  The first extension is
-	 * used as the default extension for the type.
-	 *
-	 * e.g. mime.define({'audio/ogg', ['oga', 'ogg', 'spx']});
-	 *
-	 * @param map (Object) type definitions
-	 */
-	Mime.prototype.define = function (map) {
-	  for (var type in map) {
-	    var exts = map[type];
-	    for (var i = 0; i < exts.length; i++) {
-	      if (process.env.DEBUG_MIME && this.types[exts]) {
-	        console.warn(this._loading.replace(/.*\//, ''), 'changes "' + exts[i] + '" extension type from ' +
-	          this.types[exts] + ' to ' + type);
-	      }
-
-	      this.types[exts[i]] = type;
-	    }
-
-	    // Default extension is the first one we encounter
-	    if (!this.extensions[type]) {
-	      this.extensions[type] = exts[0];
-	    }
-	  }
-	};
-
-	/**
-	 * Load an Apache2-style ".types" file
-	 *
-	 * This may be called multiple times (it's expected).  Where files declare
-	 * overlapping types/extensions, the last file wins.
-	 *
-	 * @param file (String) path of file to load.
-	 */
-	Mime.prototype.load = function(file) {
-	  this._loading = file;
-	  // Read file and split into lines
-	  var map = {},
-	      content = fs.readFileSync(file, 'ascii'),
-	      lines = content.split(/[\r\n]+/);
-
-	  lines.forEach(function(line) {
-	    // Clean up whitespace/comments, and split into fields
-	    var fields = line.replace(/\s*#.*|^\s*|\s*$/g, '').split(/\s+/);
-	    map[fields.shift()] = fields;
-	  });
-
-	  this.define(map);
-
-	  this._loading = null;
-	};
-
-	/**
-	 * Lookup a mime type based on extension
-	 */
-	Mime.prototype.lookup = function(path, fallback) {
-	  var ext = path.replace(/.*[\.\/\\]/, '').toLowerCase();
-
-	  return this.types[ext] || fallback || this.default_type;
-	};
-
-	/**
-	 * Return file extension associated with a mime type
-	 */
-	Mime.prototype.extension = function(mimeType) {
-	  var type = mimeType.match(/^\s*([^;\s]*)(?:;|\s|$)/)[1].toLowerCase();
-	  return this.extensions[type];
-	};
-
-	// Default instance
-	var mime = new Mime();
-
-	// Define built-in types
-	mime.define(__webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"./types.json\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())));
-
-	// Default type
-	mime.default_type = mime.lookup('bin');
-
-	//
-	// Additional API specific to the default instance
-	//
-
-	mime.Mime = Mime;
-
-	/**
-	 * Lookup a charset based on mime type.
-	 */
-	mime.charsets = {
-	  lookup: function(mimeType, fallback) {
-	    // Assume text types are utf8
-	    return (/^text\//).test(mimeType) ? 'UTF-8' : fallback;
-	  }
-	};
-
-	module.exports = mime;
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
-
-/***/ },
-/* 550 */
-/***/ function(module, exports, __webpack_require__) {
-
 	/* WEBPACK VAR INJECTION */(function(process) {module.exports = minimatch
 	minimatch.Minimatch = Minimatch
 
@@ -106447,7 +106120,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  isWindows = true
 
 	var GLOBSTAR = minimatch.GLOBSTAR = Minimatch.GLOBSTAR = {}
-	  , expand = __webpack_require__(647)
+	  , expand = __webpack_require__(646)
 
 	  // any single thing other than /
 	  // don't need to escape / when using new RegExp()
@@ -107311,7 +106984,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 551 */
+/* 549 */
 /***/ function(module, exports, __webpack_require__) {
 
 	if (typeof Object.create === 'function') {
@@ -107340,12 +107013,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 552 */
+/* 550 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(process) {var wrappy = __webpack_require__(654)
+	/* WEBPACK VAR INJECTION */(function(process) {var wrappy = __webpack_require__(651)
 	var reqs = Object.create(null)
-	var once = __webpack_require__(553)
+	var once = __webpack_require__(551)
 
 	module.exports = wrappy(inflight)
 
@@ -107391,10 +107064,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 553 */
+/* 551 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var wrappy = __webpack_require__(655)
+	var wrappy = __webpack_require__(652)
 	module.exports = wrappy(once)
 
 	once.proto = once(function () {
@@ -107418,13 +107091,128 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 554 */
+/* 552 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(606);
+	/* WEBPACK VAR INJECTION */(function(process) {var path = __webpack_require__(8);
+	var fs = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()));
+
+	function Mime() {
+	  // Map of extension -> mime type
+	  this.types = Object.create(null);
+
+	  // Map of mime type -> extension
+	  this.extensions = Object.create(null);
+	}
+
+	/**
+	 * Define mimetype -> extension mappings.  Each key is a mime-type that maps
+	 * to an array of extensions associated with the type.  The first extension is
+	 * used as the default extension for the type.
+	 *
+	 * e.g. mime.define({'audio/ogg', ['oga', 'ogg', 'spx']});
+	 *
+	 * @param map (Object) type definitions
+	 */
+	Mime.prototype.define = function (map) {
+	  for (var type in map) {
+	    var exts = map[type];
+	    for (var i = 0; i < exts.length; i++) {
+	      if (process.env.DEBUG_MIME && this.types[exts]) {
+	        console.warn(this._loading.replace(/.*\//, ''), 'changes "' + exts[i] + '" extension type from ' +
+	          this.types[exts] + ' to ' + type);
+	      }
+
+	      this.types[exts[i]] = type;
+	    }
+
+	    // Default extension is the first one we encounter
+	    if (!this.extensions[type]) {
+	      this.extensions[type] = exts[0];
+	    }
+	  }
+	};
+
+	/**
+	 * Load an Apache2-style ".types" file
+	 *
+	 * This may be called multiple times (it's expected).  Where files declare
+	 * overlapping types/extensions, the last file wins.
+	 *
+	 * @param file (String) path of file to load.
+	 */
+	Mime.prototype.load = function(file) {
+	  this._loading = file;
+	  // Read file and split into lines
+	  var map = {},
+	      content = fs.readFileSync(file, 'ascii'),
+	      lines = content.split(/[\r\n]+/);
+
+	  lines.forEach(function(line) {
+	    // Clean up whitespace/comments, and split into fields
+	    var fields = line.replace(/\s*#.*|^\s*|\s*$/g, '').split(/\s+/);
+	    map[fields.shift()] = fields;
+	  });
+
+	  this.define(map);
+
+	  this._loading = null;
+	};
+
+	/**
+	 * Lookup a mime type based on extension
+	 */
+	Mime.prototype.lookup = function(path, fallback) {
+	  var ext = path.replace(/.*[\.\/\\]/, '').toLowerCase();
+
+	  return this.types[ext] || fallback || this.default_type;
+	};
+
+	/**
+	 * Return file extension associated with a mime type
+	 */
+	Mime.prototype.extension = function(mimeType) {
+	  var type = mimeType.match(/^\s*([^;\s]*)(?:;|\s|$)/)[1].toLowerCase();
+	  return this.extensions[type];
+	};
+
+	// Default instance
+	var mime = new Mime();
+
+	// Define built-in types
+	mime.define(__webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"./types.json\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())));
+
+	// Default type
+	mime.default_type = mime.lookup('bin');
+
+	//
+	// Additional API specific to the default instance
+	//
+
+	mime.Mime = Mime;
+
+	/**
+	 * Lookup a charset based on mime type.
+	 */
+	mime.charsets = {
+	  lookup: function(mimeType, fallback) {
+	    // Assume text types are utf8
+	    return (/^text\//).test(mimeType) ? 'UTF-8' : fallback;
+	  }
+	};
+
+	module.exports = mime;
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 555 */
+/* 553 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = __webpack_require__(605);
+
+/***/ },
+/* 554 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
@@ -107507,17 +107295,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 556 */
+/* 555 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var inherits = __webpack_require__(53).inherits
-	  , EventEmitter = __webpack_require__(121).EventEmitter
-	  , Connection = __webpack_require__(607)
-	  , Query = __webpack_require__(327).Query
-	  , Logger = __webpack_require__(324)
-	  , f = __webpack_require__(53).format;
+	var inherits = __webpack_require__(52).inherits
+	  , EventEmitter = __webpack_require__(120).EventEmitter
+	  , Connection = __webpack_require__(606)
+	  , Query = __webpack_require__(326).Query
+	  , Logger = __webpack_require__(323)
+	  , f = __webpack_require__(52).format;
 
 	var DISCONNECTED = 'disconnected';
 	var CONNECTING = 'connecting';
@@ -107770,14 +107558,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Pool;
 
 /***/ },
-/* 557 */
+/* 556 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var setProperty = __webpack_require__(555).setProperty
-	  , getProperty = __webpack_require__(555).getProperty
-	  , getSingleProperty = __webpack_require__(555).getSingleProperty;
+	var setProperty = __webpack_require__(554).setProperty
+	  , getProperty = __webpack_require__(554).getProperty
+	  , getSingleProperty = __webpack_require__(554).getSingleProperty;
 
 	/**
 	 * Creates a new CommandResult instance
@@ -107812,24 +107600,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = CommandResult;
 
 /***/ },
-/* 558 */
+/* 557 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
 
-	var Insert = __webpack_require__(608).Insert
-	  , Update = __webpack_require__(608).Update
-	  , Remove = __webpack_require__(608).Remove
-	  , Query = __webpack_require__(327).Query
-	  , copy = __webpack_require__(555).copy
-	  , KillCursor = __webpack_require__(327).KillCursor
-	  , GetMore = __webpack_require__(327).GetMore
-	  , Query = __webpack_require__(327).Query
-	  , ReadPreference = __webpack_require__(326)
-	  , f = __webpack_require__(53).format
-	  , CommandResult = __webpack_require__(557)
-	  , MongoError = __webpack_require__(320)
-	  , Long = __webpack_require__(569).Long;
+	var Insert = __webpack_require__(607).Insert
+	  , Update = __webpack_require__(607).Update
+	  , Remove = __webpack_require__(607).Remove
+	  , Query = __webpack_require__(326).Query
+	  , copy = __webpack_require__(554).copy
+	  , KillCursor = __webpack_require__(326).KillCursor
+	  , GetMore = __webpack_require__(326).GetMore
+	  , Query = __webpack_require__(326).Query
+	  , ReadPreference = __webpack_require__(325)
+	  , f = __webpack_require__(52).format
+	  , CommandResult = __webpack_require__(556)
+	  , MongoError = __webpack_require__(319)
+	  , Long = __webpack_require__(568).Long;
 
 	// Write concern fields
 	var writeConcernFields = ['w', 'wtimeout', 'j', 'fsync'];
@@ -108332,24 +108120,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 559 */
+/* 558 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
 
-	var Insert = __webpack_require__(608).Insert
-	  , Update = __webpack_require__(608).Update
-	  , Remove = __webpack_require__(608).Remove
-	  , Query = __webpack_require__(327).Query
-	  , copy = __webpack_require__(555).copy
-	  , KillCursor = __webpack_require__(327).KillCursor
-	  , GetMore = __webpack_require__(327).GetMore
-	  , Query = __webpack_require__(327).Query
-	  , ReadPreference = __webpack_require__(326)
-	  , f = __webpack_require__(53).format
-	  , CommandResult = __webpack_require__(557)
-	  , MongoError = __webpack_require__(320)
-	  , Long = __webpack_require__(569).Long;
+	var Insert = __webpack_require__(607).Insert
+	  , Update = __webpack_require__(607).Update
+	  , Remove = __webpack_require__(607).Remove
+	  , Query = __webpack_require__(326).Query
+	  , copy = __webpack_require__(554).copy
+	  , KillCursor = __webpack_require__(326).KillCursor
+	  , GetMore = __webpack_require__(326).GetMore
+	  , Query = __webpack_require__(326).Query
+	  , ReadPreference = __webpack_require__(325)
+	  , f = __webpack_require__(52).format
+	  , CommandResult = __webpack_require__(556)
+	  , MongoError = __webpack_require__(319)
+	  , Long = __webpack_require__(568).Long;
 
 	var LegacySupport = function() {}
 
@@ -108588,14 +108376,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 560 */
+/* 559 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var inherits = __webpack_require__(53).inherits
-	  , f = __webpack_require__(53).format
-	  , EventEmitter = __webpack_require__(121).EventEmitter;
+	var inherits = __webpack_require__(52).inherits
+	  , f = __webpack_require__(52).format
+	  , EventEmitter = __webpack_require__(120).EventEmitter;
 
 	/**
 	 * Creates a new Authentication Session
@@ -108686,14 +108474,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Session;
 
 /***/ },
-/* 561 */
+/* 560 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var f = __webpack_require__(53).format
-	  , crypto = __webpack_require__(112)
-	  , MongoError = __webpack_require__(320);
+	var f = __webpack_require__(52).format
+	  , crypto = __webpack_require__(110)
+	  , MongoError = __webpack_require__(319);
 
 	var AuthSession = function(db, username, password, options) {
 	  this.db = db;
@@ -108714,9 +108502,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	// Try to grab the Kerberos class
 	try {
-	  Kerberos = __webpack_require__(590).Kerberos
+	  Kerberos = __webpack_require__(589).Kerberos
 	  // Authentication process for Mongo
-	  MongoAuthProcess = __webpack_require__(590).processes.MongoAuthProcess
+	  MongoAuthProcess = __webpack_require__(589).processes.MongoAuthProcess
 	} catch(err) {}
 
 	/**
@@ -108925,15 +108713,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = SSPI;
 
 /***/ },
-/* 562 */
+/* 561 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {"use strict";
 
-	var f = __webpack_require__(53).format
-	  , crypto = __webpack_require__(112)
-	  , Binary = __webpack_require__(569).Binary
-	  , MongoError = __webpack_require__(320);
+	var f = __webpack_require__(52).format
+	  , crypto = __webpack_require__(110)
+	  , Binary = __webpack_require__(568).Binary
+	  , MongoError = __webpack_require__(319);
 
 	var AuthSession = function(db, username, password) {
 	  this.db = db;
@@ -109245,18 +109033,18 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	module.exports = ScramSHA1;
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 563 */
+/* 562 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var Logger = __webpack_require__(324)
-	  , EventEmitter = __webpack_require__(121).EventEmitter
-	  , inherits = __webpack_require__(53).inherits
-	  , f = __webpack_require__(53).format;
+	var Logger = __webpack_require__(323)
+	  , EventEmitter = __webpack_require__(120).EventEmitter
+	  , inherits = __webpack_require__(52).inherits
+	  , f = __webpack_require__(52).format;
 
 	/**
 	 * Creates a new Ping read preference strategy instance
@@ -109529,14 +109317,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Ping;
 
 /***/ },
-/* 564 */
+/* 563 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var Logger = __webpack_require__(324)
-	  , f = __webpack_require__(53).format
-	  , MongoError = __webpack_require__(320);
+	var Logger = __webpack_require__(323)
+	  , f = __webpack_require__(52).format
+	  , MongoError = __webpack_require__(319);
 
 	var DISCONNECTED = 'disconnected';
 	var CONNECTING = 'connecting';
@@ -109956,7 +109744,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 565 */
+/* 564 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -109966,7 +109754,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Expose `debug()` as the module.
 	 */
 
-	exports = module.exports = __webpack_require__(611);
+	exports = module.exports = __webpack_require__(610);
 	exports.log = log;
 	exports.formatArgs = formatArgs;
 	exports.save = save;
@@ -110137,7 +109925,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 566 */
+/* 565 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process, Buffer) {
@@ -110151,12 +109939,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module requirements.
 	 */
 
-	var Transport = __webpack_require__(65)
+	var Transport = __webpack_require__(64)
 	  , EventEmitter = process.EventEmitter
-	  , crypto = __webpack_require__(112)
-	  , url = __webpack_require__(110)
-	  , parser = __webpack_require__(71)
-	  , util = __webpack_require__(86);
+	  , crypto = __webpack_require__(110)
+	  , url = __webpack_require__(109)
+	  , parser = __webpack_require__(70)
+	  , util = __webpack_require__(85);
 
 	/**
 	 * Export the constructor.
@@ -110783,10 +110571,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return this;
 	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(53).Buffer))
 
 /***/ },
-/* 567 */
+/* 566 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process, Buffer) {/*!
@@ -110799,12 +110587,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module requirements.
 	 */
 
-	var Transport = __webpack_require__(65)
+	var Transport = __webpack_require__(64)
 	  , EventEmitter = process.EventEmitter
-	  , crypto = __webpack_require__(112)
-	  , url = __webpack_require__(110)
-	  , parser = __webpack_require__(71)
-	  , util = __webpack_require__(86);
+	  , crypto = __webpack_require__(110)
+	  , url = __webpack_require__(109)
+	  , parser = __webpack_require__(70)
+	  , util = __webpack_require__(85);
 
 	/**
 	 * Export the constructor.
@@ -111432,10 +111220,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return this;
 	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(53).Buffer))
 
 /***/ },
-/* 568 */
+/* 567 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process, Buffer) {/*!
@@ -111448,10 +111236,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Module requirements.
 	 */
 
-	var Transport = __webpack_require__(65)
+	var Transport = __webpack_require__(64)
 	  , EventEmitter = process.EventEmitter
-	  , crypto = __webpack_require__(112)
-	  , parser = __webpack_require__(71);
+	  , crypto = __webpack_require__(110)
+	  , parser = __webpack_require__(70);
 
 	/**
 	 * Export the constructor.
@@ -111815,25 +111603,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return this;
 	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(53).Buffer))
 
 /***/ },
-/* 569 */
+/* 568 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(Buffer) {var Long = __webpack_require__(612).Long
-	  , Double = __webpack_require__(613).Double
-	  , Timestamp = __webpack_require__(614).Timestamp
-	  , ObjectID = __webpack_require__(615).ObjectID
-	  , Symbol = __webpack_require__(616).Symbol
-	  , Code = __webpack_require__(617).Code
-	  , MinKey = __webpack_require__(618).MinKey
-	  , MaxKey = __webpack_require__(619).MaxKey
-	  , DBRef = __webpack_require__(620).DBRef
-	  , Binary = __webpack_require__(621).Binary
-	  , BinaryParser = __webpack_require__(622).BinaryParser
-	  , writeIEEE754 = __webpack_require__(623).writeIEEE754
-	  , readIEEE754 = __webpack_require__(623).readIEEE754
+	/* WEBPACK VAR INJECTION */(function(Buffer) {var Long = __webpack_require__(611).Long
+	  , Double = __webpack_require__(612).Double
+	  , Timestamp = __webpack_require__(613).Timestamp
+	  , ObjectID = __webpack_require__(614).ObjectID
+	  , Symbol = __webpack_require__(615).Symbol
+	  , Code = __webpack_require__(616).Code
+	  , MinKey = __webpack_require__(617).MinKey
+	  , MaxKey = __webpack_require__(618).MaxKey
+	  , DBRef = __webpack_require__(619).DBRef
+	  , Binary = __webpack_require__(620).Binary
+	  , BinaryParser = __webpack_require__(621).BinaryParser
+	  , writeIEEE754 = __webpack_require__(622).writeIEEE754
+	  , readIEEE754 = __webpack_require__(622).readIEEE754
 
 	// To ensure that 0.4 of node works correctly
 	var isDate = function isDate(d) {
@@ -113395,10 +113183,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.MinKey = MinKey;
 	exports.MaxKey = MaxKey;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 570 */
+/* 569 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -113425,17 +113213,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Readable;
 
 	/*<replacement>*/
-	var isArray = __webpack_require__(649);
+	var isArray = __webpack_require__(648);
 	/*</replacement>*/
 
 
 	/*<replacement>*/
-	var Buffer = __webpack_require__(54).Buffer;
+	var Buffer = __webpack_require__(53).Buffer;
 	/*</replacement>*/
 
 	Readable.ReadableState = ReadableState;
 
-	var EE = __webpack_require__(121).EventEmitter;
+	var EE = __webpack_require__(120).EventEmitter;
 
 	/*<replacement>*/
 	if (!EE.listenerCount) EE.listenerCount = function(emitter, type) {
@@ -113443,11 +113231,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	/*</replacement>*/
 
-	var Stream = __webpack_require__(317);
+	var Stream = __webpack_require__(316);
 
 	/*<replacement>*/
-	var util = __webpack_require__(662);
-	util.inherits = __webpack_require__(663);
+	var util = __webpack_require__(661);
+	util.inherits = __webpack_require__(662);
 	/*</replacement>*/
 
 	var StringDecoder;
@@ -113516,7 +113304,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.encoding = null;
 	  if (options.encoding) {
 	    if (!StringDecoder)
-	      StringDecoder = __webpack_require__(650).StringDecoder;
+	      StringDecoder = __webpack_require__(649).StringDecoder;
 	    this.decoder = new StringDecoder(options.encoding);
 	    this.encoding = options.encoding;
 	  }
@@ -113617,7 +113405,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// backwards compatibility.
 	Readable.prototype.setEncoding = function(enc) {
 	  if (!StringDecoder)
-	    StringDecoder = __webpack_require__(650).StringDecoder;
+	    StringDecoder = __webpack_require__(649).StringDecoder;
 	  this._readableState.decoder = new StringDecoder(enc);
 	  this._readableState.encoding = enc;
 	};
@@ -114387,7 +114175,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 571 */
+/* 570 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -114418,18 +114206,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Writable;
 
 	/*<replacement>*/
-	var Buffer = __webpack_require__(54).Buffer;
+	var Buffer = __webpack_require__(53).Buffer;
 	/*</replacement>*/
 
 	Writable.WritableState = WritableState;
 
 
 	/*<replacement>*/
-	var util = __webpack_require__(662);
-	util.inherits = __webpack_require__(663);
+	var util = __webpack_require__(661);
+	util.inherits = __webpack_require__(662);
 	/*</replacement>*/
 
-	var Stream = __webpack_require__(317);
+	var Stream = __webpack_require__(316);
 
 	util.inherits(Writable, Stream);
 
@@ -114511,7 +114299,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 	function Writable(options) {
-	  var Duplex = __webpack_require__(572);
+	  var Duplex = __webpack_require__(571);
 
 	  // Writable ctor is applied to Duplexes, though they're not
 	  // instanceof Writable, they're instanceof Readable.
@@ -114780,7 +114568,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 572 */
+/* 571 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -114821,12 +114609,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	/*<replacement>*/
-	var util = __webpack_require__(662);
-	util.inherits = __webpack_require__(663);
+	var util = __webpack_require__(661);
+	util.inherits = __webpack_require__(662);
 	/*</replacement>*/
 
-	var Readable = __webpack_require__(570);
-	var Writable = __webpack_require__(571);
+	var Readable = __webpack_require__(569);
+	var Writable = __webpack_require__(570);
 
 	util.inherits(Duplex, Readable);
 
@@ -114876,7 +114664,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 573 */
+/* 572 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -114945,11 +114733,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = Transform;
 
-	var Duplex = __webpack_require__(572);
+	var Duplex = __webpack_require__(571);
 
 	/*<replacement>*/
-	var util = __webpack_require__(662);
-	util.inherits = __webpack_require__(663);
+	var util = __webpack_require__(661);
+	util.inherits = __webpack_require__(662);
 	/*</replacement>*/
 
 	util.inherits(Transform, Duplex);
@@ -115092,7 +114880,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 574 */
+/* 573 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -115122,11 +114910,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = PassThrough;
 
-	var Transform = __webpack_require__(573);
+	var Transform = __webpack_require__(572);
 
 	/*<replacement>*/
-	var util = __webpack_require__(662);
-	util.inherits = __webpack_require__(663);
+	var util = __webpack_require__(661);
+	util.inherits = __webpack_require__(662);
 	/*</replacement>*/
 
 	util.inherits(PassThrough, Transform);
@@ -115144,17 +114932,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 575 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	exports.decode = exports.parse = __webpack_require__(624);
-	exports.encode = exports.stringify = __webpack_require__(625);
-
-
-/***/ },
-/* 576 */
+/* 574 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -115164,7 +114942,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Expose `debug()` as the module.
 	 */
 
-	exports = module.exports = __webpack_require__(626);
+	exports = module.exports = __webpack_require__(623);
 	exports.log = log;
 	exports.formatArgs = formatArgs;
 	exports.save = save;
@@ -115335,28 +115113,38 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 577 */
+/* 575 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	exports.decode = exports.parse = __webpack_require__(624);
+	exports.encode = exports.stringify = __webpack_require__(625);
+
+
+/***/ },
+/* 576 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var map = {
-		"./application": 162,
-		"./application.js": 162,
-		"./express": 100,
-		"./express.js": 100,
+		"./application": 161,
+		"./application.js": 161,
+		"./express": 99,
+		"./express.js": 99,
 		"./middleware/init": 384,
 		"./middleware/init.js": 384,
-		"./middleware/query": 166,
-		"./middleware/query.js": 166,
-		"./request": 164,
-		"./request.js": 164,
-		"./response": 165,
-		"./response.js": 165,
-		"./router/index": 305,
-		"./router/index.js": 305,
-		"./router/layer": 386,
-		"./router/layer.js": 386,
-		"./router/route": 163,
-		"./router/route.js": 163,
+		"./middleware/query": 165,
+		"./middleware/query.js": 165,
+		"./request": 163,
+		"./request.js": 163,
+		"./response": 164,
+		"./response.js": 164,
+		"./router/index": 304,
+		"./router/index.js": 304,
+		"./router/layer": 382,
+		"./router/layer.js": 382,
+		"./router/route": 162,
+		"./router/route.js": 162,
 		"./utils": 383,
 		"./utils.js": 383,
 		"./view": 385,
@@ -115373,7 +115161,36 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	webpackContext.resolve = webpackContextResolve;
 	module.exports = webpackContext;
-	webpackContext.id = 577;
+	webpackContext.id = 576;
+
+
+/***/ },
+/* 577 */
+/***/ function(module, exports, __webpack_require__) {
+
+	if (typeof Object.create === 'function') {
+	  // implementation from standard node.js 'util' module
+	  module.exports = function inherits(ctor, superCtor) {
+	    ctor.super_ = superCtor
+	    ctor.prototype = Object.create(superCtor.prototype, {
+	      constructor: {
+	        value: ctor,
+	        enumerable: false,
+	        writable: true,
+	        configurable: true
+	      }
+	    });
+	  };
+	} else {
+	  // old school shim for old browsers
+	  module.exports = function inherits(ctor, superCtor) {
+	    ctor.super_ = superCtor
+	    var TempCtor = function () {}
+	    TempCtor.prototype = superCtor.prototype
+	    ctor.prototype = new TempCtor()
+	    ctor.prototype.constructor = ctor
+	  }
+	}
 
 
 /***/ },
@@ -115388,7 +115205,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  isWindows = true
 
 	var GLOBSTAR = minimatch.GLOBSTAR = Minimatch.GLOBSTAR = {}
-	  , expand = __webpack_require__(656)
+	  , expand = __webpack_require__(655)
 
 	  // any single thing other than /
 	  // don't need to escape / when using new RegExp()
@@ -116255,38 +116072,9 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 579 */
 /***/ function(module, exports, __webpack_require__) {
 
-	if (typeof Object.create === 'function') {
-	  // implementation from standard node.js 'util' module
-	  module.exports = function inherits(ctor, superCtor) {
-	    ctor.super_ = superCtor
-	    ctor.prototype = Object.create(superCtor.prototype, {
-	      constructor: {
-	        value: ctor,
-	        enumerable: false,
-	        writable: true,
-	        configurable: true
-	      }
-	    });
-	  };
-	} else {
-	  // old school shim for old browsers
-	  module.exports = function inherits(ctor, superCtor) {
-	    ctor.super_ = superCtor
-	    var TempCtor = function () {}
-	    TempCtor.prototype = superCtor.prototype
-	    ctor.prototype = new TempCtor()
-	    ctor.prototype.constructor = ctor
-	  }
-	}
-
-
-/***/ },
-/* 580 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(process) {var wrappy = __webpack_require__(664)
+	/* WEBPACK VAR INJECTION */(function(process) {var wrappy = __webpack_require__(663)
 	var reqs = Object.create(null)
-	var once = __webpack_require__(581)
+	var once = __webpack_require__(580)
 
 	module.exports = wrappy(inflight)
 
@@ -116332,10 +116120,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 581 */
+/* 580 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var wrappy = __webpack_require__(665)
+	var wrappy = __webpack_require__(664)
 	module.exports = wrappy(once)
 
 	once.proto = once(function () {
@@ -116359,36 +116147,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 582 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// function utils
-
-	/*
-	 * Memoize a given function by caching the computed result.
-	 * The cache of a memoized function can be cleared by deleting the `cache`
-	 * property of the function.
-	 *
-	 * @param {function} fn   The function to be memoized. Must be a pure function.
-	 * @return {function}     Returns the memoized function
-	 */
-	exports.memoize = function(fn) {
-	  return function memoize() {
-	    if (typeof memoize.cache !== 'object') {
-	      memoize.cache = {};
-	    }
-
-	    var hash = JSON.stringify(arguments);
-	    if (!(hash in memoize.cache)) {
-	      return memoize.cache[hash] = fn.apply(fn, arguments);
-	    }
-	    return memoize.cache[hash];
-	  };
-	};
-
-
-/***/ },
-/* 583 */
+/* 581 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_RESULT__;/*! decimal.js v4.0.2 https://github.com/MikeMcl/decimal.js/LICENCE */
@@ -120454,7 +120213,36 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 584 */
+/* 582 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// function utils
+
+	/*
+	 * Memoize a given function by caching the computed result.
+	 * The cache of a memoized function can be cleared by deleting the `cache`
+	 * property of the function.
+	 *
+	 * @param {function} fn   The function to be memoized. Must be a pure function.
+	 * @return {function}     Returns the memoized function
+	 */
+	exports.memoize = function(fn) {
+	  return function memoize() {
+	    if (typeof memoize.cache !== 'object') {
+	      memoize.cache = {};
+	    }
+
+	    var hash = JSON.stringify(arguments);
+	    if (!(hash in memoize.cache)) {
+	      return memoize.cache[hash] = fn.apply(fn, arguments);
+	    }
+	    return memoize.cache[hash];
+	  };
+	};
+
+
+/***/ },
+/* 583 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -120466,7 +120254,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 585 */
+/* 584 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict'
@@ -120768,7 +120556,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 586 */
+/* 585 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -121130,7 +120918,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 587 */
+/* 586 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -121216,7 +121004,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 588 */
+/* 587 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -121286,7 +121074,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 589 */
+/* 588 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var exports = module.exports = function (alg) {
@@ -121295,36 +121083,43 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return new Alg()
 	}
 
-	var Buffer = __webpack_require__(54).Buffer
-	var Hash   = __webpack_require__(628)(Buffer)
+	var Buffer = __webpack_require__(53).Buffer
+	var Hash   = __webpack_require__(627)(Buffer)
 
-	exports.sha1 = __webpack_require__(629)(Buffer, Hash)
-	exports.sha256 = __webpack_require__(630)(Buffer, Hash)
-	exports.sha512 = __webpack_require__(631)(Buffer, Hash)
+	exports.sha1 = __webpack_require__(628)(Buffer, Hash)
+	exports.sha256 = __webpack_require__(629)(Buffer, Hash)
+	exports.sha512 = __webpack_require__(630)(Buffer, Hash)
 
+
+/***/ },
+/* 589 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Get the Kerberos library
+	module.exports = __webpack_require__(631);
+	// Set up the auth processes
+	module.exports['processes'] = {
+	  MongoAuthProcess: __webpack_require__(632).MongoAuthProcess
+	}
 
 /***/ },
 /* 590 */
 /***/ function(module, exports, __webpack_require__) {
 
-	// Get the Kerberos library
-	module.exports = __webpack_require__(632);
-	// Set up the auth processes
-	module.exports['processes'] = {
-	  MongoAuthProcess: __webpack_require__(633).MongoAuthProcess
-	}
+	exports = module.exports = __webpack_require__(633);
+	exports.Stream = __webpack_require__(316);
+	exports.Readable = exports;
+	exports.Writable = __webpack_require__(634);
+	exports.Duplex = __webpack_require__(635);
+	exports.Transform = __webpack_require__(636);
+	exports.PassThrough = __webpack_require__(637);
+
 
 /***/ },
 /* 591 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports = module.exports = __webpack_require__(634);
-	exports.Stream = __webpack_require__(317);
-	exports.Readable = exports;
-	exports.Writable = __webpack_require__(635);
-	exports.Duplex = __webpack_require__(636);
-	exports.Transform = __webpack_require__(637);
-	exports.PassThrough = __webpack_require__(638);
+	module.exports = __webpack_require__(634)
 
 
 /***/ },
@@ -121352,17 +121147,10 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 595 */
 /***/ function(module, exports, __webpack_require__) {
 
-	module.exports = __webpack_require__(638)
-
-
-/***/ },
-/* 596 */
-/***/ function(module, exports, __webpack_require__) {
-
 	/* (ignored) */
 
 /***/ },
-/* 597 */
+/* 596 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {module.exports = function(crypto) {
@@ -121450,10 +121238,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  }
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 598 */
+/* 597 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {
@@ -121662,10 +121450,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 599 */
+/* 598 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {var intSize = 4;
@@ -121703,10 +121491,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = { hash: hash };
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 600 */
+/* 599 */
 /***/ function(module, exports, __webpack_require__) {
 
 	if (typeof Object.create === 'function') {
@@ -121735,7 +121523,261 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
+/* 600 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/**
+	 * Expose `pathtoRegexp`.
+	 */
+
+	module.exports = pathtoRegexp;
+
+	/**
+	 * Normalize the given path string,
+	 * returning a regular expression.
+	 *
+	 * An empty array should be passed,
+	 * which will contain the placeholder
+	 * key names. For example "/user/:id" will
+	 * then contain ["id"].
+	 *
+	 * @param  {String|RegExp|Array} path
+	 * @param  {Array} keys
+	 * @param  {Object} options
+	 * @return {RegExp}
+	 * @api private
+	 */
+
+	function pathtoRegexp(path, keys, options) {
+	  options = options || {};
+	  var strict = options.strict;
+	  var end = options.end !== false;
+	  var flags = options.sensitive ? '' : 'i';
+	  keys = keys || [];
+
+	  if (path instanceof RegExp) {
+	    return path;
+	  }
+
+	  if (Array.isArray(path)) {
+	    // Map array parts into regexps and return their source. We also pass
+	    // the same keys and options instance into every generation to get
+	    // consistent matching groups before we join the sources together.
+	    path = path.map(function (value) {
+	      return pathtoRegexp(value, keys, options).source;
+	    });
+
+	    return new RegExp('(?:' + path.join('|') + ')', flags);
+	  }
+
+	  path = ('^' + path + (strict ? '' : path[path.length - 1] === '/' ? '?' : '/?'))
+	    .replace(/\/\(/g, '/(?:')
+	    .replace(/([\/\.])/g, '\\$1')
+	    .replace(/(\\\/)?(\\\.)?:(\w+)(\(.*?\))?(\*)?(\?)?/g, function (match, slash, format, key, capture, star, optional) {
+	      slash = slash || '';
+	      format = format || '';
+	      capture = capture || '([^\\/' + format + ']+?)';
+	      optional = optional || '';
+
+	      keys.push({ name: key, optional: !!optional });
+
+	      return ''
+	        + (optional ? '' : slash)
+	        + '(?:'
+	        + format + (optional ? slash : '') + capture
+	        + (star ? '((?:[\\/' + format + '].+?)?)' : '')
+	        + ')'
+	        + optional;
+	    })
+	    .replace(/\*/g, '(.*)');
+
+	  // If the path is non-ending, match until the end or a slash.
+	  path += (end ? '$' : (path[path.length - 1] === '/' ? '' : '(?=\\/|$)'));
+
+	  return new RegExp(path, flags);
+	};
+
+
+/***/ },
 /* 601 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(Buffer) {/*!
+	 * etag
+	 * Copyright(c) 2014 Douglas Christopher Wilson
+	 * MIT Licensed
+	 */
+
+	/**
+	 * Module exports.
+	 */
+
+	module.exports = etag
+
+	/**
+	 * Module dependencies.
+	 */
+
+	var crc = __webpack_require__(683).crc32
+	var crypto = __webpack_require__(110)
+	var Stats = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())).Stats
+
+	/**
+	 * Module variables.
+	 */
+
+	var crc32threshold = 1000 // 1KB
+	var NULL = new Buffer([0])
+	var toString = Object.prototype.toString
+
+	/**
+	 * Create a simple ETag.
+	 *
+	 * @param {string|Buffer|Stats} entity
+	 * @param {object} [options]
+	 * @param {boolean} [options.weak]
+	 * @return {String}
+	 * @api public
+	 */
+
+	function etag(entity, options) {
+	  if (entity == null) {
+	    throw new TypeError('argument entity is required')
+	  }
+
+	  var isStats = isstats(entity)
+	  var weak = options && typeof options.weak === 'boolean'
+	    ? options.weak
+	    : isStats
+
+	  // support fs.Stats object
+	  if (isStats) {
+	    return stattag(entity, weak)
+	  }
+
+	  if (typeof entity !== 'string' && !Buffer.isBuffer(entity)) {
+	    throw new TypeError('argument entity must be string, Buffer, or fs.Stats')
+	  }
+
+	  var hash = weak
+	    ? weakhash(entity)
+	    : stronghash(entity)
+
+	  return weak
+	    ? 'W/"' + hash + '"'
+	    : '"' + hash + '"'
+	}
+
+	/**
+	 * Determine if object is a Stats object.
+	 *
+	 * @param {object} obj
+	 * @return {boolean}
+	 * @api private
+	 */
+
+	function isstats(obj) {
+	  // not even an object
+	  if (obj === null || typeof obj !== 'object') {
+	    return false
+	  }
+
+	  // genuine fs.Stats
+	  if (obj instanceof Stats) {
+	    return true
+	  }
+
+	  // quack quack
+	  return 'atime' in obj && toString.call(obj.atime) === '[object Date]'
+	    && 'ctime' in obj && toString.call(obj.ctime) === '[object Date]'
+	    && 'mtime' in obj && toString.call(obj.mtime) === '[object Date]'
+	    && 'ino' in obj && typeof obj.ino === 'number'
+	    && 'size' in obj && typeof obj.size === 'number'
+	}
+
+	/**
+	 * Generate a tag for a stat.
+	 *
+	 * @param {Buffer} entity
+	 * @return {String}
+	 * @api private
+	 */
+
+	function stattag(stat, weak) {
+	  var mtime = stat.mtime.toISOString()
+	  var size = stat.size.toString(16)
+
+	  if (weak) {
+	    return 'W/"' + size + '-' + crc(mtime) + '"'
+	  }
+
+	  var hash = crypto
+	    .createHash('md5')
+	    .update('file', 'utf8')
+	    .update(NULL)
+	    .update(size, 'utf8')
+	    .update(NULL)
+	    .update(mtime, 'utf8')
+	    .digest('base64')
+
+	  return '"' + hash + '"'
+	}
+
+	/**
+	 * Generate a strong hash.
+	 *
+	 * @param {Buffer} entity
+	 * @return {String}
+	 * @api private
+	 */
+
+	function stronghash(entity) {
+	  if (entity.length === 0) {
+	    // fast-path empty
+	    return '1B2M2Y8AsgTpgAmY7PhCfg=='
+	  }
+
+	  return crypto
+	    .createHash('md5')
+	    .update(entity, 'utf8')
+	    .digest('base64')
+	}
+
+	/**
+	 * Generate a weak hash.
+	 *
+	 * @param {Buffer} entity
+	 * @return {String}
+	 * @api private
+	 */
+
+	function weakhash(entity) {
+	  if (entity.length === 0) {
+	    // fast-path empty
+	    return '0-0'
+	  }
+
+	  var len = typeof entity === 'string'
+	    ? Buffer.byteLength(entity, 'utf8')
+	    : entity.length
+
+	  if (len <= crc32threshold) {
+	    // crc32 plus length when it's fast
+	    // crc(str) only accepts utf-8 encoding
+	    return len.toString(16) + '-' + crc(entity).toString(16)
+	  }
+
+	  // use md4 for long strings
+	  return crypto
+	    .createHash('md4')
+	    .update(entity, 'utf8')
+	    .digest('base64')
+	}
+
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
+
+/***/ },
+/* 602 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -121955,261 +121997,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 602 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(Buffer) {/*!
-	 * etag
-	 * Copyright(c) 2014 Douglas Christopher Wilson
-	 * MIT Licensed
-	 */
-
-	/**
-	 * Module exports.
-	 */
-
-	module.exports = etag
-
-	/**
-	 * Module dependencies.
-	 */
-
-	var crc = __webpack_require__(683).crc32
-	var crypto = __webpack_require__(112)
-	var Stats = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())).Stats
-
-	/**
-	 * Module variables.
-	 */
-
-	var crc32threshold = 1000 // 1KB
-	var NULL = new Buffer([0])
-	var toString = Object.prototype.toString
-
-	/**
-	 * Create a simple ETag.
-	 *
-	 * @param {string|Buffer|Stats} entity
-	 * @param {object} [options]
-	 * @param {boolean} [options.weak]
-	 * @return {String}
-	 * @api public
-	 */
-
-	function etag(entity, options) {
-	  if (entity == null) {
-	    throw new TypeError('argument entity is required')
-	  }
-
-	  var isStats = isstats(entity)
-	  var weak = options && typeof options.weak === 'boolean'
-	    ? options.weak
-	    : isStats
-
-	  // support fs.Stats object
-	  if (isStats) {
-	    return stattag(entity, weak)
-	  }
-
-	  if (typeof entity !== 'string' && !Buffer.isBuffer(entity)) {
-	    throw new TypeError('argument entity must be string, Buffer, or fs.Stats')
-	  }
-
-	  var hash = weak
-	    ? weakhash(entity)
-	    : stronghash(entity)
-
-	  return weak
-	    ? 'W/"' + hash + '"'
-	    : '"' + hash + '"'
-	}
-
-	/**
-	 * Determine if object is a Stats object.
-	 *
-	 * @param {object} obj
-	 * @return {boolean}
-	 * @api private
-	 */
-
-	function isstats(obj) {
-	  // not even an object
-	  if (obj === null || typeof obj !== 'object') {
-	    return false
-	  }
-
-	  // genuine fs.Stats
-	  if (obj instanceof Stats) {
-	    return true
-	  }
-
-	  // quack quack
-	  return 'atime' in obj && toString.call(obj.atime) === '[object Date]'
-	    && 'ctime' in obj && toString.call(obj.ctime) === '[object Date]'
-	    && 'mtime' in obj && toString.call(obj.mtime) === '[object Date]'
-	    && 'ino' in obj && typeof obj.ino === 'number'
-	    && 'size' in obj && typeof obj.size === 'number'
-	}
-
-	/**
-	 * Generate a tag for a stat.
-	 *
-	 * @param {Buffer} entity
-	 * @return {String}
-	 * @api private
-	 */
-
-	function stattag(stat, weak) {
-	  var mtime = stat.mtime.toISOString()
-	  var size = stat.size.toString(16)
-
-	  if (weak) {
-	    return 'W/"' + size + '-' + crc(mtime) + '"'
-	  }
-
-	  var hash = crypto
-	    .createHash('md5')
-	    .update('file', 'utf8')
-	    .update(NULL)
-	    .update(size, 'utf8')
-	    .update(NULL)
-	    .update(mtime, 'utf8')
-	    .digest('base64')
-
-	  return '"' + hash + '"'
-	}
-
-	/**
-	 * Generate a strong hash.
-	 *
-	 * @param {Buffer} entity
-	 * @return {String}
-	 * @api private
-	 */
-
-	function stronghash(entity) {
-	  if (entity.length === 0) {
-	    // fast-path empty
-	    return '1B2M2Y8AsgTpgAmY7PhCfg=='
-	  }
-
-	  return crypto
-	    .createHash('md5')
-	    .update(entity, 'utf8')
-	    .digest('base64')
-	}
-
-	/**
-	 * Generate a weak hash.
-	 *
-	 * @param {Buffer} entity
-	 * @return {String}
-	 * @api private
-	 */
-
-	function weakhash(entity) {
-	  if (entity.length === 0) {
-	    // fast-path empty
-	    return '0-0'
-	  }
-
-	  var len = typeof entity === 'string'
-	    ? Buffer.byteLength(entity, 'utf8')
-	    : entity.length
-
-	  if (len <= crc32threshold) {
-	    // crc32 plus length when it's fast
-	    // crc(str) only accepts utf-8 encoding
-	    return len.toString(16) + '-' + crc(entity).toString(16)
-	  }
-
-	  // use md4 for long strings
-	  return crypto
-	    .createHash('md4')
-	    .update(entity, 'utf8')
-	    .digest('base64')
-	}
-
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
-
-/***/ },
 /* 603 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/**
-	 * Expose `pathtoRegexp`.
-	 */
-
-	module.exports = pathtoRegexp;
-
-	/**
-	 * Normalize the given path string,
-	 * returning a regular expression.
-	 *
-	 * An empty array should be passed,
-	 * which will contain the placeholder
-	 * key names. For example "/user/:id" will
-	 * then contain ["id"].
-	 *
-	 * @param  {String|RegExp|Array} path
-	 * @param  {Array} keys
-	 * @param  {Object} options
-	 * @return {RegExp}
-	 * @api private
-	 */
-
-	function pathtoRegexp(path, keys, options) {
-	  options = options || {};
-	  var strict = options.strict;
-	  var end = options.end !== false;
-	  var flags = options.sensitive ? '' : 'i';
-	  keys = keys || [];
-
-	  if (path instanceof RegExp) {
-	    return path;
-	  }
-
-	  if (Array.isArray(path)) {
-	    // Map array parts into regexps and return their source. We also pass
-	    // the same keys and options instance into every generation to get
-	    // consistent matching groups before we join the sources together.
-	    path = path.map(function (value) {
-	      return pathtoRegexp(value, keys, options).source;
-	    });
-
-	    return new RegExp('(?:' + path.join('|') + ')', flags);
-	  }
-
-	  path = ('^' + path + (strict ? '' : path[path.length - 1] === '/' ? '?' : '/?'))
-	    .replace(/\/\(/g, '/(?:')
-	    .replace(/([\/\.])/g, '\\$1')
-	    .replace(/(\\\/)?(\\\.)?:(\w+)(\(.*?\))?(\*)?(\?)?/g, function (match, slash, format, key, capture, star, optional) {
-	      slash = slash || '';
-	      format = format || '';
-	      capture = capture || '([^\\/' + format + ']+?)';
-	      optional = optional || '';
-
-	      keys.push({ name: key, optional: !!optional });
-
-	      return ''
-	        + (optional ? '' : slash)
-	        + '(?:'
-	        + format + (optional ? slash : '') + capture
-	        + (star ? '((?:[\\/' + format + '].+?)?)' : '')
-	        + ')'
-	        + optional;
-	    })
-	    .replace(/\*/g, '(.*)');
-
-	  // If the path is non-ending, match until the end or a slash.
-	  path += (end ? '$' : (path[path.length - 1] === '/' ? '' : '(?=\\/|$)'));
-
-	  return new RegExp(path, flags);
-	};
-
-
-/***/ },
-/* 604 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {/*!
@@ -122223,7 +122011,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	lazyProperty(module.exports, 'bufferConcat', function bufferConcat() {
-	  return Buffer.concat || __webpack_require__(652)
+	  return Buffer.concat || __webpack_require__(653)
 	})
 
 	lazyProperty(module.exports, 'callSiteToString', function callSiteToString() {
@@ -122247,7 +122035,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  Error.prepareStackTrace = prep
 	  Error.stackTraceLimit = limit
 
-	  return stack[0].toString ? toString : __webpack_require__(653)
+	  return stack[0].toString ? toString : __webpack_require__(654)
 	})
 
 	/**
@@ -122282,11 +122070,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return obj.toString()
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 605 */,
-/* 606 */
+/* 604 */,
+/* 605 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer, process) {/**
@@ -122579,24 +122367,24 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	exports.version = '0.0.4';
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer, __webpack_require__(9)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer, __webpack_require__(9)))
 
 /***/ },
-/* 607 */
+/* 606 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {"use strict";
 
-	var inherits = __webpack_require__(53).inherits
-	  , EventEmitter = __webpack_require__(121).EventEmitter
+	var inherits = __webpack_require__(52).inherits
+	  , EventEmitter = __webpack_require__(120).EventEmitter
 	  , net = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"net\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
 	  , tls = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"tls\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
-	  , f = __webpack_require__(53).format
-	  , getSingleProperty = __webpack_require__(555).getSingleProperty
-	  , debugOptions = __webpack_require__(555).debugOptions
-	  , Response = __webpack_require__(327).Response
-	  , MongoError = __webpack_require__(320)
-	  , Logger = __webpack_require__(324);
+	  , f = __webpack_require__(52).format
+	  , getSingleProperty = __webpack_require__(554).getSingleProperty
+	  , debugOptions = __webpack_require__(554).debugOptions
+	  , Response = __webpack_require__(326).Response
+	  , MongoError = __webpack_require__(319)
+	  , Logger = __webpack_require__(323);
 
 	var _id = 0;
 	var debugFields = ['host', 'port', 'size', 'keepAlive', 'keepAliveInitialDelay', 'noDelay'
@@ -123040,15 +122828,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = Connection;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 608 */
+/* 607 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {"use strict";
 
-	var MongoError = __webpack_require__(320);
+	var MongoError = __webpack_require__(319);
 
 	// Wire command operation ids
 	var OP_UPDATE = 2001;
@@ -123381,10 +123169,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  , Update: Update
 	  , Remove: Remove
 	}
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 609 */
+/* 608 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {/*!
@@ -123398,7 +123186,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 
 	lazyProperty(module.exports, 'bufferConcat', function bufferConcat() {
-	  return Buffer.concat || __webpack_require__(657)
+	  return Buffer.concat || __webpack_require__(656)
 	})
 
 	lazyProperty(module.exports, 'callSiteToString', function callSiteToString() {
@@ -123422,7 +123210,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  Error.prepareStackTrace = prep
 	  Error.stackTraceLimit = limit
 
-	  return stack[0].toString ? toString : __webpack_require__(658)
+	  return stack[0].toString ? toString : __webpack_require__(657)
 	})
 
 	/**
@@ -123457,16 +123245,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return obj.toString()
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 610 */
+/* 609 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Load modules
 
-	var Stringify = __webpack_require__(659);
-	var Parse = __webpack_require__(660);
+	var Stringify = __webpack_require__(658);
+	var Parse = __webpack_require__(659);
 
 
 	// Declare internals
@@ -123481,7 +123269,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 611 */
+/* 610 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -123497,7 +123285,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.disable = disable;
 	exports.enable = enable;
 	exports.enabled = enabled;
-	exports.humanize = __webpack_require__(528);
+	exports.humanize = __webpack_require__(527);
 
 	/**
 	 * The currently active debug mode names, and names to skip.
@@ -123684,7 +123472,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 612 */
+/* 611 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Licensed under the Apache License, Version 2.0 (the "License");
@@ -124545,7 +124333,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports.Long = Long;
 
 /***/ },
-/* 613 */
+/* 612 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -124583,7 +124371,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports.Double = Double;
 
 /***/ },
-/* 614 */
+/* 613 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Licensed under the Apache License, Version 2.0 (the "License");
@@ -125444,14 +125232,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports.Timestamp = Timestamp;
 
 /***/ },
-/* 615 */
+/* 614 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {/**
 	 * Module dependencies.
 	 * @ignore
 	 */
-	var BinaryParser = __webpack_require__(622).BinaryParser;
+	var BinaryParser = __webpack_require__(621).BinaryParser;
 
 	/**
 	 * Machine id.
@@ -125724,7 +125512,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 616 */
+/* 615 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -125776,7 +125564,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports.Symbol = Symbol;
 
 /***/ },
-/* 617 */
+/* 616 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -125805,7 +125593,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports.Code = Code;
 
 /***/ },
-/* 618 */
+/* 617 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -125824,7 +125612,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports.MinKey = MinKey;
 
 /***/ },
-/* 619 */
+/* 618 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -125843,7 +125631,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports.MaxKey = MaxKey;
 
 /***/ },
-/* 620 */
+/* 619 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -125880,7 +125668,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports.DBRef = DBRef;
 
 /***/ },
-/* 621 */
+/* 620 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -125888,7 +125676,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @ignore
 	 */
 	if(typeof window === 'undefined') { 
-	  var Buffer = __webpack_require__(54).Buffer; // TODO just use global Buffer
+	  var Buffer = __webpack_require__(53).Buffer; // TODO just use global Buffer
 	}
 
 	/**
@@ -126229,7 +126017,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports.Binary = Binary;
 
 /***/ },
-/* 622 */
+/* 621 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {/**
@@ -126527,12 +126315,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        ? "0" + s.charCodeAt(i).toString(10)
 	        : s.charCodeAt(i).toString(10);
 
-	      __webpack_require__(53).debug(number+' : ');
+	      __webpack_require__(52).debug(number+' : ');
 	    } else {
 	      number = s.charCodeAt(i) <= 15
 	        ? "0" + s.charCodeAt(i).toString(10)
 	        : s.charCodeAt(i).toString(10);
-	      __webpack_require__(53).debug(number+' : '+ s.charAt(i));
+	      __webpack_require__(52).debug(number+' : '+ s.charAt(i));
 	    }
 	  }
 	};
@@ -126545,12 +126333,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	      number = s.charCodeAt(i) <= 15
 	        ? "0" + s.charCodeAt(i).toString(16)
 	        : s.charCodeAt(i).toString(16);
-	      __webpack_require__(53).debug(number+' : ');
+	      __webpack_require__(52).debug(number+' : ');
 	    } else {
 	      number = s.charCodeAt(i) <= 15
 	        ? "0" + s.charCodeAt(i).toString(16)
 	        : s.charCodeAt(i).toString(16);
-	      __webpack_require__(53).debug(number+' : '+ s.charAt(i));
+	      __webpack_require__(52).debug(number+' : '+ s.charAt(i));
 	    }
 	  }
 	};
@@ -126621,7 +126409,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 623 */
+/* 622 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright (c) 2008, Fair Oaks Labs, Inc.
@@ -126745,6 +126533,209 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	exports.readIEEE754 = readIEEE754;
 	exports.writeIEEE754 = writeIEEE754;
+
+/***/ },
+/* 623 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/**
+	 * This is the common logic for both the Node.js and web browser
+	 * implementations of `debug()`.
+	 *
+	 * Expose `debug()` as the module.
+	 */
+
+	exports = module.exports = debug;
+	exports.coerce = coerce;
+	exports.disable = disable;
+	exports.enable = enable;
+	exports.enabled = enabled;
+	exports.humanize = __webpack_require__(682);
+
+	/**
+	 * The currently active debug mode names, and names to skip.
+	 */
+
+	exports.names = [];
+	exports.skips = [];
+
+	/**
+	 * Map of special "%n" handling functions, for the debug "format" argument.
+	 *
+	 * Valid key names are a single, lowercased letter, i.e. "n".
+	 */
+
+	exports.formatters = {};
+
+	/**
+	 * Previously assigned color.
+	 */
+
+	var prevColor = 0;
+
+	/**
+	 * Previous log timestamp.
+	 */
+
+	var prevTime;
+
+	/**
+	 * Select a color.
+	 *
+	 * @return {Number}
+	 * @api private
+	 */
+
+	function selectColor() {
+	  return exports.colors[prevColor++ % exports.colors.length];
+	}
+
+	/**
+	 * Create a debugger with the given `namespace`.
+	 *
+	 * @param {String} namespace
+	 * @return {Function}
+	 * @api public
+	 */
+
+	function debug(namespace) {
+
+	  // define the `disabled` version
+	  function disabled() {
+	  }
+	  disabled.enabled = false;
+
+	  // define the `enabled` version
+	  function enabled() {
+
+	    var self = enabled;
+
+	    // set `diff` timestamp
+	    var curr = +new Date();
+	    var ms = curr - (prevTime || curr);
+	    self.diff = ms;
+	    self.prev = prevTime;
+	    self.curr = curr;
+	    prevTime = curr;
+
+	    // add the `color` if not set
+	    if (null == self.useColors) self.useColors = exports.useColors();
+	    if (null == self.color && self.useColors) self.color = selectColor();
+
+	    var args = Array.prototype.slice.call(arguments);
+
+	    args[0] = exports.coerce(args[0]);
+
+	    if ('string' !== typeof args[0]) {
+	      // anything else let's inspect with %o
+	      args = ['%o'].concat(args);
+	    }
+
+	    // apply any `formatters` transformations
+	    var index = 0;
+	    args[0] = args[0].replace(/%([a-z%])/g, function(match, format) {
+	      // if we encounter an escaped % then don't increase the array index
+	      if (match === '%%') return match;
+	      index++;
+	      var formatter = exports.formatters[format];
+	      if ('function' === typeof formatter) {
+	        var val = args[index];
+	        match = formatter.call(self, val);
+
+	        // now we need to remove `args[index]` since it's inlined in the `format`
+	        args.splice(index, 1);
+	        index--;
+	      }
+	      return match;
+	    });
+
+	    if ('function' === typeof exports.formatArgs) {
+	      args = exports.formatArgs.apply(self, args);
+	    }
+	    var logFn = enabled.log || exports.log || console.log.bind(console);
+	    logFn.apply(self, args);
+	  }
+	  enabled.enabled = true;
+
+	  var fn = exports.enabled(namespace) ? enabled : disabled;
+
+	  fn.namespace = namespace;
+
+	  return fn;
+	}
+
+	/**
+	 * Enables a debug mode by namespaces. This can include modes
+	 * separated by a colon and wildcards.
+	 *
+	 * @param {String} namespaces
+	 * @api public
+	 */
+
+	function enable(namespaces) {
+	  exports.save(namespaces);
+
+	  var split = (namespaces || '').split(/[\s,]+/);
+	  var len = split.length;
+
+	  for (var i = 0; i < len; i++) {
+	    if (!split[i]) continue; // ignore empty strings
+	    namespaces = split[i].replace(/\*/g, '.*?');
+	    if (namespaces[0] === '-') {
+	      exports.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
+	    } else {
+	      exports.names.push(new RegExp('^' + namespaces + '$'));
+	    }
+	  }
+	}
+
+	/**
+	 * Disable debug output.
+	 *
+	 * @api public
+	 */
+
+	function disable() {
+	  exports.enable('');
+	}
+
+	/**
+	 * Returns true if the given mode name is enabled, false otherwise.
+	 *
+	 * @param {String} name
+	 * @return {Boolean}
+	 * @api public
+	 */
+
+	function enabled(name) {
+	  var i, len;
+	  for (i = 0, len = exports.skips.length; i < len; i++) {
+	    if (exports.skips[i].test(name)) {
+	      return false;
+	    }
+	  }
+	  for (i = 0, len = exports.names.length; i < len; i++) {
+	    if (exports.names[i].test(name)) {
+	      return true;
+	    }
+	  }
+	  return false;
+	}
+
+	/**
+	 * Coerce `val`.
+	 *
+	 * @param {Mixed} val
+	 * @return {Mixed}
+	 * @api private
+	 */
+
+	function coerce(val) {
+	  if (val instanceof Error) return val.stack || val.message;
+	  return val;
+	}
+
 
 /***/ },
 /* 624 */
@@ -126932,209 +126923,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	
-	/**
-	 * This is the common logic for both the Node.js and web browser
-	 * implementations of `debug()`.
-	 *
-	 * Expose `debug()` as the module.
-	 */
-
-	exports = module.exports = debug;
-	exports.coerce = coerce;
-	exports.disable = disable;
-	exports.enable = enable;
-	exports.enabled = enabled;
-	exports.humanize = __webpack_require__(684);
-
-	/**
-	 * The currently active debug mode names, and names to skip.
-	 */
-
-	exports.names = [];
-	exports.skips = [];
-
-	/**
-	 * Map of special "%n" handling functions, for the debug "format" argument.
-	 *
-	 * Valid key names are a single, lowercased letter, i.e. "n".
-	 */
-
-	exports.formatters = {};
-
-	/**
-	 * Previously assigned color.
-	 */
-
-	var prevColor = 0;
-
-	/**
-	 * Previous log timestamp.
-	 */
-
-	var prevTime;
-
-	/**
-	 * Select a color.
-	 *
-	 * @return {Number}
-	 * @api private
-	 */
-
-	function selectColor() {
-	  return exports.colors[prevColor++ % exports.colors.length];
-	}
-
-	/**
-	 * Create a debugger with the given `namespace`.
-	 *
-	 * @param {String} namespace
-	 * @return {Function}
-	 * @api public
-	 */
-
-	function debug(namespace) {
-
-	  // define the `disabled` version
-	  function disabled() {
-	  }
-	  disabled.enabled = false;
-
-	  // define the `enabled` version
-	  function enabled() {
-
-	    var self = enabled;
-
-	    // set `diff` timestamp
-	    var curr = +new Date();
-	    var ms = curr - (prevTime || curr);
-	    self.diff = ms;
-	    self.prev = prevTime;
-	    self.curr = curr;
-	    prevTime = curr;
-
-	    // add the `color` if not set
-	    if (null == self.useColors) self.useColors = exports.useColors();
-	    if (null == self.color && self.useColors) self.color = selectColor();
-
-	    var args = Array.prototype.slice.call(arguments);
-
-	    args[0] = exports.coerce(args[0]);
-
-	    if ('string' !== typeof args[0]) {
-	      // anything else let's inspect with %o
-	      args = ['%o'].concat(args);
-	    }
-
-	    // apply any `formatters` transformations
-	    var index = 0;
-	    args[0] = args[0].replace(/%([a-z%])/g, function(match, format) {
-	      // if we encounter an escaped % then don't increase the array index
-	      if (match === '%%') return match;
-	      index++;
-	      var formatter = exports.formatters[format];
-	      if ('function' === typeof formatter) {
-	        var val = args[index];
-	        match = formatter.call(self, val);
-
-	        // now we need to remove `args[index]` since it's inlined in the `format`
-	        args.splice(index, 1);
-	        index--;
-	      }
-	      return match;
-	    });
-
-	    if ('function' === typeof exports.formatArgs) {
-	      args = exports.formatArgs.apply(self, args);
-	    }
-	    var logFn = enabled.log || exports.log || console.log.bind(console);
-	    logFn.apply(self, args);
-	  }
-	  enabled.enabled = true;
-
-	  var fn = exports.enabled(namespace) ? enabled : disabled;
-
-	  fn.namespace = namespace;
-
-	  return fn;
-	}
-
-	/**
-	 * Enables a debug mode by namespaces. This can include modes
-	 * separated by a colon and wildcards.
-	 *
-	 * @param {String} namespaces
-	 * @api public
-	 */
-
-	function enable(namespaces) {
-	  exports.save(namespaces);
-
-	  var split = (namespaces || '').split(/[\s,]+/);
-	  var len = split.length;
-
-	  for (var i = 0; i < len; i++) {
-	    if (!split[i]) continue; // ignore empty strings
-	    namespaces = split[i].replace(/\*/g, '.*?');
-	    if (namespaces[0] === '-') {
-	      exports.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
-	    } else {
-	      exports.names.push(new RegExp('^' + namespaces + '$'));
-	    }
-	  }
-	}
-
-	/**
-	 * Disable debug output.
-	 *
-	 * @api public
-	 */
-
-	function disable() {
-	  exports.enable('');
-	}
-
-	/**
-	 * Returns true if the given mode name is enabled, false otherwise.
-	 *
-	 * @param {String} name
-	 * @return {Boolean}
-	 * @api public
-	 */
-
-	function enabled(name) {
-	  var i, len;
-	  for (i = 0, len = exports.skips.length; i < len; i++) {
-	    if (exports.skips[i].test(name)) {
-	      return false;
-	    }
-	  }
-	  for (i = 0, len = exports.names.length; i < len; i++) {
-	    if (exports.names[i].test(name)) {
-	      return true;
-	    }
-	  }
-	  return false;
-	}
-
-	/**
-	 * Coerce `val`.
-	 *
-	 * @param {Mixed} val
-	 * @return {Mixed}
-	 * @api private
-	 */
-
-	function coerce(val) {
-	  if (val instanceof Error) return val.stack || val.message;
-	  return val;
-	}
-
-
-/***/ },
-/* 627 */
-/***/ function(module, exports, __webpack_require__) {
-
-	
 	module.exports = function first(stuff, done) {
 	  if (!Array.isArray(stuff))
 	    throw new TypeError('arg must be an array of [ee, events...] arrays')
@@ -127205,7 +126993,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 628 */
+/* 627 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = function (Buffer) {
@@ -127288,7 +127076,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 629 */
+/* 628 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*
@@ -127300,7 +127088,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * See http://pajhome.org.uk/crypt/md5 for details.
 	 */
 
-	var inherits = __webpack_require__(53).inherits
+	var inherits = __webpack_require__(52).inherits
 
 	module.exports = function (Buffer, Hash) {
 
@@ -127432,7 +127220,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 630 */
+/* 629 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -127444,7 +127232,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 *
 	 */
 
-	var inherits = __webpack_require__(53).inherits
+	var inherits = __webpack_require__(52).inherits
 
 	module.exports = function (Buffer, Hash) {
 
@@ -127585,10 +127373,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 631 */
+/* 630 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var inherits = __webpack_require__(53).inherits
+	var inherits = __webpack_require__(52).inherits
 
 	module.exports = function (Buffer, Hash) {
 	  var K = [
@@ -127835,7 +127623,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 632 */
+/* 631 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var kerberos = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"../build/Release/kerberos\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
@@ -127923,19 +127711,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	if(kerberos.SecurityCredentials) {
 	  // Put all SSPI classes in it's own namespace
 	  exports.SSIP = {
-	      SecurityCredentials: __webpack_require__(671).SecurityCredentials
-	    , SecurityContext: __webpack_require__(672).SecurityContext
-	    , SecurityBuffer: __webpack_require__(673).SecurityBuffer
-	    , SecurityBufferDescriptor: __webpack_require__(674).SecurityBufferDescriptor
+	      SecurityCredentials: __webpack_require__(670).SecurityCredentials
+	    , SecurityContext: __webpack_require__(671).SecurityContext
+	    , SecurityBuffer: __webpack_require__(672).SecurityBuffer
+	    , SecurityBufferDescriptor: __webpack_require__(673).SecurityBufferDescriptor
 	  }
 	}
 
 
 /***/ },
-/* 633 */
+/* 632 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(process, Buffer) {var format = __webpack_require__(53).format;
+	/* WEBPACK VAR INJECTION */(function(process, Buffer) {var format = __webpack_require__(52).format;
 
 	var MongoAuthProcess = function(host, port, service_name) {  
 	  // Check what system we are on
@@ -127963,7 +127751,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.host = host;
 	  this.port = port  
 	  // SSIP classes
-	  this.ssip = __webpack_require__(632).SSIP;
+	  this.ssip = __webpack_require__(631).SSIP;
 	  // Set up first transition
 	  this._transition = Win32MongoProcessor.first_transition(this);
 	  // Set up service name
@@ -128121,7 +127909,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.host = host;
 	  this.port = port  
 	  // SSIP classes
-	  this.Kerberos = __webpack_require__(632).Kerberos;
+	  this.Kerberos = __webpack_require__(631).Kerberos;
 	  this.kerberos = new this.Kerberos();
 	  service_name = service_name || "mongodb";
 	  // Set up first transition
@@ -128216,10 +128004,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	// Set the process
 	exports.MongoAuthProcess = MongoAuthProcess;
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9), __webpack_require__(53).Buffer))
 
 /***/ },
-/* 634 */
+/* 633 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -128246,17 +128034,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Readable;
 
 	/*<replacement>*/
-	var isArray = __webpack_require__(685);
+	var isArray = __webpack_require__(684);
 	/*</replacement>*/
 
 
 	/*<replacement>*/
-	var Buffer = __webpack_require__(54).Buffer;
+	var Buffer = __webpack_require__(53).Buffer;
 	/*</replacement>*/
 
 	Readable.ReadableState = ReadableState;
 
-	var EE = __webpack_require__(121).EventEmitter;
+	var EE = __webpack_require__(120).EventEmitter;
 
 	/*<replacement>*/
 	if (!EE.listenerCount) EE.listenerCount = function(emitter, type) {
@@ -128264,18 +128052,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	/*</replacement>*/
 
-	var Stream = __webpack_require__(317);
+	var Stream = __webpack_require__(316);
 
 	/*<replacement>*/
-	var util = __webpack_require__(691);
-	util.inherits = __webpack_require__(692);
+	var util = __webpack_require__(690);
+	util.inherits = __webpack_require__(691);
 	/*</replacement>*/
 
 	var StringDecoder;
 
 
 	/*<replacement>*/
-	var debug = __webpack_require__(661);
+	var debug = __webpack_require__(660);
 	if (debug && debug.debuglog) {
 	  debug = debug.debuglog('stream');
 	} else {
@@ -128287,7 +128075,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	util.inherits(Readable, Stream);
 
 	function ReadableState(options, stream) {
-	  var Duplex = __webpack_require__(636);
+	  var Duplex = __webpack_require__(635);
 
 	  options = options || {};
 
@@ -128348,14 +128136,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.encoding = null;
 	  if (options.encoding) {
 	    if (!StringDecoder)
-	      StringDecoder = __webpack_require__(666).StringDecoder;
+	      StringDecoder = __webpack_require__(665).StringDecoder;
 	    this.decoder = new StringDecoder(options.encoding);
 	    this.encoding = options.encoding;
 	  }
 	}
 
 	function Readable(options) {
-	  var Duplex = __webpack_require__(636);
+	  var Duplex = __webpack_require__(635);
 
 	  if (!(this instanceof Readable))
 	    return new Readable(options);
@@ -128458,7 +128246,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// backwards compatibility.
 	Readable.prototype.setEncoding = function(enc) {
 	  if (!StringDecoder)
-	    StringDecoder = __webpack_require__(666).StringDecoder;
+	    StringDecoder = __webpack_require__(665).StringDecoder;
 	  this._readableState.decoder = new StringDecoder(enc);
 	  this._readableState.encoding = enc;
 	  return this;
@@ -129177,7 +128965,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 635 */
+/* 634 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -129208,18 +128996,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Writable;
 
 	/*<replacement>*/
-	var Buffer = __webpack_require__(54).Buffer;
+	var Buffer = __webpack_require__(53).Buffer;
 	/*</replacement>*/
 
 	Writable.WritableState = WritableState;
 
 
 	/*<replacement>*/
-	var util = __webpack_require__(691);
-	util.inherits = __webpack_require__(692);
+	var util = __webpack_require__(690);
+	util.inherits = __webpack_require__(691);
 	/*</replacement>*/
 
-	var Stream = __webpack_require__(317);
+	var Stream = __webpack_require__(316);
 
 	util.inherits(Writable, Stream);
 
@@ -129230,7 +129018,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 	function WritableState(options, stream) {
-	  var Duplex = __webpack_require__(636);
+	  var Duplex = __webpack_require__(635);
 
 	  options = options || {};
 
@@ -129318,7 +129106,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 	function Writable(options) {
-	  var Duplex = __webpack_require__(636);
+	  var Duplex = __webpack_require__(635);
 
 	  // Writable ctor is applied to Duplexes, though they're not
 	  // instanceof Writable, they're instanceof Readable.
@@ -129661,7 +129449,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 636 */
+/* 635 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -129702,12 +129490,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 	/*<replacement>*/
-	var util = __webpack_require__(691);
-	util.inherits = __webpack_require__(692);
+	var util = __webpack_require__(690);
+	util.inherits = __webpack_require__(691);
 	/*</replacement>*/
 
-	var Readable = __webpack_require__(634);
-	var Writable = __webpack_require__(635);
+	var Readable = __webpack_require__(633);
+	var Writable = __webpack_require__(634);
 
 	util.inherits(Duplex, Readable);
 
@@ -129757,7 +129545,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(9)))
 
 /***/ },
-/* 637 */
+/* 636 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -129826,11 +129614,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = Transform;
 
-	var Duplex = __webpack_require__(636);
+	var Duplex = __webpack_require__(635);
 
 	/*<replacement>*/
-	var util = __webpack_require__(691);
-	util.inherits = __webpack_require__(692);
+	var util = __webpack_require__(690);
+	util.inherits = __webpack_require__(691);
 	/*</replacement>*/
 
 	util.inherits(Transform, Duplex);
@@ -129972,7 +129760,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 638 */
+/* 637 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -130002,11 +129790,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = PassThrough;
 
-	var Transform = __webpack_require__(637);
+	var Transform = __webpack_require__(636);
 
 	/*<replacement>*/
-	var util = __webpack_require__(691);
-	util.inherits = __webpack_require__(692);
+	var util = __webpack_require__(690);
+	util.inherits = __webpack_require__(691);
 	/*</replacement>*/
 
 	util.inherits(PassThrough, Transform);
@@ -130024,14 +129812,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 639 */
+/* 638 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
-	var preferredCharsets = __webpack_require__(667);
-	var preferredEncodings = __webpack_require__(668);
-	var preferredLanguages = __webpack_require__(669);
-	var preferredMediaTypes = __webpack_require__(670);
+	var preferredCharsets = __webpack_require__(666);
+	var preferredEncodings = __webpack_require__(667);
+	var preferredLanguages = __webpack_require__(668);
+	var preferredMediaTypes = __webpack_require__(669);
 
 	module.exports = Negotiator;
 	Negotiator.Negotiator = Negotiator;
@@ -130092,11 +129880,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 640 */
+/* 639 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
-	var db = __webpack_require__(687)
+	var db = __webpack_require__(686)
 
 	// types[extension] = type
 	exports.types = Object.create(null)
@@ -130161,7 +129949,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 641 */
+/* 640 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -130437,11 +130225,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 642 */
+/* 641 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
-	var db = __webpack_require__(688)
+	var db = __webpack_require__(687)
 
 	// types[extension] = type
 	exports.types = Object.create(null)
@@ -130506,7 +130294,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 643 */
+/* 642 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -130547,7 +130335,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 644 */
+/* 643 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -130621,11 +130409,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 645 */
+/* 644 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var ReadStream = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"fs\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())).ReadStream
-	var Stream = __webpack_require__(317)
+	var Stream = __webpack_require__(316)
 
 	module.exports = function destroy(stream) {
 	  if (stream instanceof ReadStream) {
@@ -130663,7 +130451,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 646 */
+/* 645 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -130792,11 +130580,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 647 */
+/* 646 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var concatMap = __webpack_require__(689);
-	var balanced = __webpack_require__(690);
+	var concatMap = __webpack_require__(688);
+	var balanced = __webpack_require__(689);
 
 	module.exports = expandTop;
 
@@ -130989,24 +130777,24 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 648 */
+/* 647 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	module.exports = {
-	  crc1: __webpack_require__(675),
-	  crc8: __webpack_require__(676),
-	  crc81wire: __webpack_require__(677),
-	  crc16: __webpack_require__(678),
-	  crc16ccitt: __webpack_require__(679),
-	  crc16modbus: __webpack_require__(680),
-	  crc24: __webpack_require__(681),
-	  crc32: __webpack_require__(682)
+	  crc1: __webpack_require__(674),
+	  crc8: __webpack_require__(675),
+	  crc81wire: __webpack_require__(676),
+	  crc16: __webpack_require__(677),
+	  crc16ccitt: __webpack_require__(678),
+	  crc16modbus: __webpack_require__(679),
+	  crc24: __webpack_require__(680),
+	  crc32: __webpack_require__(681)
 	};
 
 
 /***/ },
-/* 649 */
+/* 648 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = Array.isArray || function (arr) {
@@ -131015,7 +130803,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 650 */
+/* 649 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Copyright Joyent, Inc. and other Node contributors.
@@ -131039,7 +130827,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 	// USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-	var Buffer = __webpack_require__(54).Buffer;
+	var Buffer = __webpack_require__(53).Buffer;
 
 	var isBufferEncoding = Buffer.isEncoding
 	  || function(encoding) {
@@ -131242,7 +131030,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 651 */
+/* 650 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(module) {(function() {
@@ -131654,10 +131442,88 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	}).call(this);
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(56)(module)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(55)(module)))
+
+/***/ },
+/* 651 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Returns a wrapper function that returns a wrapped callback
+	// The wrapper function should do some stuff, and return a
+	// presumably different callback function.
+	// This makes sure that own properties are retained, so that
+	// decorations and such are not lost along the way.
+	module.exports = wrappy
+	function wrappy (fn, cb) {
+	  if (fn && cb) return wrappy(fn)(cb)
+
+	  if (typeof fn !== 'function')
+	    throw new TypeError('need wrapper function')
+
+	  Object.keys(fn).forEach(function (k) {
+	    wrapper[k] = fn[k]
+	  })
+
+	  return wrapper
+
+	  function wrapper() {
+	    var args = new Array(arguments.length)
+	    for (var i = 0; i < args.length; i++) {
+	      args[i] = arguments[i]
+	    }
+	    var ret = fn.apply(this, args)
+	    var cb = args[args.length-1]
+	    if (typeof ret === 'function' && ret !== cb) {
+	      Object.keys(cb).forEach(function (k) {
+	        ret[k] = cb[k]
+	      })
+	    }
+	    return ret
+	  }
+	}
+
 
 /***/ },
 /* 652 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Returns a wrapper function that returns a wrapped callback
+	// The wrapper function should do some stuff, and return a
+	// presumably different callback function.
+	// This makes sure that own properties are retained, so that
+	// decorations and such are not lost along the way.
+	module.exports = wrappy
+	function wrappy (fn, cb) {
+	  if (fn && cb) return wrappy(fn)(cb)
+
+	  if (typeof fn !== 'function')
+	    throw new TypeError('need wrapper function')
+
+	  Object.keys(fn).forEach(function (k) {
+	    wrapper[k] = fn[k]
+	  })
+
+	  return wrapper
+
+	  function wrapper() {
+	    var args = new Array(arguments.length)
+	    for (var i = 0; i < args.length; i++) {
+	      args[i] = arguments[i]
+	    }
+	    var ret = fn.apply(this, args)
+	    var cb = args[args.length-1]
+	    if (typeof ret === 'function' && ret !== cb) {
+	      Object.keys(cb).forEach(function (k) {
+	        ret[k] = cb[k]
+	      })
+	    }
+	    return ret
+	  }
+	}
+
+
+/***/ },
+/* 653 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {/*!
@@ -131694,10 +131560,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return buf
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 653 */
+/* 654 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -131804,89 +131670,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 654 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// Returns a wrapper function that returns a wrapped callback
-	// The wrapper function should do some stuff, and return a
-	// presumably different callback function.
-	// This makes sure that own properties are retained, so that
-	// decorations and such are not lost along the way.
-	module.exports = wrappy
-	function wrappy (fn, cb) {
-	  if (fn && cb) return wrappy(fn)(cb)
-
-	  if (typeof fn !== 'function')
-	    throw new TypeError('need wrapper function')
-
-	  Object.keys(fn).forEach(function (k) {
-	    wrapper[k] = fn[k]
-	  })
-
-	  return wrapper
-
-	  function wrapper() {
-	    var args = new Array(arguments.length)
-	    for (var i = 0; i < args.length; i++) {
-	      args[i] = arguments[i]
-	    }
-	    var ret = fn.apply(this, args)
-	    var cb = args[args.length-1]
-	    if (typeof ret === 'function' && ret !== cb) {
-	      Object.keys(cb).forEach(function (k) {
-	        ret[k] = cb[k]
-	      })
-	    }
-	    return ret
-	  }
-	}
-
-
-/***/ },
 /* 655 */
 /***/ function(module, exports, __webpack_require__) {
 
-	// Returns a wrapper function that returns a wrapped callback
-	// The wrapper function should do some stuff, and return a
-	// presumably different callback function.
-	// This makes sure that own properties are retained, so that
-	// decorations and such are not lost along the way.
-	module.exports = wrappy
-	function wrappy (fn, cb) {
-	  if (fn && cb) return wrappy(fn)(cb)
-
-	  if (typeof fn !== 'function')
-	    throw new TypeError('need wrapper function')
-
-	  Object.keys(fn).forEach(function (k) {
-	    wrapper[k] = fn[k]
-	  })
-
-	  return wrapper
-
-	  function wrapper() {
-	    var args = new Array(arguments.length)
-	    for (var i = 0; i < args.length; i++) {
-	      args[i] = arguments[i]
-	    }
-	    var ret = fn.apply(this, args)
-	    var cb = args[args.length-1]
-	    if (typeof ret === 'function' && ret !== cb) {
-	      Object.keys(cb).forEach(function (k) {
-	        ret[k] = cb[k]
-	      })
-	    }
-	    return ret
-	  }
-	}
-
-
-/***/ },
-/* 656 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var concatMap = __webpack_require__(693);
-	var balanced = __webpack_require__(694);
+	var concatMap = __webpack_require__(692);
+	var balanced = __webpack_require__(693);
 
 	module.exports = expandTop;
 
@@ -132079,7 +131867,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 657 */
+/* 656 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {/*!
@@ -132116,10 +131904,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return buf
 	}
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 658 */
+/* 657 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/*!
@@ -132226,12 +132014,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 659 */
+/* 658 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Load modules
 
-	var Utils = __webpack_require__(686);
+	var Utils = __webpack_require__(685);
 
 
 	// Declare internals
@@ -132329,12 +132117,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 660 */
+/* 659 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Load modules
 
-	var Utils = __webpack_require__(686);
+	var Utils = __webpack_require__(685);
 
 
 	// Declare internals
@@ -132496,13 +132284,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 661 */
+/* 660 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* (ignored) */
 
 /***/ },
-/* 662 */
+/* 661 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {// Copyright Joyent, Inc. and other Node contributors.
@@ -132612,10 +132400,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	function objectToString(o) {
 	  return Object.prototype.toString.call(o);
 	}
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 663 */
+/* 662 */
 /***/ function(module, exports, __webpack_require__) {
 
 	if (typeof Object.create === 'function') {
@@ -132639,6 +132427,45 @@ return /******/ (function(modules) { // webpackBootstrap
 	    TempCtor.prototype = superCtor.prototype
 	    ctor.prototype = new TempCtor()
 	    ctor.prototype.constructor = ctor
+	  }
+	}
+
+
+/***/ },
+/* 663 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Returns a wrapper function that returns a wrapped callback
+	// The wrapper function should do some stuff, and return a
+	// presumably different callback function.
+	// This makes sure that own properties are retained, so that
+	// decorations and such are not lost along the way.
+	module.exports = wrappy
+	function wrappy (fn, cb) {
+	  if (fn && cb) return wrappy(fn)(cb)
+
+	  if (typeof fn !== 'function')
+	    throw new TypeError('need wrapper function')
+
+	  Object.keys(fn).forEach(function (k) {
+	    wrapper[k] = fn[k]
+	  })
+
+	  return wrapper
+
+	  function wrapper() {
+	    var args = new Array(arguments.length)
+	    for (var i = 0; i < args.length; i++) {
+	      args[i] = arguments[i]
+	    }
+	    var ret = fn.apply(this, args)
+	    var cb = args[args.length-1]
+	    if (typeof ret === 'function' && ret !== cb) {
+	      Object.keys(cb).forEach(function (k) {
+	        ret[k] = cb[k]
+	      })
+	    }
+	    return ret
 	  }
 	}
 
@@ -132686,45 +132513,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 665 */
 /***/ function(module, exports, __webpack_require__) {
 
-	// Returns a wrapper function that returns a wrapped callback
-	// The wrapper function should do some stuff, and return a
-	// presumably different callback function.
-	// This makes sure that own properties are retained, so that
-	// decorations and such are not lost along the way.
-	module.exports = wrappy
-	function wrappy (fn, cb) {
-	  if (fn && cb) return wrappy(fn)(cb)
-
-	  if (typeof fn !== 'function')
-	    throw new TypeError('need wrapper function')
-
-	  Object.keys(fn).forEach(function (k) {
-	    wrapper[k] = fn[k]
-	  })
-
-	  return wrapper
-
-	  function wrapper() {
-	    var args = new Array(arguments.length)
-	    for (var i = 0; i < args.length; i++) {
-	      args[i] = arguments[i]
-	    }
-	    var ret = fn.apply(this, args)
-	    var cb = args[args.length-1]
-	    if (typeof ret === 'function' && ret !== cb) {
-	      Object.keys(cb).forEach(function (k) {
-	        ret[k] = cb[k]
-	      })
-	    }
-	    return ret
-	  }
-	}
-
-
-/***/ },
-/* 666 */
-/***/ function(module, exports, __webpack_require__) {
-
 	// Copyright Joyent, Inc. and other Node contributors.
 	//
 	// Permission is hereby granted, free of charge, to any person obtaining a
@@ -132746,7 +132534,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
 	// USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-	var Buffer = __webpack_require__(54).Buffer;
+	var Buffer = __webpack_require__(53).Buffer;
 
 	var isBufferEncoding = Buffer.isEncoding
 	  || function(encoding) {
@@ -132949,7 +132737,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 667 */
+/* 666 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = preferredCharsets;
@@ -133057,7 +132845,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 668 */
+/* 667 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = preferredEncodings;
@@ -133181,7 +132969,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 669 */
+/* 668 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = preferredLanguages;
@@ -133299,7 +133087,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 670 */
+/* 669 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = preferredMediaTypes;
@@ -133441,7 +133229,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 671 */
+/* 670 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var SecurityCredentialsNative = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"../../../build/Release/kerberos\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())).SecurityCredentials;
@@ -133468,7 +133256,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.SecurityCredentials = SecurityCredentialsNative;
 
 /***/ },
-/* 672 */
+/* 671 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var SecurityContextNative = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"../../../build/Release/kerberos\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())).SecurityContext;
@@ -133476,7 +133264,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.SecurityContext = SecurityContextNative;
 
 /***/ },
-/* 673 */
+/* 672 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var SecurityBufferNative = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"../../../build/Release/kerberos\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())).SecurityBuffer;
@@ -133493,7 +133281,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.SecurityBuffer = SecurityBufferNative;
 
 /***/ },
-/* 674 */
+/* 673 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var SecurityBufferDescriptorNative = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"../../../build/Release/kerberos\""); e.code = 'MODULE_NOT_FOUND'; throw e; }())).SecurityBufferDescriptor;
@@ -133501,15 +133289,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.SecurityBufferDescriptor = SecurityBufferDescriptorNative;
 
 /***/ },
-/* 675 */
+/* 674 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(695);
+	create = __webpack_require__(694);
 
 	module.exports = create('crc1', function(buf, previous) {
 	  var accum, byte, crc, _i, _len;
@@ -133528,15 +133316,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 676 */
+/* 675 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(695);
+	create = __webpack_require__(694);
 
 	TABLE = [0x00, 0x07, 0x0e, 0x09, 0x1c, 0x1b, 0x12, 0x15, 0x38, 0x3f, 0x36, 0x31, 0x24, 0x23, 0x2a, 0x2d, 0x70, 0x77, 0x7e, 0x79, 0x6c, 0x6b, 0x62, 0x65, 0x48, 0x4f, 0x46, 0x41, 0x54, 0x53, 0x5a, 0x5d, 0xe0, 0xe7, 0xee, 0xe9, 0xfc, 0xfb, 0xf2, 0xf5, 0xd8, 0xdf, 0xd6, 0xd1, 0xc4, 0xc3, 0xca, 0xcd, 0x90, 0x97, 0x9e, 0x99, 0x8c, 0x8b, 0x82, 0x85, 0xa8, 0xaf, 0xa6, 0xa1, 0xb4, 0xb3, 0xba, 0xbd, 0xc7, 0xc0, 0xc9, 0xce, 0xdb, 0xdc, 0xd5, 0xd2, 0xff, 0xf8, 0xf1, 0xf6, 0xe3, 0xe4, 0xed, 0xea, 0xb7, 0xb0, 0xb9, 0xbe, 0xab, 0xac, 0xa5, 0xa2, 0x8f, 0x88, 0x81, 0x86, 0x93, 0x94, 0x9d, 0x9a, 0x27, 0x20, 0x29, 0x2e, 0x3b, 0x3c, 0x35, 0x32, 0x1f, 0x18, 0x11, 0x16, 0x03, 0x04, 0x0d, 0x0a, 0x57, 0x50, 0x59, 0x5e, 0x4b, 0x4c, 0x45, 0x42, 0x6f, 0x68, 0x61, 0x66, 0x73, 0x74, 0x7d, 0x7a, 0x89, 0x8e, 0x87, 0x80, 0x95, 0x92, 0x9b, 0x9c, 0xb1, 0xb6, 0xbf, 0xb8, 0xad, 0xaa, 0xa3, 0xa4, 0xf9, 0xfe, 0xf7, 0xf0, 0xe5, 0xe2, 0xeb, 0xec, 0xc1, 0xc6, 0xcf, 0xc8, 0xdd, 0xda, 0xd3, 0xd4, 0x69, 0x6e, 0x67, 0x60, 0x75, 0x72, 0x7b, 0x7c, 0x51, 0x56, 0x5f, 0x58, 0x4d, 0x4a, 0x43, 0x44, 0x19, 0x1e, 0x17, 0x10, 0x05, 0x02, 0x0b, 0x0c, 0x21, 0x26, 0x2f, 0x28, 0x3d, 0x3a, 0x33, 0x34, 0x4e, 0x49, 0x40, 0x47, 0x52, 0x55, 0x5c, 0x5b, 0x76, 0x71, 0x78, 0x7f, 0x6a, 0x6d, 0x64, 0x63, 0x3e, 0x39, 0x30, 0x37, 0x22, 0x25, 0x2c, 0x2b, 0x06, 0x01, 0x08, 0x0f, 0x1a, 0x1d, 0x14, 0x13, 0xae, 0xa9, 0xa0, 0xa7, 0xb2, 0xb5, 0xbc, 0xbb, 0x96, 0x91, 0x98, 0x9f, 0x8a, 0x8d, 0x84, 0x83, 0xde, 0xd9, 0xd0, 0xd7, 0xc2, 0xc5, 0xcc, 0xcb, 0xe6, 0xe1, 0xe8, 0xef, 0xfa, 0xfd, 0xf4, 0xf3];
 
@@ -133559,15 +133347,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 677 */
+/* 676 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(695);
+	create = __webpack_require__(694);
 
 	TABLE = [0x00, 0x5e, 0xbc, 0xe2, 0x61, 0x3f, 0xdd, 0x83, 0xc2, 0x9c, 0x7e, 0x20, 0xa3, 0xfd, 0x1f, 0x41, 0x9d, 0xc3, 0x21, 0x7f, 0xfc, 0xa2, 0x40, 0x1e, 0x5f, 0x01, 0xe3, 0xbd, 0x3e, 0x60, 0x82, 0xdc, 0x23, 0x7d, 0x9f, 0xc1, 0x42, 0x1c, 0xfe, 0xa0, 0xe1, 0xbf, 0x5d, 0x03, 0x80, 0xde, 0x3c, 0x62, 0xbe, 0xe0, 0x02, 0x5c, 0xdf, 0x81, 0x63, 0x3d, 0x7c, 0x22, 0xc0, 0x9e, 0x1d, 0x43, 0xa1, 0xff, 0x46, 0x18, 0xfa, 0xa4, 0x27, 0x79, 0x9b, 0xc5, 0x84, 0xda, 0x38, 0x66, 0xe5, 0xbb, 0x59, 0x07, 0xdb, 0x85, 0x67, 0x39, 0xba, 0xe4, 0x06, 0x58, 0x19, 0x47, 0xa5, 0xfb, 0x78, 0x26, 0xc4, 0x9a, 0x65, 0x3b, 0xd9, 0x87, 0x04, 0x5a, 0xb8, 0xe6, 0xa7, 0xf9, 0x1b, 0x45, 0xc6, 0x98, 0x7a, 0x24, 0xf8, 0xa6, 0x44, 0x1a, 0x99, 0xc7, 0x25, 0x7b, 0x3a, 0x64, 0x86, 0xd8, 0x5b, 0x05, 0xe7, 0xb9, 0x8c, 0xd2, 0x30, 0x6e, 0xed, 0xb3, 0x51, 0x0f, 0x4e, 0x10, 0xf2, 0xac, 0x2f, 0x71, 0x93, 0xcd, 0x11, 0x4f, 0xad, 0xf3, 0x70, 0x2e, 0xcc, 0x92, 0xd3, 0x8d, 0x6f, 0x31, 0xb2, 0xec, 0x0e, 0x50, 0xaf, 0xf1, 0x13, 0x4d, 0xce, 0x90, 0x72, 0x2c, 0x6d, 0x33, 0xd1, 0x8f, 0x0c, 0x52, 0xb0, 0xee, 0x32, 0x6c, 0x8e, 0xd0, 0x53, 0x0d, 0xef, 0xb1, 0xf0, 0xae, 0x4c, 0x12, 0x91, 0xcf, 0x2d, 0x73, 0xca, 0x94, 0x76, 0x28, 0xab, 0xf5, 0x17, 0x49, 0x08, 0x56, 0xb4, 0xea, 0x69, 0x37, 0xd5, 0x8b, 0x57, 0x09, 0xeb, 0xb5, 0x36, 0x68, 0x8a, 0xd4, 0x95, 0xcb, 0x29, 0x77, 0xf4, 0xaa, 0x48, 0x16, 0xe9, 0xb7, 0x55, 0x0b, 0x88, 0xd6, 0x34, 0x6a, 0x2b, 0x75, 0x97, 0xc9, 0x4a, 0x14, 0xf6, 0xa8, 0x74, 0x2a, 0xc8, 0x96, 0x15, 0x4b, 0xa9, 0xf7, 0xb6, 0xe8, 0x0a, 0x54, 0xd7, 0x89, 0x6b, 0x35];
 
@@ -133590,15 +133378,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 678 */
+/* 677 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(695);
+	create = __webpack_require__(694);
 
 	TABLE = [0x0000, 0xc0c1, 0xc181, 0x0140, 0xc301, 0x03c0, 0x0280, 0xc241, 0xc601, 0x06c0, 0x0780, 0xc741, 0x0500, 0xc5c1, 0xc481, 0x0440, 0xcc01, 0x0cc0, 0x0d80, 0xcd41, 0x0f00, 0xcfc1, 0xce81, 0x0e40, 0x0a00, 0xcac1, 0xcb81, 0x0b40, 0xc901, 0x09c0, 0x0880, 0xc841, 0xd801, 0x18c0, 0x1980, 0xd941, 0x1b00, 0xdbc1, 0xda81, 0x1a40, 0x1e00, 0xdec1, 0xdf81, 0x1f40, 0xdd01, 0x1dc0, 0x1c80, 0xdc41, 0x1400, 0xd4c1, 0xd581, 0x1540, 0xd701, 0x17c0, 0x1680, 0xd641, 0xd201, 0x12c0, 0x1380, 0xd341, 0x1100, 0xd1c1, 0xd081, 0x1040, 0xf001, 0x30c0, 0x3180, 0xf141, 0x3300, 0xf3c1, 0xf281, 0x3240, 0x3600, 0xf6c1, 0xf781, 0x3740, 0xf501, 0x35c0, 0x3480, 0xf441, 0x3c00, 0xfcc1, 0xfd81, 0x3d40, 0xff01, 0x3fc0, 0x3e80, 0xfe41, 0xfa01, 0x3ac0, 0x3b80, 0xfb41, 0x3900, 0xf9c1, 0xf881, 0x3840, 0x2800, 0xe8c1, 0xe981, 0x2940, 0xeb01, 0x2bc0, 0x2a80, 0xea41, 0xee01, 0x2ec0, 0x2f80, 0xef41, 0x2d00, 0xedc1, 0xec81, 0x2c40, 0xe401, 0x24c0, 0x2580, 0xe541, 0x2700, 0xe7c1, 0xe681, 0x2640, 0x2200, 0xe2c1, 0xe381, 0x2340, 0xe101, 0x21c0, 0x2080, 0xe041, 0xa001, 0x60c0, 0x6180, 0xa141, 0x6300, 0xa3c1, 0xa281, 0x6240, 0x6600, 0xa6c1, 0xa781, 0x6740, 0xa501, 0x65c0, 0x6480, 0xa441, 0x6c00, 0xacc1, 0xad81, 0x6d40, 0xaf01, 0x6fc0, 0x6e80, 0xae41, 0xaa01, 0x6ac0, 0x6b80, 0xab41, 0x6900, 0xa9c1, 0xa881, 0x6840, 0x7800, 0xb8c1, 0xb981, 0x7940, 0xbb01, 0x7bc0, 0x7a80, 0xba41, 0xbe01, 0x7ec0, 0x7f80, 0xbf41, 0x7d00, 0xbdc1, 0xbc81, 0x7c40, 0xb401, 0x74c0, 0x7580, 0xb541, 0x7700, 0xb7c1, 0xb681, 0x7640, 0x7200, 0xb2c1, 0xb381, 0x7340, 0xb101, 0x71c0, 0x7080, 0xb041, 0x5000, 0x90c1, 0x9181, 0x5140, 0x9301, 0x53c0, 0x5280, 0x9241, 0x9601, 0x56c0, 0x5780, 0x9741, 0x5500, 0x95c1, 0x9481, 0x5440, 0x9c01, 0x5cc0, 0x5d80, 0x9d41, 0x5f00, 0x9fc1, 0x9e81, 0x5e40, 0x5a00, 0x9ac1, 0x9b81, 0x5b40, 0x9901, 0x59c0, 0x5880, 0x9841, 0x8801, 0x48c0, 0x4980, 0x8941, 0x4b00, 0x8bc1, 0x8a81, 0x4a40, 0x4e00, 0x8ec1, 0x8f81, 0x4f40, 0x8d01, 0x4dc0, 0x4c80, 0x8c41, 0x4400, 0x84c1, 0x8581, 0x4540, 0x8701, 0x47c0, 0x4680, 0x8641, 0x8201, 0x42c0, 0x4380, 0x8341, 0x4100, 0x81c1, 0x8081, 0x4040];
 
@@ -133621,15 +133409,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 679 */
+/* 678 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(695);
+	create = __webpack_require__(694);
 
 	TABLE = [0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7, 0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef, 0x1231, 0x0210, 0x3273, 0x2252, 0x52b5, 0x4294, 0x72f7, 0x62d6, 0x9339, 0x8318, 0xb37b, 0xa35a, 0xd3bd, 0xc39c, 0xf3ff, 0xe3de, 0x2462, 0x3443, 0x0420, 0x1401, 0x64e6, 0x74c7, 0x44a4, 0x5485, 0xa56a, 0xb54b, 0x8528, 0x9509, 0xe5ee, 0xf5cf, 0xc5ac, 0xd58d, 0x3653, 0x2672, 0x1611, 0x0630, 0x76d7, 0x66f6, 0x5695, 0x46b4, 0xb75b, 0xa77a, 0x9719, 0x8738, 0xf7df, 0xe7fe, 0xd79d, 0xc7bc, 0x48c4, 0x58e5, 0x6886, 0x78a7, 0x0840, 0x1861, 0x2802, 0x3823, 0xc9cc, 0xd9ed, 0xe98e, 0xf9af, 0x8948, 0x9969, 0xa90a, 0xb92b, 0x5af5, 0x4ad4, 0x7ab7, 0x6a96, 0x1a71, 0x0a50, 0x3a33, 0x2a12, 0xdbfd, 0xcbdc, 0xfbbf, 0xeb9e, 0x9b79, 0x8b58, 0xbb3b, 0xab1a, 0x6ca6, 0x7c87, 0x4ce4, 0x5cc5, 0x2c22, 0x3c03, 0x0c60, 0x1c41, 0xedae, 0xfd8f, 0xcdec, 0xddcd, 0xad2a, 0xbd0b, 0x8d68, 0x9d49, 0x7e97, 0x6eb6, 0x5ed5, 0x4ef4, 0x3e13, 0x2e32, 0x1e51, 0x0e70, 0xff9f, 0xefbe, 0xdfdd, 0xcffc, 0xbf1b, 0xaf3a, 0x9f59, 0x8f78, 0x9188, 0x81a9, 0xb1ca, 0xa1eb, 0xd10c, 0xc12d, 0xf14e, 0xe16f, 0x1080, 0x00a1, 0x30c2, 0x20e3, 0x5004, 0x4025, 0x7046, 0x6067, 0x83b9, 0x9398, 0xa3fb, 0xb3da, 0xc33d, 0xd31c, 0xe37f, 0xf35e, 0x02b1, 0x1290, 0x22f3, 0x32d2, 0x4235, 0x5214, 0x6277, 0x7256, 0xb5ea, 0xa5cb, 0x95a8, 0x8589, 0xf56e, 0xe54f, 0xd52c, 0xc50d, 0x34e2, 0x24c3, 0x14a0, 0x0481, 0x7466, 0x6447, 0x5424, 0x4405, 0xa7db, 0xb7fa, 0x8799, 0x97b8, 0xe75f, 0xf77e, 0xc71d, 0xd73c, 0x26d3, 0x36f2, 0x0691, 0x16b0, 0x6657, 0x7676, 0x4615, 0x5634, 0xd94c, 0xc96d, 0xf90e, 0xe92f, 0x99c8, 0x89e9, 0xb98a, 0xa9ab, 0x5844, 0x4865, 0x7806, 0x6827, 0x18c0, 0x08e1, 0x3882, 0x28a3, 0xcb7d, 0xdb5c, 0xeb3f, 0xfb1e, 0x8bf9, 0x9bd8, 0xabbb, 0xbb9a, 0x4a75, 0x5a54, 0x6a37, 0x7a16, 0x0af1, 0x1ad0, 0x2ab3, 0x3a92, 0xfd2e, 0xed0f, 0xdd6c, 0xcd4d, 0xbdaa, 0xad8b, 0x9de8, 0x8dc9, 0x7c26, 0x6c07, 0x5c64, 0x4c45, 0x3ca2, 0x2c83, 0x1ce0, 0x0cc1, 0xef1f, 0xff3e, 0xcf5d, 0xdf7c, 0xaf9b, 0xbfba, 0x8fd9, 0x9ff8, 0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0];
 
@@ -133652,15 +133440,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 680 */
+/* 679 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(695);
+	create = __webpack_require__(694);
 
 	TABLE = [0x0000, 0xc0c1, 0xc181, 0x0140, 0xc301, 0x03c0, 0x0280, 0xc241, 0xc601, 0x06c0, 0x0780, 0xc741, 0x0500, 0xc5c1, 0xc481, 0x0440, 0xcc01, 0x0cc0, 0x0d80, 0xcd41, 0x0f00, 0xcfc1, 0xce81, 0x0e40, 0x0a00, 0xcac1, 0xcb81, 0x0b40, 0xc901, 0x09c0, 0x0880, 0xc841, 0xd801, 0x18c0, 0x1980, 0xd941, 0x1b00, 0xdbc1, 0xda81, 0x1a40, 0x1e00, 0xdec1, 0xdf81, 0x1f40, 0xdd01, 0x1dc0, 0x1c80, 0xdc41, 0x1400, 0xd4c1, 0xd581, 0x1540, 0xd701, 0x17c0, 0x1680, 0xd641, 0xd201, 0x12c0, 0x1380, 0xd341, 0x1100, 0xd1c1, 0xd081, 0x1040, 0xf001, 0x30c0, 0x3180, 0xf141, 0x3300, 0xf3c1, 0xf281, 0x3240, 0x3600, 0xf6c1, 0xf781, 0x3740, 0xf501, 0x35c0, 0x3480, 0xf441, 0x3c00, 0xfcc1, 0xfd81, 0x3d40, 0xff01, 0x3fc0, 0x3e80, 0xfe41, 0xfa01, 0x3ac0, 0x3b80, 0xfb41, 0x3900, 0xf9c1, 0xf881, 0x3840, 0x2800, 0xe8c1, 0xe981, 0x2940, 0xeb01, 0x2bc0, 0x2a80, 0xea41, 0xee01, 0x2ec0, 0x2f80, 0xef41, 0x2d00, 0xedc1, 0xec81, 0x2c40, 0xe401, 0x24c0, 0x2580, 0xe541, 0x2700, 0xe7c1, 0xe681, 0x2640, 0x2200, 0xe2c1, 0xe381, 0x2340, 0xe101, 0x21c0, 0x2080, 0xe041, 0xa001, 0x60c0, 0x6180, 0xa141, 0x6300, 0xa3c1, 0xa281, 0x6240, 0x6600, 0xa6c1, 0xa781, 0x6740, 0xa501, 0x65c0, 0x6480, 0xa441, 0x6c00, 0xacc1, 0xad81, 0x6d40, 0xaf01, 0x6fc0, 0x6e80, 0xae41, 0xaa01, 0x6ac0, 0x6b80, 0xab41, 0x6900, 0xa9c1, 0xa881, 0x6840, 0x7800, 0xb8c1, 0xb981, 0x7940, 0xbb01, 0x7bc0, 0x7a80, 0xba41, 0xbe01, 0x7ec0, 0x7f80, 0xbf41, 0x7d00, 0xbdc1, 0xbc81, 0x7c40, 0xb401, 0x74c0, 0x7580, 0xb541, 0x7700, 0xb7c1, 0xb681, 0x7640, 0x7200, 0xb2c1, 0xb381, 0x7340, 0xb101, 0x71c0, 0x7080, 0xb041, 0x5000, 0x90c1, 0x9181, 0x5140, 0x9301, 0x53c0, 0x5280, 0x9241, 0x9601, 0x56c0, 0x5780, 0x9741, 0x5500, 0x95c1, 0x9481, 0x5440, 0x9c01, 0x5cc0, 0x5d80, 0x9d41, 0x5f00, 0x9fc1, 0x9e81, 0x5e40, 0x5a00, 0x9ac1, 0x9b81, 0x5b40, 0x9901, 0x59c0, 0x5880, 0x9841, 0x8801, 0x48c0, 0x4980, 0x8941, 0x4b00, 0x8bc1, 0x8a81, 0x4a40, 0x4e00, 0x8ec1, 0x8f81, 0x4f40, 0x8d01, 0x4dc0, 0x4c80, 0x8c41, 0x4400, 0x84c1, 0x8581, 0x4540, 0x8701, 0x47c0, 0x4680, 0x8641, 0x8201, 0x42c0, 0x4380, 0x8341, 0x4100, 0x81c1, 0x8081, 0x4040];
 
@@ -133683,15 +133471,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 681 */
+/* 680 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(695);
+	create = __webpack_require__(694);
 
 	TABLE = [0x000000, 0x864cfb, 0x8ad50d, 0x0c99f6, 0x93e6e1, 0x15aa1a, 0x1933ec, 0x9f7f17, 0xa18139, 0x27cdc2, 0x2b5434, 0xad18cf, 0x3267d8, 0xb42b23, 0xb8b2d5, 0x3efe2e, 0xc54e89, 0x430272, 0x4f9b84, 0xc9d77f, 0x56a868, 0xd0e493, 0xdc7d65, 0x5a319e, 0x64cfb0, 0xe2834b, 0xee1abd, 0x685646, 0xf72951, 0x7165aa, 0x7dfc5c, 0xfbb0a7, 0x0cd1e9, 0x8a9d12, 0x8604e4, 0x00481f, 0x9f3708, 0x197bf3, 0x15e205, 0x93aefe, 0xad50d0, 0x2b1c2b, 0x2785dd, 0xa1c926, 0x3eb631, 0xb8faca, 0xb4633c, 0x322fc7, 0xc99f60, 0x4fd39b, 0x434a6d, 0xc50696, 0x5a7981, 0xdc357a, 0xd0ac8c, 0x56e077, 0x681e59, 0xee52a2, 0xe2cb54, 0x6487af, 0xfbf8b8, 0x7db443, 0x712db5, 0xf7614e, 0x19a3d2, 0x9fef29, 0x9376df, 0x153a24, 0x8a4533, 0x0c09c8, 0x00903e, 0x86dcc5, 0xb822eb, 0x3e6e10, 0x32f7e6, 0xb4bb1d, 0x2bc40a, 0xad88f1, 0xa11107, 0x275dfc, 0xdced5b, 0x5aa1a0, 0x563856, 0xd074ad, 0x4f0bba, 0xc94741, 0xc5deb7, 0x43924c, 0x7d6c62, 0xfb2099, 0xf7b96f, 0x71f594, 0xee8a83, 0x68c678, 0x645f8e, 0xe21375, 0x15723b, 0x933ec0, 0x9fa736, 0x19ebcd, 0x8694da, 0x00d821, 0x0c41d7, 0x8a0d2c, 0xb4f302, 0x32bff9, 0x3e260f, 0xb86af4, 0x2715e3, 0xa15918, 0xadc0ee, 0x2b8c15, 0xd03cb2, 0x567049, 0x5ae9bf, 0xdca544, 0x43da53, 0xc596a8, 0xc90f5e, 0x4f43a5, 0x71bd8b, 0xf7f170, 0xfb6886, 0x7d247d, 0xe25b6a, 0x641791, 0x688e67, 0xeec29c, 0x3347a4, 0xb50b5f, 0xb992a9, 0x3fde52, 0xa0a145, 0x26edbe, 0x2a7448, 0xac38b3, 0x92c69d, 0x148a66, 0x181390, 0x9e5f6b, 0x01207c, 0x876c87, 0x8bf571, 0x0db98a, 0xf6092d, 0x7045d6, 0x7cdc20, 0xfa90db, 0x65efcc, 0xe3a337, 0xef3ac1, 0x69763a, 0x578814, 0xd1c4ef, 0xdd5d19, 0x5b11e2, 0xc46ef5, 0x42220e, 0x4ebbf8, 0xc8f703, 0x3f964d, 0xb9dab6, 0xb54340, 0x330fbb, 0xac70ac, 0x2a3c57, 0x26a5a1, 0xa0e95a, 0x9e1774, 0x185b8f, 0x14c279, 0x928e82, 0x0df195, 0x8bbd6e, 0x872498, 0x016863, 0xfad8c4, 0x7c943f, 0x700dc9, 0xf64132, 0x693e25, 0xef72de, 0xe3eb28, 0x65a7d3, 0x5b59fd, 0xdd1506, 0xd18cf0, 0x57c00b, 0xc8bf1c, 0x4ef3e7, 0x426a11, 0xc426ea, 0x2ae476, 0xaca88d, 0xa0317b, 0x267d80, 0xb90297, 0x3f4e6c, 0x33d79a, 0xb59b61, 0x8b654f, 0x0d29b4, 0x01b042, 0x87fcb9, 0x1883ae, 0x9ecf55, 0x9256a3, 0x141a58, 0xefaaff, 0x69e604, 0x657ff2, 0xe33309, 0x7c4c1e, 0xfa00e5, 0xf69913, 0x70d5e8, 0x4e2bc6, 0xc8673d, 0xc4fecb, 0x42b230, 0xddcd27, 0x5b81dc, 0x57182a, 0xd154d1, 0x26359f, 0xa07964, 0xace092, 0x2aac69, 0xb5d37e, 0x339f85, 0x3f0673, 0xb94a88, 0x87b4a6, 0x01f85d, 0x0d61ab, 0x8b2d50, 0x145247, 0x921ebc, 0x9e874a, 0x18cbb1, 0xe37b16, 0x6537ed, 0x69ae1b, 0xefe2e0, 0x709df7, 0xf6d10c, 0xfa48fa, 0x7c0401, 0x42fa2f, 0xc4b6d4, 0xc82f22, 0x4e63d9, 0xd11cce, 0x575035, 0x5bc9c3, 0xdd8538];
 
@@ -133714,15 +133502,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 682 */
+/* 681 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(695);
+	create = __webpack_require__(694);
 
 	TABLE = [0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91, 0x1db71064, 0x6ab020f2, 0xf3b97148, 0x84be41de, 0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7, 0x136c9856, 0x646ba8c0, 0xfd62f97a, 0x8a65c9ec, 0x14015c4f, 0x63066cd9, 0xfa0f3d63, 0x8d080df5, 0x3b6e20c8, 0x4c69105e, 0xd56041e4, 0xa2677172, 0x3c03e4d1, 0x4b04d447, 0xd20d85fd, 0xa50ab56b, 0x35b5a8fa, 0x42b2986c, 0xdbbbc9d6, 0xacbcf940, 0x32d86ce3, 0x45df5c75, 0xdcd60dcf, 0xabd13d59, 0x26d930ac, 0x51de003a, 0xc8d75180, 0xbfd06116, 0x21b4f4b5, 0x56b3c423, 0xcfba9599, 0xb8bda50f, 0x2802b89e, 0x5f058808, 0xc60cd9b2, 0xb10be924, 0x2f6f7c87, 0x58684c11, 0xc1611dab, 0xb6662d3d, 0x76dc4190, 0x01db7106, 0x98d220bc, 0xefd5102a, 0x71b18589, 0x06b6b51f, 0x9fbfe4a5, 0xe8b8d433, 0x7807c9a2, 0x0f00f934, 0x9609a88e, 0xe10e9818, 0x7f6a0dbb, 0x086d3d2d, 0x91646c97, 0xe6635c01, 0x6b6b51f4, 0x1c6c6162, 0x856530d8, 0xf262004e, 0x6c0695ed, 0x1b01a57b, 0x8208f4c1, 0xf50fc457, 0x65b0d9c6, 0x12b7e950, 0x8bbeb8ea, 0xfcb9887c, 0x62dd1ddf, 0x15da2d49, 0x8cd37cf3, 0xfbd44c65, 0x4db26158, 0x3ab551ce, 0xa3bc0074, 0xd4bb30e2, 0x4adfa541, 0x3dd895d7, 0xa4d1c46d, 0xd3d6f4fb, 0x4369e96a, 0x346ed9fc, 0xad678846, 0xda60b8d0, 0x44042d73, 0x33031de5, 0xaa0a4c5f, 0xdd0d7cc9, 0x5005713c, 0x270241aa, 0xbe0b1010, 0xc90c2086, 0x5768b525, 0x206f85b3, 0xb966d409, 0xce61e49f, 0x5edef90e, 0x29d9c998, 0xb0d09822, 0xc7d7a8b4, 0x59b33d17, 0x2eb40d81, 0xb7bd5c3b, 0xc0ba6cad, 0xedb88320, 0x9abfb3b6, 0x03b6e20c, 0x74b1d29a, 0xead54739, 0x9dd277af, 0x04db2615, 0x73dc1683, 0xe3630b12, 0x94643b84, 0x0d6d6a3e, 0x7a6a5aa8, 0xe40ecf0b, 0x9309ff9d, 0x0a00ae27, 0x7d079eb1, 0xf00f9344, 0x8708a3d2, 0x1e01f268, 0x6906c2fe, 0xf762575d, 0x806567cb, 0x196c3671, 0x6e6b06e7, 0xfed41b76, 0x89d32be0, 0x10da7a5a, 0x67dd4acc, 0xf9b9df6f, 0x8ebeeff9, 0x17b7be43, 0x60b08ed5, 0xd6d6a3e8, 0xa1d1937e, 0x38d8c2c4, 0x4fdff252, 0xd1bb67f1, 0xa6bc5767, 0x3fb506dd, 0x48b2364b, 0xd80d2bda, 0xaf0a1b4c, 0x36034af6, 0x41047a60, 0xdf60efc3, 0xa867df55, 0x316e8eef, 0x4669be79, 0xcb61b38c, 0xbc66831a, 0x256fd2a0, 0x5268e236, 0xcc0c7795, 0xbb0b4703, 0x220216b9, 0x5505262f, 0xc5ba3bbe, 0xb2bd0b28, 0x2bb45a92, 0x5cb36a04, 0xc2d7ffa7, 0xb5d0cf31, 0x2cd99e8b, 0x5bdeae1d, 0x9b64c2b0, 0xec63f226, 0x756aa39c, 0x026d930a, 0x9c0906a9, 0xeb0e363f, 0x72076785, 0x05005713, 0x95bf4a82, 0xe2b87a14, 0x7bb12bae, 0x0cb61b38, 0x92d28e9b, 0xe5d5be0d, 0x7cdcefb7, 0x0bdbdf21, 0x86d3d2d4, 0xf1d4e242, 0x68ddb3f8, 0x1fda836e, 0x81be16cd, 0xf6b9265b, 0x6fb077e1, 0x18b74777, 0x88085ae6, 0xff0f6a70, 0x66063bca, 0x11010b5c, 0x8f659eff, 0xf862ae69, 0x616bffd3, 0x166ccf45, 0xa00ae278, 0xd70dd2ee, 0x4e048354, 0x3903b3c2, 0xa7672661, 0xd06016f7, 0x4969474d, 0x3e6e77db, 0xaed16a4a, 0xd9d65adc, 0x40df0b66, 0x37d83bf0, 0xa9bcae53, 0xdebb9ec5, 0x47b2cf7f, 0x30b5ffe9, 0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693, 0x54de5729, 0x23d967bf, 0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d];
 
@@ -133745,24 +133533,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 683 */
-/***/ function(module, exports, __webpack_require__) {
-
-	// Generated by CoffeeScript 1.7.1
-	module.exports = {
-	  crc1: __webpack_require__(696),
-	  crc8: __webpack_require__(697),
-	  crc81wire: __webpack_require__(698),
-	  crc16: __webpack_require__(699),
-	  crc16ccitt: __webpack_require__(700),
-	  crc16modbus: __webpack_require__(701),
-	  crc24: __webpack_require__(702),
-	  crc32: __webpack_require__(703)
-	};
-
-
-/***/ },
-/* 684 */
+/* 682 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/**
@@ -133891,7 +133662,24 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 685 */
+/* 683 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Generated by CoffeeScript 1.7.1
+	module.exports = {
+	  crc1: __webpack_require__(695),
+	  crc8: __webpack_require__(696),
+	  crc81wire: __webpack_require__(697),
+	  crc16: __webpack_require__(698),
+	  crc16ccitt: __webpack_require__(699),
+	  crc16modbus: __webpack_require__(700),
+	  crc24: __webpack_require__(701),
+	  crc32: __webpack_require__(702)
+	};
+
+
+/***/ },
+/* 684 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = Array.isArray || function (arr) {
@@ -133900,7 +133688,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 686 */
+/* 685 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Load modules
@@ -134038,6 +133826,23 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
+/* 686 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/*!
+	 * mime-db
+	 * Copyright(c) 2014 Jonathan Ong
+	 * MIT Licensed
+	 */
+
+	/**
+	 * Module exports.
+	 */
+
+	module.exports = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"./db.json\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
+
+
+/***/ },
 /* 687 */
 /***/ function(module, exports, __webpack_require__) {
 
@@ -134058,23 +133863,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 688 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/*!
-	 * mime-db
-	 * Copyright(c) 2014 Jonathan Ong
-	 * MIT Licensed
-	 */
-
-	/**
-	 * Module exports.
-	 */
-
-	module.exports = __webpack_require__(!(function webpackMissingModule() { var e = new Error("Cannot find module \"./db.json\""); e.code = 'MODULE_NOT_FOUND'; throw e; }()))
-
-
-/***/ },
-/* 689 */
-/***/ function(module, exports, __webpack_require__) {
-
 	module.exports = function (xs, fn) {
 	    var res = [];
 	    for (var i = 0; i < xs.length; i++) {
@@ -134091,7 +133879,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 690 */
+/* 689 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = balanced;
@@ -134135,7 +133923,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 691 */
+/* 690 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(Buffer) {// Copyright Joyent, Inc. and other Node contributors.
@@ -134245,10 +134033,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	function objectToString(o) {
 	  return Object.prototype.toString.call(o);
 	}
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(54).Buffer))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(53).Buffer))
 
 /***/ },
-/* 692 */
+/* 691 */
 /***/ function(module, exports, __webpack_require__) {
 
 	if (typeof Object.create === 'function') {
@@ -134277,7 +134065,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 693 */
+/* 692 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = function (xs, fn) {
@@ -134296,7 +134084,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 694 */
+/* 693 */
 /***/ function(module, exports, __webpack_require__) {
 
 	module.exports = balanced;
@@ -134340,7 +134128,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 695 */
+/* 694 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
@@ -134357,15 +134145,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 696 */
+/* 695 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(706);
+	create = __webpack_require__(705);
 
 	module.exports = create('crc1', function(buf, previous) {
 	  var accum, byte, crc, _i, _len;
@@ -134384,15 +134172,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 697 */
+/* 696 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(706);
+	create = __webpack_require__(705);
 
 	TABLE = [0x00, 0x07, 0x0e, 0x09, 0x1c, 0x1b, 0x12, 0x15, 0x38, 0x3f, 0x36, 0x31, 0x24, 0x23, 0x2a, 0x2d, 0x70, 0x77, 0x7e, 0x79, 0x6c, 0x6b, 0x62, 0x65, 0x48, 0x4f, 0x46, 0x41, 0x54, 0x53, 0x5a, 0x5d, 0xe0, 0xe7, 0xee, 0xe9, 0xfc, 0xfb, 0xf2, 0xf5, 0xd8, 0xdf, 0xd6, 0xd1, 0xc4, 0xc3, 0xca, 0xcd, 0x90, 0x97, 0x9e, 0x99, 0x8c, 0x8b, 0x82, 0x85, 0xa8, 0xaf, 0xa6, 0xa1, 0xb4, 0xb3, 0xba, 0xbd, 0xc7, 0xc0, 0xc9, 0xce, 0xdb, 0xdc, 0xd5, 0xd2, 0xff, 0xf8, 0xf1, 0xf6, 0xe3, 0xe4, 0xed, 0xea, 0xb7, 0xb0, 0xb9, 0xbe, 0xab, 0xac, 0xa5, 0xa2, 0x8f, 0x88, 0x81, 0x86, 0x93, 0x94, 0x9d, 0x9a, 0x27, 0x20, 0x29, 0x2e, 0x3b, 0x3c, 0x35, 0x32, 0x1f, 0x18, 0x11, 0x16, 0x03, 0x04, 0x0d, 0x0a, 0x57, 0x50, 0x59, 0x5e, 0x4b, 0x4c, 0x45, 0x42, 0x6f, 0x68, 0x61, 0x66, 0x73, 0x74, 0x7d, 0x7a, 0x89, 0x8e, 0x87, 0x80, 0x95, 0x92, 0x9b, 0x9c, 0xb1, 0xb6, 0xbf, 0xb8, 0xad, 0xaa, 0xa3, 0xa4, 0xf9, 0xfe, 0xf7, 0xf0, 0xe5, 0xe2, 0xeb, 0xec, 0xc1, 0xc6, 0xcf, 0xc8, 0xdd, 0xda, 0xd3, 0xd4, 0x69, 0x6e, 0x67, 0x60, 0x75, 0x72, 0x7b, 0x7c, 0x51, 0x56, 0x5f, 0x58, 0x4d, 0x4a, 0x43, 0x44, 0x19, 0x1e, 0x17, 0x10, 0x05, 0x02, 0x0b, 0x0c, 0x21, 0x26, 0x2f, 0x28, 0x3d, 0x3a, 0x33, 0x34, 0x4e, 0x49, 0x40, 0x47, 0x52, 0x55, 0x5c, 0x5b, 0x76, 0x71, 0x78, 0x7f, 0x6a, 0x6d, 0x64, 0x63, 0x3e, 0x39, 0x30, 0x37, 0x22, 0x25, 0x2c, 0x2b, 0x06, 0x01, 0x08, 0x0f, 0x1a, 0x1d, 0x14, 0x13, 0xae, 0xa9, 0xa0, 0xa7, 0xb2, 0xb5, 0xbc, 0xbb, 0x96, 0x91, 0x98, 0x9f, 0x8a, 0x8d, 0x84, 0x83, 0xde, 0xd9, 0xd0, 0xd7, 0xc2, 0xc5, 0xcc, 0xcb, 0xe6, 0xe1, 0xe8, 0xef, 0xfa, 0xfd, 0xf4, 0xf3];
 
@@ -134415,15 +134203,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 698 */
+/* 697 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(706);
+	create = __webpack_require__(705);
 
 	TABLE = [0x00, 0x5e, 0xbc, 0xe2, 0x61, 0x3f, 0xdd, 0x83, 0xc2, 0x9c, 0x7e, 0x20, 0xa3, 0xfd, 0x1f, 0x41, 0x9d, 0xc3, 0x21, 0x7f, 0xfc, 0xa2, 0x40, 0x1e, 0x5f, 0x01, 0xe3, 0xbd, 0x3e, 0x60, 0x82, 0xdc, 0x23, 0x7d, 0x9f, 0xc1, 0x42, 0x1c, 0xfe, 0xa0, 0xe1, 0xbf, 0x5d, 0x03, 0x80, 0xde, 0x3c, 0x62, 0xbe, 0xe0, 0x02, 0x5c, 0xdf, 0x81, 0x63, 0x3d, 0x7c, 0x22, 0xc0, 0x9e, 0x1d, 0x43, 0xa1, 0xff, 0x46, 0x18, 0xfa, 0xa4, 0x27, 0x79, 0x9b, 0xc5, 0x84, 0xda, 0x38, 0x66, 0xe5, 0xbb, 0x59, 0x07, 0xdb, 0x85, 0x67, 0x39, 0xba, 0xe4, 0x06, 0x58, 0x19, 0x47, 0xa5, 0xfb, 0x78, 0x26, 0xc4, 0x9a, 0x65, 0x3b, 0xd9, 0x87, 0x04, 0x5a, 0xb8, 0xe6, 0xa7, 0xf9, 0x1b, 0x45, 0xc6, 0x98, 0x7a, 0x24, 0xf8, 0xa6, 0x44, 0x1a, 0x99, 0xc7, 0x25, 0x7b, 0x3a, 0x64, 0x86, 0xd8, 0x5b, 0x05, 0xe7, 0xb9, 0x8c, 0xd2, 0x30, 0x6e, 0xed, 0xb3, 0x51, 0x0f, 0x4e, 0x10, 0xf2, 0xac, 0x2f, 0x71, 0x93, 0xcd, 0x11, 0x4f, 0xad, 0xf3, 0x70, 0x2e, 0xcc, 0x92, 0xd3, 0x8d, 0x6f, 0x31, 0xb2, 0xec, 0x0e, 0x50, 0xaf, 0xf1, 0x13, 0x4d, 0xce, 0x90, 0x72, 0x2c, 0x6d, 0x33, 0xd1, 0x8f, 0x0c, 0x52, 0xb0, 0xee, 0x32, 0x6c, 0x8e, 0xd0, 0x53, 0x0d, 0xef, 0xb1, 0xf0, 0xae, 0x4c, 0x12, 0x91, 0xcf, 0x2d, 0x73, 0xca, 0x94, 0x76, 0x28, 0xab, 0xf5, 0x17, 0x49, 0x08, 0x56, 0xb4, 0xea, 0x69, 0x37, 0xd5, 0x8b, 0x57, 0x09, 0xeb, 0xb5, 0x36, 0x68, 0x8a, 0xd4, 0x95, 0xcb, 0x29, 0x77, 0xf4, 0xaa, 0x48, 0x16, 0xe9, 0xb7, 0x55, 0x0b, 0x88, 0xd6, 0x34, 0x6a, 0x2b, 0x75, 0x97, 0xc9, 0x4a, 0x14, 0xf6, 0xa8, 0x74, 0x2a, 0xc8, 0x96, 0x15, 0x4b, 0xa9, 0xf7, 0xb6, 0xe8, 0x0a, 0x54, 0xd7, 0x89, 0x6b, 0x35];
 
@@ -134446,15 +134234,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 699 */
+/* 698 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(706);
+	create = __webpack_require__(705);
 
 	TABLE = [0x0000, 0xc0c1, 0xc181, 0x0140, 0xc301, 0x03c0, 0x0280, 0xc241, 0xc601, 0x06c0, 0x0780, 0xc741, 0x0500, 0xc5c1, 0xc481, 0x0440, 0xcc01, 0x0cc0, 0x0d80, 0xcd41, 0x0f00, 0xcfc1, 0xce81, 0x0e40, 0x0a00, 0xcac1, 0xcb81, 0x0b40, 0xc901, 0x09c0, 0x0880, 0xc841, 0xd801, 0x18c0, 0x1980, 0xd941, 0x1b00, 0xdbc1, 0xda81, 0x1a40, 0x1e00, 0xdec1, 0xdf81, 0x1f40, 0xdd01, 0x1dc0, 0x1c80, 0xdc41, 0x1400, 0xd4c1, 0xd581, 0x1540, 0xd701, 0x17c0, 0x1680, 0xd641, 0xd201, 0x12c0, 0x1380, 0xd341, 0x1100, 0xd1c1, 0xd081, 0x1040, 0xf001, 0x30c0, 0x3180, 0xf141, 0x3300, 0xf3c1, 0xf281, 0x3240, 0x3600, 0xf6c1, 0xf781, 0x3740, 0xf501, 0x35c0, 0x3480, 0xf441, 0x3c00, 0xfcc1, 0xfd81, 0x3d40, 0xff01, 0x3fc0, 0x3e80, 0xfe41, 0xfa01, 0x3ac0, 0x3b80, 0xfb41, 0x3900, 0xf9c1, 0xf881, 0x3840, 0x2800, 0xe8c1, 0xe981, 0x2940, 0xeb01, 0x2bc0, 0x2a80, 0xea41, 0xee01, 0x2ec0, 0x2f80, 0xef41, 0x2d00, 0xedc1, 0xec81, 0x2c40, 0xe401, 0x24c0, 0x2580, 0xe541, 0x2700, 0xe7c1, 0xe681, 0x2640, 0x2200, 0xe2c1, 0xe381, 0x2340, 0xe101, 0x21c0, 0x2080, 0xe041, 0xa001, 0x60c0, 0x6180, 0xa141, 0x6300, 0xa3c1, 0xa281, 0x6240, 0x6600, 0xa6c1, 0xa781, 0x6740, 0xa501, 0x65c0, 0x6480, 0xa441, 0x6c00, 0xacc1, 0xad81, 0x6d40, 0xaf01, 0x6fc0, 0x6e80, 0xae41, 0xaa01, 0x6ac0, 0x6b80, 0xab41, 0x6900, 0xa9c1, 0xa881, 0x6840, 0x7800, 0xb8c1, 0xb981, 0x7940, 0xbb01, 0x7bc0, 0x7a80, 0xba41, 0xbe01, 0x7ec0, 0x7f80, 0xbf41, 0x7d00, 0xbdc1, 0xbc81, 0x7c40, 0xb401, 0x74c0, 0x7580, 0xb541, 0x7700, 0xb7c1, 0xb681, 0x7640, 0x7200, 0xb2c1, 0xb381, 0x7340, 0xb101, 0x71c0, 0x7080, 0xb041, 0x5000, 0x90c1, 0x9181, 0x5140, 0x9301, 0x53c0, 0x5280, 0x9241, 0x9601, 0x56c0, 0x5780, 0x9741, 0x5500, 0x95c1, 0x9481, 0x5440, 0x9c01, 0x5cc0, 0x5d80, 0x9d41, 0x5f00, 0x9fc1, 0x9e81, 0x5e40, 0x5a00, 0x9ac1, 0x9b81, 0x5b40, 0x9901, 0x59c0, 0x5880, 0x9841, 0x8801, 0x48c0, 0x4980, 0x8941, 0x4b00, 0x8bc1, 0x8a81, 0x4a40, 0x4e00, 0x8ec1, 0x8f81, 0x4f40, 0x8d01, 0x4dc0, 0x4c80, 0x8c41, 0x4400, 0x84c1, 0x8581, 0x4540, 0x8701, 0x47c0, 0x4680, 0x8641, 0x8201, 0x42c0, 0x4380, 0x8341, 0x4100, 0x81c1, 0x8081, 0x4040];
 
@@ -134477,15 +134265,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 700 */
+/* 699 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(706);
+	create = __webpack_require__(705);
 
 	TABLE = [0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7, 0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef, 0x1231, 0x0210, 0x3273, 0x2252, 0x52b5, 0x4294, 0x72f7, 0x62d6, 0x9339, 0x8318, 0xb37b, 0xa35a, 0xd3bd, 0xc39c, 0xf3ff, 0xe3de, 0x2462, 0x3443, 0x0420, 0x1401, 0x64e6, 0x74c7, 0x44a4, 0x5485, 0xa56a, 0xb54b, 0x8528, 0x9509, 0xe5ee, 0xf5cf, 0xc5ac, 0xd58d, 0x3653, 0x2672, 0x1611, 0x0630, 0x76d7, 0x66f6, 0x5695, 0x46b4, 0xb75b, 0xa77a, 0x9719, 0x8738, 0xf7df, 0xe7fe, 0xd79d, 0xc7bc, 0x48c4, 0x58e5, 0x6886, 0x78a7, 0x0840, 0x1861, 0x2802, 0x3823, 0xc9cc, 0xd9ed, 0xe98e, 0xf9af, 0x8948, 0x9969, 0xa90a, 0xb92b, 0x5af5, 0x4ad4, 0x7ab7, 0x6a96, 0x1a71, 0x0a50, 0x3a33, 0x2a12, 0xdbfd, 0xcbdc, 0xfbbf, 0xeb9e, 0x9b79, 0x8b58, 0xbb3b, 0xab1a, 0x6ca6, 0x7c87, 0x4ce4, 0x5cc5, 0x2c22, 0x3c03, 0x0c60, 0x1c41, 0xedae, 0xfd8f, 0xcdec, 0xddcd, 0xad2a, 0xbd0b, 0x8d68, 0x9d49, 0x7e97, 0x6eb6, 0x5ed5, 0x4ef4, 0x3e13, 0x2e32, 0x1e51, 0x0e70, 0xff9f, 0xefbe, 0xdfdd, 0xcffc, 0xbf1b, 0xaf3a, 0x9f59, 0x8f78, 0x9188, 0x81a9, 0xb1ca, 0xa1eb, 0xd10c, 0xc12d, 0xf14e, 0xe16f, 0x1080, 0x00a1, 0x30c2, 0x20e3, 0x5004, 0x4025, 0x7046, 0x6067, 0x83b9, 0x9398, 0xa3fb, 0xb3da, 0xc33d, 0xd31c, 0xe37f, 0xf35e, 0x02b1, 0x1290, 0x22f3, 0x32d2, 0x4235, 0x5214, 0x6277, 0x7256, 0xb5ea, 0xa5cb, 0x95a8, 0x8589, 0xf56e, 0xe54f, 0xd52c, 0xc50d, 0x34e2, 0x24c3, 0x14a0, 0x0481, 0x7466, 0x6447, 0x5424, 0x4405, 0xa7db, 0xb7fa, 0x8799, 0x97b8, 0xe75f, 0xf77e, 0xc71d, 0xd73c, 0x26d3, 0x36f2, 0x0691, 0x16b0, 0x6657, 0x7676, 0x4615, 0x5634, 0xd94c, 0xc96d, 0xf90e, 0xe92f, 0x99c8, 0x89e9, 0xb98a, 0xa9ab, 0x5844, 0x4865, 0x7806, 0x6827, 0x18c0, 0x08e1, 0x3882, 0x28a3, 0xcb7d, 0xdb5c, 0xeb3f, 0xfb1e, 0x8bf9, 0x9bd8, 0xabbb, 0xbb9a, 0x4a75, 0x5a54, 0x6a37, 0x7a16, 0x0af1, 0x1ad0, 0x2ab3, 0x3a92, 0xfd2e, 0xed0f, 0xdd6c, 0xcd4d, 0xbdaa, 0xad8b, 0x9de8, 0x8dc9, 0x7c26, 0x6c07, 0x5c64, 0x4c45, 0x3ca2, 0x2c83, 0x1ce0, 0x0cc1, 0xef1f, 0xff3e, 0xcf5d, 0xdf7c, 0xaf9b, 0xbfba, 0x8fd9, 0x9ff8, 0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0];
 
@@ -134508,15 +134296,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 701 */
+/* 700 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(706);
+	create = __webpack_require__(705);
 
 	TABLE = [0x0000, 0xc0c1, 0xc181, 0x0140, 0xc301, 0x03c0, 0x0280, 0xc241, 0xc601, 0x06c0, 0x0780, 0xc741, 0x0500, 0xc5c1, 0xc481, 0x0440, 0xcc01, 0x0cc0, 0x0d80, 0xcd41, 0x0f00, 0xcfc1, 0xce81, 0x0e40, 0x0a00, 0xcac1, 0xcb81, 0x0b40, 0xc901, 0x09c0, 0x0880, 0xc841, 0xd801, 0x18c0, 0x1980, 0xd941, 0x1b00, 0xdbc1, 0xda81, 0x1a40, 0x1e00, 0xdec1, 0xdf81, 0x1f40, 0xdd01, 0x1dc0, 0x1c80, 0xdc41, 0x1400, 0xd4c1, 0xd581, 0x1540, 0xd701, 0x17c0, 0x1680, 0xd641, 0xd201, 0x12c0, 0x1380, 0xd341, 0x1100, 0xd1c1, 0xd081, 0x1040, 0xf001, 0x30c0, 0x3180, 0xf141, 0x3300, 0xf3c1, 0xf281, 0x3240, 0x3600, 0xf6c1, 0xf781, 0x3740, 0xf501, 0x35c0, 0x3480, 0xf441, 0x3c00, 0xfcc1, 0xfd81, 0x3d40, 0xff01, 0x3fc0, 0x3e80, 0xfe41, 0xfa01, 0x3ac0, 0x3b80, 0xfb41, 0x3900, 0xf9c1, 0xf881, 0x3840, 0x2800, 0xe8c1, 0xe981, 0x2940, 0xeb01, 0x2bc0, 0x2a80, 0xea41, 0xee01, 0x2ec0, 0x2f80, 0xef41, 0x2d00, 0xedc1, 0xec81, 0x2c40, 0xe401, 0x24c0, 0x2580, 0xe541, 0x2700, 0xe7c1, 0xe681, 0x2640, 0x2200, 0xe2c1, 0xe381, 0x2340, 0xe101, 0x21c0, 0x2080, 0xe041, 0xa001, 0x60c0, 0x6180, 0xa141, 0x6300, 0xa3c1, 0xa281, 0x6240, 0x6600, 0xa6c1, 0xa781, 0x6740, 0xa501, 0x65c0, 0x6480, 0xa441, 0x6c00, 0xacc1, 0xad81, 0x6d40, 0xaf01, 0x6fc0, 0x6e80, 0xae41, 0xaa01, 0x6ac0, 0x6b80, 0xab41, 0x6900, 0xa9c1, 0xa881, 0x6840, 0x7800, 0xb8c1, 0xb981, 0x7940, 0xbb01, 0x7bc0, 0x7a80, 0xba41, 0xbe01, 0x7ec0, 0x7f80, 0xbf41, 0x7d00, 0xbdc1, 0xbc81, 0x7c40, 0xb401, 0x74c0, 0x7580, 0xb541, 0x7700, 0xb7c1, 0xb681, 0x7640, 0x7200, 0xb2c1, 0xb381, 0x7340, 0xb101, 0x71c0, 0x7080, 0xb041, 0x5000, 0x90c1, 0x9181, 0x5140, 0x9301, 0x53c0, 0x5280, 0x9241, 0x9601, 0x56c0, 0x5780, 0x9741, 0x5500, 0x95c1, 0x9481, 0x5440, 0x9c01, 0x5cc0, 0x5d80, 0x9d41, 0x5f00, 0x9fc1, 0x9e81, 0x5e40, 0x5a00, 0x9ac1, 0x9b81, 0x5b40, 0x9901, 0x59c0, 0x5880, 0x9841, 0x8801, 0x48c0, 0x4980, 0x8941, 0x4b00, 0x8bc1, 0x8a81, 0x4a40, 0x4e00, 0x8ec1, 0x8f81, 0x4f40, 0x8d01, 0x4dc0, 0x4c80, 0x8c41, 0x4400, 0x84c1, 0x8581, 0x4540, 0x8701, 0x47c0, 0x4680, 0x8641, 0x8201, 0x42c0, 0x4380, 0x8341, 0x4100, 0x81c1, 0x8081, 0x4040];
 
@@ -134539,15 +134327,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 702 */
+/* 701 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(706);
+	create = __webpack_require__(705);
 
 	TABLE = [0x000000, 0x864cfb, 0x8ad50d, 0x0c99f6, 0x93e6e1, 0x15aa1a, 0x1933ec, 0x9f7f17, 0xa18139, 0x27cdc2, 0x2b5434, 0xad18cf, 0x3267d8, 0xb42b23, 0xb8b2d5, 0x3efe2e, 0xc54e89, 0x430272, 0x4f9b84, 0xc9d77f, 0x56a868, 0xd0e493, 0xdc7d65, 0x5a319e, 0x64cfb0, 0xe2834b, 0xee1abd, 0x685646, 0xf72951, 0x7165aa, 0x7dfc5c, 0xfbb0a7, 0x0cd1e9, 0x8a9d12, 0x8604e4, 0x00481f, 0x9f3708, 0x197bf3, 0x15e205, 0x93aefe, 0xad50d0, 0x2b1c2b, 0x2785dd, 0xa1c926, 0x3eb631, 0xb8faca, 0xb4633c, 0x322fc7, 0xc99f60, 0x4fd39b, 0x434a6d, 0xc50696, 0x5a7981, 0xdc357a, 0xd0ac8c, 0x56e077, 0x681e59, 0xee52a2, 0xe2cb54, 0x6487af, 0xfbf8b8, 0x7db443, 0x712db5, 0xf7614e, 0x19a3d2, 0x9fef29, 0x9376df, 0x153a24, 0x8a4533, 0x0c09c8, 0x00903e, 0x86dcc5, 0xb822eb, 0x3e6e10, 0x32f7e6, 0xb4bb1d, 0x2bc40a, 0xad88f1, 0xa11107, 0x275dfc, 0xdced5b, 0x5aa1a0, 0x563856, 0xd074ad, 0x4f0bba, 0xc94741, 0xc5deb7, 0x43924c, 0x7d6c62, 0xfb2099, 0xf7b96f, 0x71f594, 0xee8a83, 0x68c678, 0x645f8e, 0xe21375, 0x15723b, 0x933ec0, 0x9fa736, 0x19ebcd, 0x8694da, 0x00d821, 0x0c41d7, 0x8a0d2c, 0xb4f302, 0x32bff9, 0x3e260f, 0xb86af4, 0x2715e3, 0xa15918, 0xadc0ee, 0x2b8c15, 0xd03cb2, 0x567049, 0x5ae9bf, 0xdca544, 0x43da53, 0xc596a8, 0xc90f5e, 0x4f43a5, 0x71bd8b, 0xf7f170, 0xfb6886, 0x7d247d, 0xe25b6a, 0x641791, 0x688e67, 0xeec29c, 0x3347a4, 0xb50b5f, 0xb992a9, 0x3fde52, 0xa0a145, 0x26edbe, 0x2a7448, 0xac38b3, 0x92c69d, 0x148a66, 0x181390, 0x9e5f6b, 0x01207c, 0x876c87, 0x8bf571, 0x0db98a, 0xf6092d, 0x7045d6, 0x7cdc20, 0xfa90db, 0x65efcc, 0xe3a337, 0xef3ac1, 0x69763a, 0x578814, 0xd1c4ef, 0xdd5d19, 0x5b11e2, 0xc46ef5, 0x42220e, 0x4ebbf8, 0xc8f703, 0x3f964d, 0xb9dab6, 0xb54340, 0x330fbb, 0xac70ac, 0x2a3c57, 0x26a5a1, 0xa0e95a, 0x9e1774, 0x185b8f, 0x14c279, 0x928e82, 0x0df195, 0x8bbd6e, 0x872498, 0x016863, 0xfad8c4, 0x7c943f, 0x700dc9, 0xf64132, 0x693e25, 0xef72de, 0xe3eb28, 0x65a7d3, 0x5b59fd, 0xdd1506, 0xd18cf0, 0x57c00b, 0xc8bf1c, 0x4ef3e7, 0x426a11, 0xc426ea, 0x2ae476, 0xaca88d, 0xa0317b, 0x267d80, 0xb90297, 0x3f4e6c, 0x33d79a, 0xb59b61, 0x8b654f, 0x0d29b4, 0x01b042, 0x87fcb9, 0x1883ae, 0x9ecf55, 0x9256a3, 0x141a58, 0xefaaff, 0x69e604, 0x657ff2, 0xe33309, 0x7c4c1e, 0xfa00e5, 0xf69913, 0x70d5e8, 0x4e2bc6, 0xc8673d, 0xc4fecb, 0x42b230, 0xddcd27, 0x5b81dc, 0x57182a, 0xd154d1, 0x26359f, 0xa07964, 0xace092, 0x2aac69, 0xb5d37e, 0x339f85, 0x3f0673, 0xb94a88, 0x87b4a6, 0x01f85d, 0x0d61ab, 0x8b2d50, 0x145247, 0x921ebc, 0x9e874a, 0x18cbb1, 0xe37b16, 0x6537ed, 0x69ae1b, 0xefe2e0, 0x709df7, 0xf6d10c, 0xfa48fa, 0x7c0401, 0x42fa2f, 0xc4b6d4, 0xc82f22, 0x4e63d9, 0xd11cce, 0x575035, 0x5bc9c3, 0xdd8538];
 
@@ -134570,15 +134358,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 703 */
+/* 702 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
 	var Buffer, TABLE, create;
 
-	Buffer = __webpack_require__(54).Buffer;
+	Buffer = __webpack_require__(53).Buffer;
 
-	create = __webpack_require__(706);
+	create = __webpack_require__(705);
 
 	TABLE = [0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91, 0x1db71064, 0x6ab020f2, 0xf3b97148, 0x84be41de, 0x1adad47d, 0x6ddde4eb, 0xf4d4b551, 0x83d385c7, 0x136c9856, 0x646ba8c0, 0xfd62f97a, 0x8a65c9ec, 0x14015c4f, 0x63066cd9, 0xfa0f3d63, 0x8d080df5, 0x3b6e20c8, 0x4c69105e, 0xd56041e4, 0xa2677172, 0x3c03e4d1, 0x4b04d447, 0xd20d85fd, 0xa50ab56b, 0x35b5a8fa, 0x42b2986c, 0xdbbbc9d6, 0xacbcf940, 0x32d86ce3, 0x45df5c75, 0xdcd60dcf, 0xabd13d59, 0x26d930ac, 0x51de003a, 0xc8d75180, 0xbfd06116, 0x21b4f4b5, 0x56b3c423, 0xcfba9599, 0xb8bda50f, 0x2802b89e, 0x5f058808, 0xc60cd9b2, 0xb10be924, 0x2f6f7c87, 0x58684c11, 0xc1611dab, 0xb6662d3d, 0x76dc4190, 0x01db7106, 0x98d220bc, 0xefd5102a, 0x71b18589, 0x06b6b51f, 0x9fbfe4a5, 0xe8b8d433, 0x7807c9a2, 0x0f00f934, 0x9609a88e, 0xe10e9818, 0x7f6a0dbb, 0x086d3d2d, 0x91646c97, 0xe6635c01, 0x6b6b51f4, 0x1c6c6162, 0x856530d8, 0xf262004e, 0x6c0695ed, 0x1b01a57b, 0x8208f4c1, 0xf50fc457, 0x65b0d9c6, 0x12b7e950, 0x8bbeb8ea, 0xfcb9887c, 0x62dd1ddf, 0x15da2d49, 0x8cd37cf3, 0xfbd44c65, 0x4db26158, 0x3ab551ce, 0xa3bc0074, 0xd4bb30e2, 0x4adfa541, 0x3dd895d7, 0xa4d1c46d, 0xd3d6f4fb, 0x4369e96a, 0x346ed9fc, 0xad678846, 0xda60b8d0, 0x44042d73, 0x33031de5, 0xaa0a4c5f, 0xdd0d7cc9, 0x5005713c, 0x270241aa, 0xbe0b1010, 0xc90c2086, 0x5768b525, 0x206f85b3, 0xb966d409, 0xce61e49f, 0x5edef90e, 0x29d9c998, 0xb0d09822, 0xc7d7a8b4, 0x59b33d17, 0x2eb40d81, 0xb7bd5c3b, 0xc0ba6cad, 0xedb88320, 0x9abfb3b6, 0x03b6e20c, 0x74b1d29a, 0xead54739, 0x9dd277af, 0x04db2615, 0x73dc1683, 0xe3630b12, 0x94643b84, 0x0d6d6a3e, 0x7a6a5aa8, 0xe40ecf0b, 0x9309ff9d, 0x0a00ae27, 0x7d079eb1, 0xf00f9344, 0x8708a3d2, 0x1e01f268, 0x6906c2fe, 0xf762575d, 0x806567cb, 0x196c3671, 0x6e6b06e7, 0xfed41b76, 0x89d32be0, 0x10da7a5a, 0x67dd4acc, 0xf9b9df6f, 0x8ebeeff9, 0x17b7be43, 0x60b08ed5, 0xd6d6a3e8, 0xa1d1937e, 0x38d8c2c4, 0x4fdff252, 0xd1bb67f1, 0xa6bc5767, 0x3fb506dd, 0x48b2364b, 0xd80d2bda, 0xaf0a1b4c, 0x36034af6, 0x41047a60, 0xdf60efc3, 0xa867df55, 0x316e8eef, 0x4669be79, 0xcb61b38c, 0xbc66831a, 0x256fd2a0, 0x5268e236, 0xcc0c7795, 0xbb0b4703, 0x220216b9, 0x5505262f, 0xc5ba3bbe, 0xb2bd0b28, 0x2bb45a92, 0x5cb36a04, 0xc2d7ffa7, 0xb5d0cf31, 0x2cd99e8b, 0x5bdeae1d, 0x9b64c2b0, 0xec63f226, 0x756aa39c, 0x026d930a, 0x9c0906a9, 0xeb0e363f, 0x72076785, 0x05005713, 0x95bf4a82, 0xe2b87a14, 0x7bb12bae, 0x0cb61b38, 0x92d28e9b, 0xe5d5be0d, 0x7cdcefb7, 0x0bdbdf21, 0x86d3d2d4, 0xf1d4e242, 0x68ddb3f8, 0x1fda836e, 0x81be16cd, 0xf6b9265b, 0x6fb077e1, 0x18b74777, 0x88085ae6, 0xff0f6a70, 0x66063bca, 0x11010b5c, 0x8f659eff, 0xf862ae69, 0x616bffd3, 0x166ccf45, 0xa00ae278, 0xd70dd2ee, 0x4e048354, 0x3903b3c2, 0xa7672661, 0xd06016f7, 0x4969474d, 0x3e6e77db, 0xaed16a4a, 0xd9d65adc, 0x40df0b66, 0x37d83bf0, 0xa9bcae53, 0xdebb9ec5, 0x47b2cf7f, 0x30b5ffe9, 0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693, 0x54de5729, 0x23d967bf, 0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d];
 
@@ -134601,9 +134389,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
+/* 703 */,
 /* 704 */,
-/* 705 */,
-/* 706 */
+/* 705 */
 /***/ function(module, exports, __webpack_require__) {
 
 	// Generated by CoffeeScript 1.7.1
