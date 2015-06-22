@@ -4,7 +4,7 @@
  *
  */
 {
-  // mocksock: true,   // You can set MOCKSOCK=true from the shell.
+  mocksock: true,   // You can set MOCKSOCK=true from the shell.
   mochaTesting: true,
   mochaConsoleMute: false // Hide outputs to the mm.logs
 }
