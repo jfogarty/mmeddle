@@ -39,6 +39,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
   }
   
   before(function primeStorage() {
+    this.timeout(SAL_TIMEOUT);
     // Prime the pump by first loading something that does not exist.
     return qq.all(storageClients().map(function (sc) {
       // Once gone it shoult not be reloaded.

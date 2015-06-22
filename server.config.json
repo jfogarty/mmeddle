@@ -1,9 +1,0 @@
-/* 
- *
- *   mMeddle server configuration file. 
- *
- */
-{
-  enableMongoDb: true,
-  boring: 'as a server'
-}

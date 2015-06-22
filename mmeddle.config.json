@@ -2,10 +2,11 @@
     mMeddle Configuration file.
 
     Configuration files are used to populate the mm.config object.
-    .config.json files are read once during startup. The root directory
-    is checked first and if no config is found, the ./config directory
-    is examined for the same file. This lets you override a ./config file
-    by copying it to the root and changing it to your hearts content.
+    The '[name].config.json' files are read once during startup. 
+    The root directory is checked first and if no config is found,
+    the ./config subdirectory is examined for the same file. 
+    This lets you override a ./config file by copying it to the root
+    and changing it to your hearts content.
 
     If any [name].config.json file contains a 'debug: true' directive, or if 
     either environment variable DEBUG=true, or MMEDDLE_DEBUG=true then

@@ -98,6 +98,7 @@ module.exports = function registerCliConsole(mm) {
     var inNode = mm.config.inNode;
     var inBrowser = inNode ? false : true;
     var activity = false;
+    var isConsole = true;
 
     // Defined on Node clients.
     var outStream;
@@ -122,7 +123,13 @@ module.exports = function registerCliConsole(mm) {
       inStream.setEncoding('utf8');
       // Raw mode reads from the console without echoing characters and
       // doesn't buffer up the keys.  
-      inStream.setRawMode(true);
+      try {
+        inStream.setRawMode(true);
+      }
+      catch (e) {
+        mm.log.warn('***** Stdin is not a CONSOLE :', e);
+        isConsole = false;
+      }
 
       self.displayRows = outStream.rows;
       self.displayCols = outStream.columns;
