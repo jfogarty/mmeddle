@@ -31,6 +31,9 @@
 
 [https://github.com/jfogarty/mmeddle][github-mm-url]
 
+[graphicsMagick-url]: http://www.graphicsmagick.org/
+[imageMagick-url]: http://www.imagemagick.org/
+
 ![backgound math art](../images/art/mathart2.png)
 
 `mmeddle.js` is a symbolic math workspace for browsers and Node.js. It features pluggable types, operators, units, and functions.
@@ -293,6 +296,9 @@ The CLI does not give you access to everything mMeddle can do, and it is
 really terrible as a way to write math, but it is still the best way to
 test your non-UI code.
 
+Connection to the localhost server is the default, but you can use the
+`.host remote` command to connect to the live remote server.
+
 The CLI works with `mocksock` testing as well, so this is often an easy
 way to debug client/server issues since both run in the same process.
 Start the server and CLI using mocksock via:
@@ -310,9 +316,20 @@ you must run a mMeddle server.
 
 Use http://127.0.0.1:8080/test/webcli.html to start the web based text
 mode cli. You can reach the online version at [test/webcli.html][openshift-mm-cli-url] or [test/webcli.min.html][openshift-mm-climin-url].
+
 Note that the CLI uses browser localStorage to hold the current workspace and
 user login information. The localStorage domains will be different depending
 on how you start the app, so this may cause you some confusion at first.
+Some mocha unit tests will wipe out your local storage as well.
+
+Configuration of the webCli comes from the `./dist/config.js` file loaded
+when the page loads.  This file is created from the merge of the current
+server configuration with `./config/browser.config.json`, when server
+starts execution.
+
+You can work on a local version of the WebCLI and mmeddle library while
+using the live server by entering a `.host remote` command.
+using the live server by entering a `.host remote` command.
 
 ## Local Server Execution
 
@@ -377,7 +394,7 @@ a lot of code to work, but you may be more disciplined.
 We want to keep coverage well above 90% overall and 100% for critical
 components. Check the current coverage using:
 
-    mocksock=true
+    MOCKSOCK=true
     npm run coverage
     
 This runs the **istanbul** code coverage tool against the Mocha test suite.
@@ -413,31 +430,37 @@ exception that crashes the server, disables the client, or corrupts the data.
     
 ## Persistent Data
 
-mMeddle uses three forms of read/write persistent data:
+mMeddle uses four forms of read/write persistent data:
 
-- LocalStorage : used by browser clients and emulated for Node.js clients
 - MongoDB Database storage : primary storage mechanism
 - Filesystem storage : available for testing and fallback
+- Client remote storage : browser & clients to the server
+- LocalStorage : used by browser clients and emulated for Node.js clients
 
-The first is `localStorage` in the browser to maintain session information.
-Node.js client applications use a simulated form of localStorage which is
-saved to the `./storage/localStorage/[app]` directory. See `./sal/LocalStorage`.
-The practical limit of localStorage is 2.5 million characters per domain so
-we need to be careful to not extend our local requirements to anything like
-that number.
-
-The second is a MongoDB database.  You should install one locally; see
+The first is a MongoDB database.  You should install one locally; see
 [MongoDB server](https://www.mongodb.org/downloads) . The server will look
 for a database using the `./sal/MongoDBProvider'.  You can inspect the
 contents of the MongoDB using its `Mongo` client application, but it is
 a bit painful.
 
-The third is the filesystem itself. If your mongoDB database cannot be
+The second is the filesystem itself. If your mongoDB database cannot be
 found then IO will be to the file system. Most, if not all, functions which
 currently use the database can be accomplished using the `./sal/FileProvider`.
 The file system is slower and does not scale well, but has the great advantage
 that it is really easy to look at the JSON files produced and see whats
 going on. I do most early debugging with the database turned off.
+
+The third is really just the remote form of the first two. When logged into
+a server, client storage operations are remoted by the `./sal/ClientProvider`.
+The storage operations are funneled through the workspace connection 
+socket to the corresponding session on the server.
+
+The last is `localStorage` in the browser to maintain session information.
+Node.js client applications use a simulated form of localStorage which is
+saved to the `./storage/localStorage/[app]` directory. See `./sal/LocalStorage`.
+The practical limit of localStorage is 2.5 million characters per domain so
+we need to be careful to not extend our local requirements to anything like
+that number.
 
 
 ## Cloud Build Automation
@@ -610,6 +633,32 @@ Change **security.fileuri.strict_origin_policy** to false.
 From the command line (in the chrome installation directory):
 
     chrome --allow-file-access-from-files
+    
+### NodeJS Testing of Equation Graphics
+
+`MNode` objects draw to `DisplayContext` objects. The gmDC can be used
+for testing on Node as long as you have independently installed
+[`GraphicsMagick`][graphicsMagick-url] or [`ImageMagick`][imageMagick-url].
+This creates .png files as the result of performing expression `.render()`
+operations. You will need to enable this by setting 
+
+    displayContext: 'gm'
+
+in an appropriate config.json file.
+
+I've been using only ImageMagick. To verify it is installed correctly
+you should be able to see its version from the command line. For example:
+
+    C:\jf\_mMeddle\_mm>convert --version
+    Version: ImageMagick 6.9.1-2 Q16 x64 2015-04-14 http://www.imagemagick.org
+    Copyright: Copyright (C) 1999-2015 ImageMagick Studio LLC
+    License: http://www.imagemagick.org/script/license.php
+    Features: DPC Modules OpenMP
+    Delegates (built-in): bzlib cairo freetype jbig jng jp2 jpeg lcms lqr openexr pangocairo png ps rsvg tiff webp xml zlib
+
+You will note this is running on Windows, but of course its easier on almost
+any other OS.
+
     
 ## The End
 If you're here, perhaps you've already found errors in this document or
