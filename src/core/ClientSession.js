@@ -35,6 +35,9 @@
       self.loggedIn = null; // Not currently logged in.
       self.mmc = false; // No MMeddleClient has been added,
       self.clientApp = clientApp ? clientApp : 'client';
+      self.storageClient = null;
+      self.storageEngine = new mm.storage.StorageEngine();
+      mm.storage.providers.ClientProvider.register(self.storageEngine, self);
 
       /* istanbul ignore next */ // tested independently
       self.newSessionId = function newSessionId() {
@@ -44,6 +47,14 @@
   
     return ctor;
   }());
+
+  /**
+   * @summary **Determine if this session is in Admin mode**
+   * @return {bool} true if logged on as an administrator.
+   */  
+  ClientSession.prototype.isAdmin = function isAdmin() {
+    return this.userConfig.administrator;
+  }
 
   /**
    * @summary **Bind the MMeddleClient to this session**
@@ -57,6 +68,7 @@
     var self = this;  
     self.mmc = mmc;
   }
+  
 
   /**
    * @summary **Issue a server request with optional response**
@@ -64,8 +76,12 @@
    * If the a client session is available and connected then this will
    * pass the request on the the MMeddleClient, otherwise it returns
    * false or a rejected error promise.
+   * 
+   * If rsRequired is a callback function then repeated responses will
+   * be tunneled to the callback from the server before the completion
+   * response.
    * @param {string} op the operation being requested.
-   * @param {bool} rsRequired true if a return promise response is needed.
+   * @param {bool|function} rsRequired true or callback function.
    * @param {object} content the content for the operation.
    * @param {number} timeout n optional timeout in seconds.
    * @returns {bool|Promise} success if true or promise to response.
@@ -85,7 +101,13 @@
     }
     return false;
   }
-  
+
+  ClientSession.prototype.rqWithReply =
+  function rqWithReply(op, content, timeout) {
+    var self = this;
+    return self.rq(op, content, true, timeout);
+  }
+
   /**
    * @summary **Send a message to be logged on the server console**
    * @description
@@ -97,6 +119,19 @@
   function emitLogMessage(text) {
     var self = this;
     return self.rq('log', text);
+  }
+  
+  /**
+   * @summary **Send a command to be executed remotely**
+   * @description
+   * Administrators can use this to monitor activity on the server.
+   * @param {string} cmd the text of the command.
+   * @returns {Promise} promise to the result of the command
+   */
+  ClientSession.prototype.doCommand =
+  function doCommand(text) {
+    var self = this;
+    return self.rqWithReply('cmd', text);
   }
 
   return ClientSession;

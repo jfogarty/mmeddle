@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>opentype fonts test</title>
+    <meta description="Testing OpenType font display for mMeddle.">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>mMeddle Standalone Scratch Page</title>
+    <link rel="shortcut icon" href="images/icons/mmTTab.ico">
+    <link rel="stylesheet" href="/css/webcli.css" />
+	
+    <style>
+  	#div-ns
+    {
+    	display:inline-block;
+    	width: 80px;
+    	position:relative;
+    	height:70px;
+      border-style:solid;
+      border-width: 1px;
+      text-align:center;
+    }
+
+    .north, .south
+    {
+        left: 0;
+        width: 100%;
+        text-align:center;
+    }
+
+    .north span, .south span
+    {
+      background-color:pink;
+    }
+
+    .north
+    {
+    	position:absolute;
+    	top:0;
+    }
+
+    .south
+    {
+    	position:absolute;
+    	bottom:0;
+    }
+  </style>	
+</head>
+<body>
+  <p id="topstatusfixed">Network Status</p>
+  <p id="botstatusfixed">Workspace Status</p>
+  
+  <h2>mMeddle Test Styles</h2>
+
+	<div id="div-ns">
+		<span class="north"><span>N</span></span>
+		<span class="south"><span>This is a test</span></span>
+	</div>	
+
+    <script src="/lib/Font.js"></script>
+    <script src="/dist/mmeddle.js"></script>
+    <script src="/dist/config.js"></script>
+<!--    
+    <script src="/public/ftest/ftest.js"></script>
+    <script src="/dist/cli.js"></script>    
+-->    
+  <script>
+  </script>
+  
+</body>
+</html>

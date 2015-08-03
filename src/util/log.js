@@ -55,6 +55,9 @@ module.exports = function registerLoggers(mm) {
   log.status = Logger.bindLog(statusLogger);
   log.warn   = Logger.bindLog(warningLogger);
   log.error  = Logger.bindLog(errorLogger);
+  log.fail   = function (e) {
+    log.error('*** Internal Failure:', e.stack);
+  }
 
   /**
    * @summary **Logger destination for info logging**
@@ -327,7 +330,7 @@ module.exports = function registerLoggers(mm) {
    log.setupAppDebugLog = function setupAppDebugLog(appName, debugToConsole) {
     /* istanbul ignore if */ // Tested independently (in WebCLI).
     if (mm.config.inBrowser) return;
-    var logDir = path.join(mm.config.baseDir, 'logs');
+    var logDir = mm.config.logDir;
     var appId = path.basename(appName, '.js');
     var logFile = appId + '-' + mm.util.yymmdd() + '.log';
     var logPath = path.join(logDir, logFile);

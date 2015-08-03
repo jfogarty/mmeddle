@@ -15,6 +15,19 @@
   // Approximate number of saved input lines to restore from the
   // locally saved user.
   var MAX_SAVED_INPUT_LINES = 50;
+  
+  // Finishes up the user and establishes the storage client.
+  function loggedInUser(self, rs, user) {
+    user._elapsed = rs._elapsed;
+    user.ok = true;
+    self.loggedIn = user;
+    self.storageClient = new mm.storage.StorageClient({
+      user: user.name,
+      engine: self.storageEngine 
+    });
+
+    return user;
+  }
 
   /**
    * @summary **clear the current user/workspace owner**
@@ -115,10 +128,26 @@
   function getUser(userName) {
     var self = this;
     var user = new ClientUser(userName);
-    return self.rq('loadUsers', user, true)
+    return self.rqWithReply('loadUsers', user)
     .then(function (rs) {
       return rs.content;
     })
+  }
+
+  /**
+   * @summary **Creates a new user if needed and then Login to server**
+   * @description
+   * The supplied user attempts to login to the server. If it fails then
+   * a new user is created with the specified parameters and login is
+   * completed.
+   * @param {object} newUser new ClientUser.init compatible object
+   * @returns {Promise} to the private user.
+   */  
+  ClientSession.prototype.userCreateOrLogin =
+  function userCreateOrLogin(newUser) {
+    var self = this;  
+    var user = new ClientUser(newUser.name).init(newUser);
+    return self.userLogin(user.name, user.ptpwd, false, user);
   }
 
   /**
@@ -131,16 +160,20 @@
    * it slightly less of a security risk. This hash remains as part
    * of the workspace for auto-login during later connections. The logged
    * in user is now the current user for the session and its workspace.
+   *
+   * The newUser object supports the userCreateOrLogin method which is
+   * the preferred way to do this.
    * @param {string} userName the userName to login with.
    * @param {string} ptpwd the optional plain text password.
    * @param {bool} ispdk optional PDK supplied instead of plain text.
+   * @param {object} newUser optional new ClientUser init compatible object
    * @returns {Promise} to the private user.
    */  
   ClientSession.prototype.userLogin =
-  function userLogin(userName, ptpwd, ispdk) {
+  function userLogin(userName, ptpwd, ispdk, newUser) {
     var self = this;
     var user = new ClientUser(userName);
-    return self.rq('loadUser', user, true)
+    return self.rqWithReply('loadUser', user)
     .then(function (rs) {
       try{    
         user.init(rs.content).hashP(ptpwd, ispdk);
@@ -152,7 +185,7 @@
         var rquser = new ClientUser(userName).init(user);
         /* istanbul ignore else */ // Tested independently.
         if (rquser.pdk) delete rquser.pdk;
-        return self.rq('loginUser', rquser, true)
+        return self.rqWithReply('loginUser', rquser)
         .then(function (rs) {
           user.init(rs.content);
           self.user = user;
@@ -162,15 +195,18 @@
             self.userConfig.init(rs.userConfig);
             mm.log('- User [' + user.name + '] has a personal configuration');
           }
-          user.elapsed = rs.elapsed;
-          user.ok = true;
-          self.loggedIn = user;
-          return user;
+          return loggedInUser(self, rs, user);
         });
       } catch (e) { 
         /* istanbul ignore next */ // Tested independently.
         mm.log.error('userLogin failure internal', e.stack);
       }      
+    },
+    function (e) {
+      if (newUser && mm.util.ENOENT(e)) {
+        return self.userCreate(newUser);
+      }
+      throw e;
     })
   }
   
@@ -196,12 +232,13 @@
     else {
       var ptpwd = newUser.ptpwd;
       delete newUser.ptpwd;
+      // Since this creates the hash seed, we must get the user from the host.
       user = new ClientUser()
           .init(newUser)
           .hashP(ptpwd);
     }
     var pdk = user.pdk;
-    return self.rq('createUser', user, true)
+    return self.rqWithReply('createUser', user)
     .then(function (rs) {
       user.init(rs.content);
       self.user = user;
@@ -211,11 +248,8 @@
         self.userConfig.init(rs.userConfig); // Add to the session.
         mm.log('- User [' + user.name + '] has a personal configuration');
       }
-      user.elapsed = rs.elapsed;
       user.pdk = pdk;
-      user.ok = true;
-      self.loggedIn = user;
-      return user;
+      return loggedInUser(self, rs, user);
     })
   }
 
@@ -234,8 +268,10 @@
       var em  = '- User [' + self.user.name + '] is not logged in';
       return qq.reject(new Error(em));
     }
-    return self.rq('deleteUser', self.user, true)
+    return self.rqWithReply('deleteUser', self.user)
     .then(function (rs) {
+      self.loggedIn = null;
+      self.storageClient = null;
       return rs.content;
     })
   }  
@@ -250,7 +286,7 @@
   ClientSession.prototype.listUserSessions =
   function listUserSessions() {
     var self = this;
-    return self.rq('listUserSessions', self.user, true)
+    return self.rqWithReply('listUserSessions', self.user)
     .then(function (rs) {
       return rs.content;
     })

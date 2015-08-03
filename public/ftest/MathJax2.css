@@ -1,0 +1,14 @@
+
+.MathJax_Hover_Frame {
+    border: 1px solid #a6d !important;
+    border-radius: 0.25em;
+    box-shadow: 0 0 15px #83a;
+    display: inline-block;
+    position: absolute;
+}
+.MathJax_Hover_Arrow {
+    cursor: pointer;
+    height: 11px;
+    position: absolute;
+    width: 15px;
+}

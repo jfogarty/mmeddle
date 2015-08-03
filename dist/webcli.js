@@ -26,7 +26,7 @@ function webcli(mm) {  // jshint ignore:line
     var mmath  = check(new MMath());
     mm.log.setCliConsole(mConsole);
     mConsole.clearScreen();
-    mm.log('----- mMeddle CLI v0.1.3 -----');
+    mm.log('----- mMeddle CLI v0.1.5 -----');
 
     //mm.config = mm.config.appLoad(__filename);
     mm.loggers.debugLogger.removeDestination('*');

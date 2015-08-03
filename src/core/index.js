@@ -3,9 +3,7 @@ module.exports = function(mm) {
   mm.core.CliConsole    = require('./CliConsole')(mm);
   mm.core.Cmd           = require('./Cmd')(mm);
   mm.core.CmdSet        = require('./CmdSet')(mm);    
-  mm.core.MMath         = require('./MMath')(mm);
   mm.core.Workspace     = require('./Workspace')(mm);
-  mm.core.Parser        = require('./Parser')(mm);
   mm.core.ClientSession = require('./ClientSession')(mm);
                           require('./ClientSessionUser')(mm);
                           require('./ClientSessionWorkspace')(mm);

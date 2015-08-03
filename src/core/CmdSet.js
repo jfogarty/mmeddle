@@ -109,8 +109,8 @@ module.exports = function registerCliCommands(mm) {
     var self = this;
     function helpCmdHandler(context, args) {
       try { 
-        if (args.commandName) return self.helpCmdDetail(context, args);
-        return self.helpCmdSummary(context, args);
+        if (args.commandName) return qq(self.helpCmdDetail(context, args));
+        return qq(self.helpCmdSummary(context, args));
       } catch (e) { mm.log.error('helpCmdHandler', e.stack); }
     }
 
@@ -142,9 +142,7 @@ module.exports = function registerCliCommands(mm) {
     });
     sortedCmds = _.sortBy(sortedCmds, 'keyword');
     sortedCmds.forEach(function (cmd) {
-      var cmdName = prefix + cmd.keyword;
-      var helpLine = _.padRight(cmdName, 9) + ': ' + cmd.desc;
-      mm.log(helpLine);
+      mm.log(cmd._helpSummary(prefix));
     });
     if (_.size(self.subsets) > 0) {
       mm.log();
@@ -173,23 +171,7 @@ module.exports = function registerCliCommands(mm) {
       cmd = self.cmds[cmdName];
     }
     if (cmd) {
-      cmdName = prefix + cmd.keyword;
-      var format = cmd.format.join(' ');
-      mm.log('Command:', cmdName, format, ':', cmd.desc);
-      // Show the acceptable enumerated argument values.
-      if (_.size(cmd.argEnums) > 0) {
-        _.forEach(cmd.argEnums, function (values, key) {
-          mm.log('   Argument "' + key + '" are in [' + values + ']');
-        });
-      }
-      if (cmd.aliases.length > 0) {
-        var aliasText = '   Alias' + (cmd.aliases.length > 1 ? 'es' : '');
-        aliasText = aliasText + ': ' + cmd.aliases.join(', ');
-        mm.log(aliasText);
-      }
-      if (cmd.help) {
-        mm.log('  ', cmd.help);
-      }
+      cmd._helpDetail(prefix);
       return true;    
     }
     else {
@@ -227,7 +209,7 @@ module.exports = function registerCliCommands(mm) {
    * @param {function} handler the command handler.
    * @returns {CmdSet} the current CmdSet being added to.
    */    
-  CmdSet.prototype.defaultHandler = function defaultHandler(handler) {
+  CmdSet.prototype.setDefaultHandler = function setDefaultHandler(handler) {
     var self = this;
     self.defaultHandler = handler;
     return self;
@@ -265,137 +247,130 @@ module.exports = function registerCliCommands(mm) {
    * @summary **do a command in this set**
    * @description
    * A command line is parsed and used to populate the context for a 
-   * matching keyword.
+   * matching keyword.  If the handler succeeds (returns a Promise that
+   * succeeds, or returns a truthy value) then a true promise is returned.
+   * If the handler fails (throws, returns false, or rejects a promise)
+   * then a rejected promise is returned.
    * @param {string} the single or multiline command
    * @param {ClientSession} the current client session
    * @returns {Q(result)} Promise to the result of the handler or Q(false).
    */    
   CmdSet.prototype.doCmd = function doCmd(cmdText, cs) {
-    var self = this;
-    /* istanbul ignore if */ // Tested independently.
-    if (!self.initialized) self.done();
-    var args = mm.util.removeWhitespace(cmdText).split(' ');
-    var keyword = args[0].toLowerCase();
-    var cmd = self.cmds[keyword];
-    var arg1 = args.length > 1 ? args[1] : '';
-    var arg2 = args.length > 2 ? args[2] : '';
-    var arg3 = args.length > 3 ? args[3] : '';
-    
-    // Check for a matching command subset prefix.
-    if (!cmd && _.size(self.subsets) > 0) {
-      for (var prefix in self.subsets) {
-        if (_.startsWith(keyword, prefix)) {
-          var subset = self.subsets[prefix];
-          var subCmdText = cmdText.substr(prefix.length);
-          // Handle special subcmd help command format: "[prefix]? [command]"
-          if (_.startsWith(subCmdText, '?')) {
-            subCmdText = 'help ' + subCmdText.substring(1);
+    try {  
+      var self = this;
+      /* istanbul ignore if */ // Tested independently.
+      if (!self.initialized) self.done();
+      var args = mm.util.removeWhitespace(cmdText).split(' ');
+      var keyword = args[0].toLowerCase();
+      var cmd = self.cmds[keyword];
+      var arg1 = args.length > 1 ? args[1] : '';
+      var arg2 = args.length > 2 ? args[2] : '';
+      var arg3 = args.length > 3 ? args[3] : '';
+      
+      // Check for a matching command subset prefix.
+      if (!cmd && _.size(self.subsets) > 0) {
+        for (var prefix in self.subsets) {
+          if (_.startsWith(keyword, prefix)) {
+            var subset = self.subsets[prefix];
+            var subCmdText = cmdText.substr(prefix.length);
+            // Handle special subcmd help command format: "[prefix]? [command]"
+            if (_.startsWith(subCmdText, '?')) {
+              subCmdText = 'help ' + subCmdText.substring(1);
+            }
+            return subset.doCmd(subCmdText, cs);
           }
-          return subset.doCmd(subCmdText, cs);
         }
       }
-    }
 
-    // Handle special help command format: "[command] -h / -?"
-    if (arg1 === '-h' || arg1 === '-?' ) {
-      cmdText = 'help ' + keyword;
-      args = cmdText.split(' ');
-      arg1 = keyword;
-      keyword = 'help';
-      cmd = self.cmds[keyword];
-    }
-    
-    // Put QQ pending handling here xxxxxxxxxxxx
-    // Sequence the commands.
-
-    var handler = self.defaultHandler;
-    var timeout = self.timeoutSec * 1000;
-    if (!cmd && !handler) {
-      return qq(false);
-    }
-
-    var context = {
-      keyword: keyword,
-      args: args,
-      arg1: arg1,
-      arg2: arg2,
-      arg3: arg3,
-      text: cmdText,
-      set: self,
-      cs: cs
-    }
-
-    if (cmd) {
-      if (cmd.adminRequired) {
-        /* istanbul ignore if */ // Tested independently.
-        if (!cs.userConfig.administrator) {
-          var ea = 'You must be an administrator to do this.';
-          return qq.reject(new Error(ea));
-        }
-      }
-      /* istanbul ignore next */ // Tested independently.
-      timeout = (cmd.timeoutSec ? cmd.timeoutSec * 1000 : timeout);
-      // When a format is supplied, check the arguments against it and
-      // build a populated args object.
-      var oargs = {};
-      var remainderIsArray = false;
-      if (cmd.format.length > 0) {
-        var i = 0;
-        var fargs = cmd.format;
-        for (var fargi in fargs) {
-          i++;
-          var farg = fargs[fargi];
-          /* istanbul ignore if */ // Tested independently.
-          if (remainderIsArray) return;
-          var arg = args[i];
-          var optional = _.startsWith(farg, '['); 
-          if (optional) farg = farg.substring(1, farg.length - 1);
-          var array = _.endsWith(farg, '()');
-          if (array) {
-            remainderIsArray = true;
-            farg = farg.substring(0, farg.length - 2);
-            var arrayArg = _.slice(args, i);
-            oargs[farg] = arrayArg;
-            if (!optional && arrayArg.length === 0) {
-              var e1 = cmd.keyword + ' requires at least one "' +
-                      farg + '" argument';
-              return qq.reject(new Error(e1));
-            }
-          }
-          else {
-            oargs[farg] = ''; // Create blanks for each argument.
-            /* istanbul ignore if */ // Tested independently.
-            if (!optional && !arg) {
-              var e2 = cmd.keyword + ' requires a "' + farg + '" argument';
-              return qq.reject(new Error(e2));
-            }
-            if (arg) {
-              var argEnum = cmd.argEnums[farg];
-              if (argEnum) {
-                var allowedVals = argEnum.split('|');
-                /* istanbul ignore if */ // Tested independently.
-                if (!_.contains(allowedVals, arg)) {
-                  var e3 = 'Argument "' + farg + '" must be in ' + allowedVals;
-                  return qq.reject(new Error(e3));
-                }
-              }
-              oargs[farg] = arg; // Add to the object.
-            }
-          }
-        } // next arg
-        //mm.log('-------- Arguments:', oargs);      
+      // Handle special help command format: "[command] -h / -?"
+      if (arg1 === '-h' || arg1 === '-?' ) {
+        cmdText = 'help ' + keyword;
+        args = cmdText.split(' ');
+        arg1 = keyword;
+        keyword = 'help';
+        cmd = self.cmds[keyword];
       }
       
-      handler = cmd.handler.bind(cmd, context, oargs);
-    }
-    else {
-      handler = self.defaultHandler.bind(self, context);
-    }
+      // Put QQ pending handling here xxxxxxxxxxxx
+      // Sequence the commands.
 
-    var result = qq.fcall(handler);
-    return result.timeout(timeout, 'The command timed out');
-      // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx QQ pending .... stuff
-      // xxxxxxxxxxxxxxx Command Timeout ...stuff
+      var handler = self.defaultHandler;
+      var timeout = self.timeoutSec * 1000;
+      if (!cmd && !handler) {
+        var nch = 'Sorry, No command: "' + cmdText + '"';
+  //mm.log.error('xxxxxxxxxxxxxxxx' + nch); 
+        return qq.reject(new Error(nch));
+      }
+
+      var context = {
+        keyword: keyword,
+        args: args,
+        arg1: arg1,
+        arg2: arg2,
+        arg3: arg3,
+        text: cmdText,
+        set: self,
+        cs: cs
+      }
+
+      if (cmd) {
+        timeout = (cmd.timeoutSec ? cmd.timeoutSec * 1000 : timeout);
+        var oargs = cmd._evalArgs(args, cs);
+        if (oargs instanceof Error) {
+          return qq.reject(oargs);
+        }
+        handler = cmd.handler.bind(cmd, context, oargs);
+      }
+      else {
+  //mm.log.error('DEFAULT TRYING:' + cmdText + ' with ', self.defaultHandler);     
+        if (!self.defaultHandler) {
+          var ndh = 'Sorry, No hander for command: "' + cmdText + '"';
+  //mm.log.error('xxxxxxxxxxxxxxxx' + ndh); 
+          return qq.reject(new Error(ndh));
+        }
+
+        handler = self.defaultHandler.bind(self, context);
+      }
+
+      var result;
+      try {
+        result = handler();
+      } catch (handlerError) {
+        // Make the exception the result.
+        result = handlerError;
+      }
+
+      if (!qq.isPromise(result)) {
+        if (result instanceof Error) {
+          result = qq.reject(result);
+        }
+        else {
+          if (result) {
+            // Truthy return.
+            result = qq(result);
+          }
+          else {
+            var ef = 'Command: "' + cmdText + '" failed';
+            result = qq.reject(new Error(ef));
+          }
+        }
+      }
+      return result.timeout(timeout, 'The command timed out').
+      then (function (emaybe) {
+        // Successful promises that are actually errors are a pain
+        // to handle. Make them into first class rejections.
+        if (emaybe instanceof Error) {
+          // -- We can turn Beans into Peas!!!
+          // Benson, dear Benson, you are so mercifully free of the
+          // ravages of intelligence.
+          return qq.reject(emaybe)
+        }
+        else {
+          return emaybe;
+        }
+      });
+    }
+    catch (e) { mm.log.fail(e); }    
   }
 
   CmdSet.Cmd = Cmd;

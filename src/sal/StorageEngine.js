@@ -42,84 +42,38 @@
     if (self.fileProvider && self.fileProvider.close) {
       self.fileProvider.close();
     }
+    if (self.clientProvider && self.clientProvider.close) {
+      self.clientProvider.close();
+    }
+    
     self.initialized = false;
   }
 
   /**
-   * @summary **Initiate object storage by engine**
+   * @summary **Initiate an operation by engine**
    * @description
-   * The object is stored in the specified path. A promise is returned
-   * which evaluates to the full `StorageInfo` to the object when it
-   * has been successfully saved. Note that storage can be successful
-   * even if operation is on a browser and the connection to the server
-   * is lost, since the object will be saved to local storage.
-   * @param {StoragePath} path the path object
-   * @param {object} content the named object to store
-   * @returns {Promise} a promise to a `StorageInfo`
-   */
-  StorageEngine.prototype.store = 
-  function engineStore(path, content) {
-    var self = this;
-    path.itemName = content.name;
-    content.owner = path.userName;
-    return self.queue({ op: 'store', path: path, content: content});
-  }
-
-  /**
-   * @summary **Initiate object loading by engine**
-   * @description
-   * The object is loaded from the specified path. A promise is returned
-   * which evaluates to the full `StorageInfo` which contains the 
-   * object content  field along with other info about the object access.
+   * The operation is queued to the appropriate provider.
+   * @param {string} opName the operation requested.
    * @param {StoragePath} path the text path or object
    * @param {string} name unique name of the object  
+   * @param {object} content the named object to store on 'store' operations.
    * @returns {Promise} a promise to a `StorageInfo`
    */
-  StorageEngine.prototype.load = 
-  function engineLoad(path, name) {
+  StorageEngine.prototype.rq = 
+  function engineRq(opName, path, name, content) {
     var self = this;
     /* istanbul ignore next */
     path.itemName = name ? name : path.itemName;
-    return self.queue({ op: 'load', path: path});
+    return self.queue({ op: opName, path: path, content: content});
   }
 
   /**
-   * @summary **Initiate multiple object loading by engine**
+   * @summary **Queue an operation to the storage engine**
    * @description
-   * The object set is loaded from the specified path. A promise is
-   * returned which evaluates to a `StorageInfo` which contains an 
-   * object content array field along with other info about the 
-   * object set access.
-   * @param {StoragePath} path the text path or object
-   * @param {string} namePattern a pattern to search for the objects
+   * The operation is added to the storage engine  queue.
+   * @param {object} op a storage operation object
    * @returns {Promise} a promise to a `StorageInfo`
    */
-  StorageEngine.prototype.loadMultiple = 
-  function engineLoad(path, name) {
-    var self = this;
-    /* istanbul ignore next */
-    path.itemName = name ? name : path.itemName;
-    return self.queue({ op: 'loadMultiple', path: path});
-  }
-
-  /**
-   * @summary **Initiate object removal by engine**
-   * @description
-   * The object is removed from the specified path. A promise is returned
-   * which evaluates to true if the object was removed, false if it did
-   * not exist.
-   * @param {StoragePath} path the text path or object
-   * @param {string} name unique name of the object  
-   * @returns {Promise} a promise to a boolean value
-   */
-  StorageEngine.prototype.remove = 
-  function engineRemove(path, name) {
-    var self = this;
-    /* istanbul ignore next */
-    path.itemName = name ? name : path.itemName;
-    return self.queue({ op: 'remove', path: path});
-  }
-
   StorageEngine.prototype.queue = 
   function engineQueue(op) {
     var self = this;
@@ -194,7 +148,17 @@
         p.catch( /* istanbul ignore next */
         function () {
           mm.log.error('File provider is not available');
-          delete self.fileProviderfileProvider;
+          delete self.fileProvider;
+        })
+      }
+
+      if (self.clientProvider) {
+        p = self.clientProvider.initialize();
+        initializedProviders.push(p);
+        p.catch( /* istanbul ignore next */
+        function () {
+          mm.log.error('Client provider is not available');
+          delete self.clientProvider;
         })
       }
 
@@ -214,7 +178,13 @@
   function startOp(op) {
     var self = this;
     var p = op.path;
-    
+
+    // Use the client provider whenever it is available
+    if (self.clientProvider) {
+      self.clientProvider.perform(op);
+      return;
+    }
+ 
     // Use the filesystem if it was preferred by the client.
     if (p.prefer === 'fs' && self.fileProvider) {
       self.fileProvider.perform(op);

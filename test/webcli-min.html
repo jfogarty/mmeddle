@@ -3,51 +3,21 @@
 <head>
   <meta charset="utf-8">
   <title>mMeddle-webcli-Command Line Interface (min)</title>
-  <link rel="shortcut icon" href="../images/icons/mmTTab.ico">
-  
-  <style>
-    #topstatusfixed {
-      position: fixed;
-      top: -1em;
-      right: 5px;
-      color: red;
-    }
-    
-    #botstatusfixed {
-      position: fixed;
-      bottom: -1em;
-      right: 5px;
-      color: red;
-    }
-
-    .scrollabletextbox {
-      height:100px;
-      width:800px;
-      font-family: Verdana, Tahoma, Arial, Helvetica, sans-serif;
-      font-size: 90%;
-      overflow:scroll;
-    }
-
-    #cliInText {
-      width: 800px;
-    }
-
-  </style>
+  <link rel="shortcut icon" href="/images/icons/mmTTab.ico">
+  <link rel="stylesheet" href="/css/webcli.css" />
 </head>
 <body>
-  <p id="topstatusfixed">Top Current mMeddle Status</p>
-  <p id="botstatusfixed">Bottom mMeddle Status</p>
-  <!-- WebPacked library(s) to test against -->
+  <p id="topstatusfixed">Network Status</p>
+  <p id="botstatusfixed">Workspace Status</p>
+  
   <h2>mMeddle Test Command Line Interface</h2>
 
-  <pre><div id="consolediv"></div></pre>
-  <label id="inTextPrompt" for="cliIn" >Command:</label>
+  <pre><div id="consolediv">Loading the minimized mMeddle execution engine...  Even this may take a few seconds, please be patient ...</div></pre>
+  <label id="inTextPrompt" for="cliIn" >-></label>
   <input id="cliInText"   name="cliIn" type="text" autofocus />
 
-  <script src="../dist/mmeddle.min.js"></script>
-  <script src="../dist/webcli.js"></script>
-  <script>
-    webcli(mmeddle);
-  </script>
+  <script src="/dist/mmeddle.js"></script>
+  <script src="/dist/config.js"></script>
+  <script src="/dist/cli.js"></script>
 </body>
 </html>

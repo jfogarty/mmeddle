@@ -1,0 +1,102 @@
+
+#MathJax_About {
+    background-color: #dddddd;
+    border: 3px outset;
+    border-radius: 15px;
+    box-shadow: 0 10px 20px #808080;
+    color: black;
+    cursor: default;
+    float: none;
+    font-family: message-box;
+    font-size: 120%;
+    font-style: normal;
+    left: 50%;
+    letter-spacing: normal;
+    line-height: normal;
+    padding: 1em 2em;
+    position: fixed;
+    text-align: center;
+    text-indent: 0;
+    text-transform: none;
+    white-space: nowrap;
+    width: auto;
+    word-spacing: normal;
+    word-wrap: normal;
+    z-index: 201;
+}
+.MathJax_Menu {
+    background-color: white;
+    border: 1px solid #cccccc;
+    box-shadow: 0 10px 20px #808080;
+    color: black;
+    cursor: default;
+    float: none;
+    font: ;
+    letter-spacing: normal;
+    line-height: normal;
+    margin: 0;
+    padding: 2px;
+    position: absolute;
+    text-align: left;
+    text-indent: 0;
+    text-transform: none;
+    white-space: nowrap;
+    width: auto;
+    word-spacing: normal;
+    word-wrap: normal;
+    z-index: 201;
+}
+.MathJax_MenuItem {
+    background: transparent none repeat scroll 0 0;
+    padding: 2px 2em;
+}
+.MathJax_MenuArrow {
+    color: #666666;
+    position: absolute;
+    right: 0.5em;
+}
+.MathJax_MenuActive .MathJax_MenuArrow {
+    color: white;
+}
+.MathJax_MenuArrow.RTL {
+    left: 0.5em;
+    right: auto;
+}
+.MathJax_MenuCheck {
+    left: 0.7em;
+    position: absolute;
+}
+.MathJax_MenuCheck.RTL {
+    left: auto;
+    right: 0.7em;
+}
+.MathJax_MenuRadioCheck {
+    left: 1em;
+    position: absolute;
+}
+.MathJax_MenuRadioCheck.RTL {
+    left: auto;
+    right: 1em;
+}
+.MathJax_MenuLabel {
+    font-style: italic;
+    padding: 2px 2em 4px 1.33em;
+}
+.MathJax_MenuRule {
+    border-top: 1px solid #cccccc;
+    margin: 4px 1px 0;
+}
+.MathJax_MenuDisabled {
+    color: graytext;
+}
+.MathJax_MenuActive {
+    background-color: highlight;
+    color: highlighttext;
+}
+.MathJax_Menu_Close {
+    height: 31px;
+    left: -15px;
+    position: absolute;
+    top: -15px;
+    width: 31px;
+}

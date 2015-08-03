@@ -1,0 +1,25 @@
+{
+  "name": "mMath",
+  "version": "0.0.0",
+  "description": "the symbolic math library for mMeddle",
+  "author": "John Fogarty <johnhenryfogarty@gmail.com> (https://github.com/jfogarty)",
+  "contributors": [],
+  "homepage": "http://jfogarty.org/mmeddle",
+  "license": "Apache License",
+  "keywords": [
+    "math",
+    "mathematics",
+    "functions",
+    "symbolic",
+    "algebra",
+    "units"
+  ],
+  "dependencies": {
+    "bignumber.js": "latest",
+    "mathjs": "latest",
+    "q": "1.2.0"
+  },
+  "devDependencies": {
+  },
+  "main" : "./index.js"
+}

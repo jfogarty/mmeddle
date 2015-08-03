@@ -3,7 +3,9 @@
  * @fileOverview MMeddleServer
  * @module server/MMeddleServer
  */ 
- module.exports = function(mm) {
+module.exports = function(mm) {
+  var publicDirs = ['lib', 'dist', 'test', 'api', 'css', 'images',
+                    'public', 'fonts', 'node_modules'];   
 
   //--------------------------------------------------------------------------
   /**
@@ -113,7 +115,6 @@
           setHeaders: setCustomCacheControl
         };
         
-        var publicDirs = ['lib', 'dist', 'test', 'api', 'css', 'images'];
         publicDirs.forEach(function serveStaticDir(dir) {
           self.app.use('/' + dir,
               serveStatic(self.dirName + '/' + dir,  cacheControl));

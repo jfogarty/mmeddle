@@ -10,8 +10,11 @@ module.exports = function(mm) {
   mm.storage.StorageEngine = require('./StorageEngine')(mm);
   mm.storage.StorageClient = require('./StorageClient')(mm);
   
-  mm.storage.providers.MongoDBProvider = require('./MongoDBProvider')(mm);
-  mm.storage.providers.FileProvider = require('./FileProvider')(mm);
+  if (mm.config.inNode) {
+    mm.storage.providers.MongoDBProvider = require('./MongoDBProvider')(mm);
+    mm.storage.providers.FileProvider    = require('./FileProvider')(mm);
+  }
+  mm.storage.providers.ClientProvider  = require('./ClientProvider')(mm);
  
   mm.users = {};
   mm.users.ClientUser = require('./ClientUser')(mm);

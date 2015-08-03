@@ -101,7 +101,7 @@ module.exports = function setupClientTestSupport(mm) {
       var clientName = 'MochaTests';
       var cs = new ClientSession(clientName);
 
-      var host = mm.config.localUrl;
+      var host = mm.config.startLocal ? mm.config.localUrl : mm.config.remoteUrl;
       var mmc = new MMeddleClient(host, cs);
       mm.test.client.cs = cs;
       mm.test.client.mmc = mmc;

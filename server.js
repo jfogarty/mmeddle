@@ -61,6 +61,11 @@ module.exports = (function runServer () {
       mm.storage.providers.MongoDBProvider.register(storageEngine);
     }
   }  
+  else {
+    mm.log.error('***** Not in NODE - This is incompatible with life.');
+    mm.log.error('- Server exit with prejudice.');
+    process.exit(666);
+  }
 //  mm.storage.storageEngine = storageEngine;
 
   var mockSock = mm.util.ifEnvOption('MOCKSOCK') || program.mock;

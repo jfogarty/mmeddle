@@ -1,0 +1,236 @@
+#topstatusfixed {
+  position: fixed;
+  top: 0;
+  right: 0;
+  background: rgba(150, 150, 150, 0.5);
+  color: black;
+}
+
+
+#botstatusfixed {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+	background: rgba(150, 150, 150, 0.5);
+  color: green;
+}
+
+#allColors {
+	/* A CSS Level 1 color */
+	color: red;
+
+	/* The only color added in CSS Level 2 (Revision 1) */
+	color: orange;
+
+	/* CSS Level 3 color, sometimes called a SVG or X11 color */
+	color: antiquewhite;
+}
+
+/* ------------------------------------------------------------------------ */
+xxXXXxx
+{ font-family:
+  STIXGeneral, 'DejaVu Sans', 'DejaVu Serif', 
+  /* Cambria, 'Cambria Math', */ 
+  'Lucida Sans Unicode',
+  'Lucida Grande',
+  'Arial Unicode MS', 
+  Times,
+	OpenSymbol,
+  'Standard Symbols L',
+  sans-serif 
+}
+
+
+
+@font-face {
+  font-family: Symbola;
+  src: url(/fonts/Symbola.eot);
+  src: local("Symbola Regular"),
+  local("Symbola"), 
+  url(/fonts/Symbola.ttf) format("truetype"),
+  url(/fonts/Symbola.otf) format("opentype"),
+  url(/fonts/Symbola.svg#Symbola) format("svg");
+}
+
+@font-face {
+  font-family: Symbola-italic;
+  /* Note font-style: kills the @font-face directive in Opera */  
+  src: url(/fonts/stixgeneralitalic-webfont.eot);
+  src: 
+  local("STIX General Italic"),
+  local("stixgeneralitalic-webfont"), 
+  url(/fonts/stixgeneralitalic-webfont.ttf) format("truetype"),
+  url(/fonts/stixgeneralitalic-webfont.otf) format("opentype"),
+  url(/fonts/stixgeneralitalic-webfont.svg#Symbola) format("svg");
+}
+
+@font-face {
+  font-family: Symbola-bolditalic;
+  src: url(/fonts/stixgeneralbolita-webfont.eot);
+  src: local("STIX General Bold Italic"),
+  local("stixgeneralbolita"),
+  url(/fonts/stixgeneralbolita-webfont.ttf) format("truetype"),
+  url(/fonts/stixgeneralbolita-webfont.otf) format("opentype"),
+  url(/fonts/stixgeneralbolita-webfont.svg#Symbola) format("svg");
+}
+
+
+/* ------------------------------------------------------------------------ 
+.equation table  {
+  border-collapse: collapse;
+  border-spacing: 0;
+  float: none;
+  table-layout: auto;
+  text-align: center;
+}
+
+.equation table, .equation tr, .equation td, .equation tbody {
+  border: 0 none; 
+  margin: 0;
+  outline: 0 none;
+  padding: 0;
+}
+*/
+
+/* ------------------------------------------------------------------------ */
+.equations .eq {
+  
+}
+            
+.mono{
+  font-family: "Courier",monospace;
+  font-weight: bold; 
+  font-size: 12px;
+}
+
+.mmid{
+  font-family: "Courier",monospace;
+  font-weight: bold; 
+  font-size: 12px;
+}
+
+#mm .intro:hover {
+	background: yellow;
+}
+
+/* ------------------------------------------------------------------------ */
+.equation .mmeqb {
+  font-family: "Symbola";
+  font-size: 14px;
+  display: inline-block;
+  color: #900;
+  border: 1px solid #900; 
+  border-top-color: #FC9;
+  border-left-color: #FC9;
+  border-radius:3px;
+  -webkit-border-radius:3px;
+  text-align: center;
+  vertical-align: middle;
+  padding: 0px 0px;
+  box-sizing: border-box;
+  line-height: 1.2;
+}
+
+.equation .mmeqbi {
+  font-family: "Symbola-italic";
+  font-size: 14px;
+  display: inline-block;
+  color: #900;
+  border: 1px solid #900; 
+  border-top-color: #FC9;
+  border-left-color: #FC9;
+  border-radius:3px;
+  -webkit-border-radius:3px;
+  text-align: center;
+  vertical-align: middle;
+  padding: 0px 0px;
+  box-sizing: border-box;
+  line-height: 1.2;
+}
+
+.equation .mmeqbbi {
+  font-family: "Symbola-bolditalic";
+  font-size: 14px;
+  display: inline-block;
+  color: #900;
+  border: 1px solid #900; 
+  border-top-color: #FC9;
+  border-left-color: #FC9;
+  border-radius:3px;
+  -webkit-border-radius:3px;
+  text-align: center;
+  vertical-align: middle;
+  padding: 0px 0px;
+  box-sizing: border-box;
+  line-height: 1.2;
+}
+
+.equation .mmeqbbig
+ {
+  font-size: 28px;
+}
+
+.equation .mmeqbhuge
+ {
+  font-size: 33px;
+}
+
+.equation .mmeqb:hover {
+  cursor: pointer; /* cursor: hand; for IE5 */
+  border-color: #F00 #C30 #C30 #F00;  
+}
+
+
+ .equation  table tr td  {
+  text-align:center; 
+  vertical-align:middle; 
+}
+
+/* ------------------------------------------------------------------------ */
+.equation  .eqsum  {
+    display: inline-block;
+    /* border: 1px solid green; */
+ }
+ 
+.equation .overUnderBase {
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.equation  .eqsumMain {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 1.8em;
+  text-indent: 0;
+  /* border: 1px solid orange; */
+}
+
+.equation  .eqsumUpper,
+.equation  .eqsumLower {
+  font-size: 9px;
+  font-size: 0.71em;
+  line-height: 1.2 !important;
+}
+
+.equation  .eqsumUpper,
+.equation  .eqsumLower {
+/* vertical-align: top; */
+  vertical-align: text-bottom;
+  /* border: 1px solid green; */
+}
+
+
+.equation  td {
+  max-width: 42px;
+}
+
+.equation  .eqsumLower {
+  /*  vertical-align: bottom; */
+  vertical-align: text-baseline;
+  /* border: 1px solid blue; */
+}
+
+/* ------------------------------------------------------------------------ */  
+.equation .mmeqButtonTable {
+  border: 2px solid black; 
+}

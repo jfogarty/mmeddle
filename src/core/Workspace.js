@@ -4,12 +4,14 @@
  */ 
 'use strict';
 module.exports = function registerWorkspace(mm) {
-  var check       = mm.check;
-  var _           = mm.check(mm._);
-  var Enum        = check(mm.obj.Enum);
-  var log         = check(mm.log);
-  var Logger      = check(mm.Logger);
-  var CmdSet      = check(mm.core.CmdSet);
+  var check  = mm.check;
+  var _      = check(mm._);
+  var Enum   = check(mm.obj.Enum);
+  var log    = check(mm.log);
+  var Logger = check(mm.Logger);
+  var CmdSet = check(mm.core.CmdSet);
+  var Parser = check(mm.mMath.Parser);
+  var MMath  = check(mm.mMath.MMath);
   
   // fixme - get the settings from mm.
   var settings = {}
@@ -42,7 +44,13 @@ module.exports = function registerWorkspace(mm) {
       ws.name = '';
       ws.vars = {};
       ws.settings = settings;
+      ws.saved = true;
       
+      // Put these in the closure and not on the object since the
+      // values of ws are replaced from init.
+      var mmath = check(new MMath());
+      var parser = check(new Parser(ws, mmath, cs));
+
       /**
        * @summary Initialize a ws from a saved JSON object.
        * @description
@@ -50,8 +58,8 @@ module.exports = function registerWorkspace(mm) {
        * object. Any fields NOT in the source object remain in the ws.
        */      
       Workspace.prototype.init = function init(wsObj) {
-        var ws = this;  
         _.assign(ws, wsObj);
+        parser.update();
       }
 
       Object.defineProperty(ws, 'varsCount', {
@@ -59,6 +67,10 @@ module.exports = function registerWorkspace(mm) {
         enumerable: true,
         configurable: true
       });
+
+      Workspace.prototype.evaluate = function evaluate(expr) {
+        return parser.evaluate(expr);
+      }
 
       Workspace.prototype.list = function list(prefixes, detailed) {
         var ws = this;  
@@ -104,12 +116,14 @@ module.exports = function registerWorkspace(mm) {
         if (variables[0] === 'all') {
           ws.vars = {};
           log('All variables cleared.');
+          ws.saved = true; // Doesn't matter if its saved.
           return true;
         }
         variables.forEach(function (v) {
           if (ws.vars[v]) {
             delete ws.vars[v];
             log('Removed variable: "'+ v + '"');
+            ws.saved = false;
           }
           else {
             log('Variable "{0}" not found.', v);
@@ -179,7 +193,7 @@ module.exports = function registerWorkspace(mm) {
         /* istanbul ignore next */  // Tested independently
         cset.cmd('list [obj] [spec]',
             'List a server object type',
-            '\'List user\' shows information about the logged in user\n',
+            '\'List user\' shows information about the current user\n',
             '\'List users\' lists the currently connected users\n',
             '\'List ws\' lists the workspaces for this user\n',
             'Use [spec] to select a prefix to subset the objects to list.')
@@ -234,35 +248,69 @@ module.exports = function registerWorkspace(mm) {
               return true;
             });
         /* istanbul ignore next */  // Tested independently            
-        cset.cmd('deleteUser',
-            'Delete the current user')
-            .setHandler(function delUser() {
-              return cs.userDelete()
-              .then(function (msg) {
-                mm.log(msg);
+        cset.cmd('user [op]',
+            'Perform a user operation')
+            .argEnum('op', 'delete|list|create|logout')
+            .setHandler(function userOp(context, args) {
+              if (args.op === 'delete') {
+                return cs.userDelete()
+                .then(function (msg) {
+                  mm.log(msg);
+                  return true;
+                },
+                function (err) {
+                  mm.log(err);
+                  return true;
+                });
+              }
+              else if (args.op === 'list') {
+                mm.log('. user', args.op,'* NOT IMPLEMENTED *');
                 return true;
-              },
-              function (err) {
-                mm.log(err);
+              }
+              else if (args.op === 'create') {
+                mm.log('. user', args.op,'* NOT IMPLEMENTED *');
                 return true;
+              }
+              else if (args.op === 'logout') {
+                mm.log('. user', args.op,'* NOT IMPLEMENTED *');
+                return true;
+              }
+              else  {
+                mm.log('. user', args.op,'* NOT IMPLEMENTED *');
+                return true;
+              }
+            });
+        /* istanbul ignore next */  // Tested independently
+        cset.cmd('sync op [collection]',
+            'Perform a db/filesystem synchronize operation')
+            .argEnum('op', 'dbToFs|fsToDb')
+            .setAdmin()
+            .setHandler(function syncDbFs() {
+               mm.log('. sync * NOT IMPLEMENTED *');
+               return true;
+            });
+        /* istanbul ignore next */  // Tested independently
+        cset.cmd('host url',
+            'Switch host connection to the specified URL (or remote/local)')
+            .argEnum('url', 'remote|local|*(url)')
+            .setHandler(function hostConnect(context, args) {
+              var host = args.url;
+              if (host === 'remote') {
+                host = mm.config.remoteUrl;
+              }
+              else if (host === 'local') {
+                host = mm.config.localUrl
+              }
+              return cs.mmc.connectWorkspace(host)
+              .then(function () {
+                mm.log('- Connected to server: [{0}]', cs.mmc.host);
               });
-            });
-        /* istanbul ignore next */  // Tested independently
-        cset.cmd('syncDbToFs [collection]',
-            'Synchronize the database to the file system')
-            .setAdmin()
-            .setHandler(function syncDbToFs() {
-               mm.log('. syncDbToFs * NOT IMPLEMENTED *');
-               return true;
-            });
-        /* istanbul ignore next */  // Tested independently
-        cset.cmd('syncFsToDb [collection]',
-            'Synchronize the file sysem storage area to the mongo database')
-            .setAdmin()
-            .setHandler(function syncFsToDb() {
-               mm.log('. syncFsToDb * NOT IMPLEMENTED *');
-               return true;
-            });
+            })
+            .url = function validateUrl(u) {
+              var h = mm.url.parse(u, false, true);
+              return h.host ? true : false;
+            };
+            
         /* istanbul ignore next */  // Tested independently
         cset.cmd('reconnect',
             'Reconnect to the server')

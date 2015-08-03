@@ -25,7 +25,7 @@
     var userObj = rq.content;
     var userName = userObj.name;
     mm.log('- Loading public user [' + userName + ']');
-    self.usersStorage.load('publicUsers', userName)
+    return self.usersStorage.load('publicUsers', userName)
     .then(function(publicUser) {
       mm.log.debug('- Loaded user', publicUser);
       self.respond(rq, publicUser);
@@ -38,7 +38,7 @@
       else {
         mm.log.debug('loadUser: Access error: [' + userName + ']', e.stack);
       }
-      self.respond(rq, '', e);
+      self.respondError(rq, e);
     })
   }
 
@@ -65,7 +65,7 @@
       /* istanbul ignore next */ // Tested independently.
     function(e) {
       mm.log.debug('Storage error: ', e.stack)
-      self.respond(rq, '', e);
+      self.respondError(rq, e);
     })
   }
 
@@ -87,7 +87,7 @@
     var user = new ClientUser(userName);
     user.init(publicUserObj);
     mm.log('- Loading private user [' + userName + ']');
-    self.usersStorage.load('privateUsers', userName)
+    return self.usersStorage.load('privateUsers', userName)
     .then(function(privateUser) {
 //mm.log.debug('- Loaded private user', privateUser);
 //mm.log.debug('- ************ remotehpdk:', privateUser);
@@ -110,24 +110,46 @@
         delete rsuser.pdk; 
         var userConfig = self.loadUserConfig(userName);
         /* istanbul ignore if */ // Tested independently.
-        if (userConfig) {
-          mm.log('- Logged in user [' + userName +
-                 '] with private configuration');        
-          self.respond(rq, rsuser, false, { userConfig: userConfig });
-        }
-        else {
-          mm.log('- Logged in user [' + userName + ']');
-          self.respond(rq, rsuser);
-        }
+        mm.log('- Logged in user [' + userName + ']');
+        return self.usersStorage.store('privateUsers', user)
+        .then(function (stat) {
+          // *** BUG NOTE *** unless the response is made dependent on
+          // updating of the privateUser, the FileProvider.store
+          // fs.writeFile DOES NOT COMPLETE. It does not issue an error
+          // message, it just truncates the file and then fails to call
+          // any callback. This is a BAD thing that I have only been
+          // able to reproduce in the mocha test cases.
+          mm.log.status('Updated user [' + userName + ']', 
+                        user.loginCount, ' logins');
+          if (userConfig) {
+            mm.log('- Logged in user [' + userName +
+                   '] with private configuration');        
+            self.respond(rq, rsuser, false, { userConfig: userConfig });
+          }
+          else {
+            self.respond(rq, rsuser);
+          }
+          return true;
+        });
       }
       else {
         user.failedLoginCount++;
         mm.log.error('Password mismatch on user [{0}]. {1} failed attempts',
             userName, user.failedLoginCount);
         var e = new Error('Password mismatch. Sorry, try again');
-        self.respond(rq, '', e);
+        return self.usersStorage.store('privateUsers', user)
+        .then(function (stat) {
+          // If a tree falls in the forest does it make a sound?
+          mm.log.status('Updated user [' + userName + ']', 
+                    user.failedLoginCount, ' failed logins');
+          self.respondError(rq, e);
+          return true;
+        });
       }
-      self.usersStorage.store('privateUsers', user)
+      // If the privateUser update is moved down here (where it belongs)
+      // the error in the BUG NOTE above can occur.
+      // I do not understand this behavior but I expect it to bite me
+      // again until I do.
     },
       /* istanbul ignore next */ // Tested independently.
     function(e) {
@@ -137,7 +159,7 @@
       else {
         mm.log.debug('loginUser: Access error: [' + userName + ']', e.stack);
       }
-      self.respond(rq, '', e);
+      self.respondError(rq, e);
     })
   }
   
@@ -161,7 +183,7 @@
     user.failedLoginCount = 0;
     mm.log('- Created new user [' + userName + ']');
     mm.log.debug('createUser: storing private user', user);        
-    self.usersStorage.store('privateUsers', user)
+    return self.usersStorage.store('privateUsers', user)
     .then(function(info) {
       mm.log('- Saved private user info');
       var publicUser = new ClientUser(userName);
@@ -174,7 +196,7 @@
         publicUser.email = user.email;
       }
       mm.log.debug('createUser: storing', publicUser);            
-      self.usersStorage.store('publicUsers', publicUser)
+      return self.usersStorage.store('publicUsers', publicUser)
       .then(function(info) {
         self.user = user; // This user is now the current user.
         self.loggedIn = true;
@@ -193,13 +215,13 @@
       /* istanbul ignore next */ // Tested independently.
       function(e) { 
         mm.log.error('Cannot save public user: ', e.stack);
-        self.respond(rq, '', e);
+        self.respondError(rq, e);
       });
     },
     /* istanbul ignore next */ // Tested independently.
     function(e) { 
       mm.log.error('Cannot save private user:', e.stack);
-      self.respond(rq, '', e);
+      self.respondError(rq, e);
     });
   }
   
@@ -216,20 +238,19 @@
     var deleteUserObj = rq.content;
     mm.log.debug('- Delete user', deleteUserObj);
     var userName = self.user.name;
-mm.log.debug('++++++++++++++ deleteUser', deleteUserObj);
     /* istanbul ignore if */ // Tested independently.
     if (userName !== deleteUserObj.name) {
       var em1 = mm.format('"{0}" is not the current user: "{1}"',
           deleteUserObj.name, userName);
       mm.log.error(em1);
-      self.respond(rq, '', new Error(em1));
+      self.respondError(rq, em1);
       return;
     }
     mm.log('- Deleting private user [' + userName + ']');
-    self.usersStorage.remove('privateUsers', userName)
+    return self.usersStorage.remove('privateUsers', userName)
     .then(function(ok) {
       mm.log('- Deleting public user [' + userName + ']');
-      self.usersStorage.remove('publicUsers', userName)
+      return self.usersStorage.remove('publicUsers', userName)
       .then(function(ok) {
         var rmd = mm.format('User "{0}" has been removed', userName);
         self.respond(rq, rmd);
@@ -237,13 +258,13 @@ mm.log.debug('++++++++++++++ deleteUser', deleteUserObj);
       /* istanbul ignore next */ // Tested independently.
       function(e) { 
         mm.log.error('Cannot remove public user: ', e.stack);
-        self.respond(rq, '', e);
+        self.respondError(rq, e);
       });
     },
     /* istanbul ignore next */ // Tested independently.
     function(e) { 
       mm.log.error('Cannot remove private user:', e.stack);
-      self.respond(rq, '', e);
+      self.respondError(rq, e);
     });
   }
 
@@ -272,7 +293,7 @@ mm.log.debug('++++++++++++++ deleteUser', deleteUserObj);
       sessionInfos.push(sessionInfo);
     }
 
-    mm.log('- Sending into on {0} sessions', sessionInfos.length);
+    mm.log('- Sending info on {0} sessions', sessionInfos.length);
     self.respond(rq, sessionInfos);
   }
 

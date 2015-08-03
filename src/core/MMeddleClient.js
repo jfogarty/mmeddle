@@ -6,6 +6,9 @@
  module.exports = function(mm) {
   var _           = mm.check(mm._);
   var qq          = mm.check(mm.Q);
+
+  var clientConnectTimeout = mm.config.get('clientConnectTimeout', 10);
+  
   //--------------------------------------------------------------------------
   /**
    * @summary **mMeddle client services**
@@ -35,11 +38,33 @@
   }());
 
   MMeddleClient.prototype.connectWorkspace =
-  function connectWorkspace() {
+  function connectWorkspace(host) {
     var self = this;
+    if (host) {
+      if (host === self.host) {
+        if (self.connectedP.isFulfilled()) {
+          mm.log('- Already connected to: [' + self.host + ']');
+        }
+        else if (self.connectedP.isRejected()) {
+          mm.log('- Retry connection to: [' + self.host + ']');
+          self.connectedD = null; // Do a connection to a new host.
+          self.connectedP = null;
+        }
+        else {
+          // Not yet resolved, allow it to resolve.
+        }
+      }
+      else {
+        self.host = host;
+        self.connectedD = null; // Do a connection to a new host.
+        self.connectedP = null;
+        mm.log('- Connecting to: [' + self.host + ']');
+      }
+    }
+    
     /* istanbul ignore if */ 
-    if (self.connectedD) {
-      return self.connectedD.promise;
+    if (self.connectedP) {
+      return self.connectedP;
     }
     try { 
       // Assign this here or you may not get the mock version when
@@ -47,9 +72,12 @@
       // after this module is loaded.
       var io = mm.check(mm.socketClient.io);
       self.connectedD = qq.defer();
+      
       //mm.log('- Connecting to: [' + self.host + ']');
-
-      self.socket = io.connect(self.host);
+      self.socket = io.connect(self.host, {
+        'forceNew':true,
+        'max reconnection attempts': Infinity // defaults to 10
+      });
       
       // Handle connection request from the MMeddleServer/SocketService.
       self.socket.on('mmConnectRq', function (data) {
@@ -99,13 +127,65 @@
             pending.rsD.reject(new Error(emsg));
           }
           else {
-            rs.elapsed = _.now() - pending.at;
+            rs._elapsed = _.now() - pending.at;
             //mm.log(' Received response to ', rqId);
             //mm.log.debug('mmWs Response: ', rs);
             pending.rsD.resolve(rs);
           }
         }
       })
+      
+      // Handle intermediate callbacks on a multipart response.
+      self.socket.on('mmWsCb', function (rs) {
+        var stopNow = false;
+        mm.log.debug('--- received mmWsCb:', rs, mm.Logger.Priority.LOW);
+        var rqId = rs.rqId;
+        var pending = self.rsPending[rqId];
+        /* istanbul ignore if */   // Tested independently.
+        if (!pending) {
+          // Timeout has already rejected the response.
+          mm.log.warn('Received late callback to ', rqId);
+          mm.log.debug('mmWs Late Callback: ', rs);
+        }
+        else {
+          if (rs.ok !== true) {
+            var emsg = mm.util.trimPrefix(rs.error, 'Error: ');
+            pending.rsD.reject(new Error(emsg));
+          }
+          else {
+            // Call the callback with the intermediate results.
+            if (pending.callback) {
+              if (!pending.erred && !pending.ignore) {
+                try {
+                  var content = rs.content ? rs.content : null;
+                  stopNow = pending.callback(content);
+                  // TODO: Instead of just ignoring all the remaining
+                  // traffic from the request, implement an 'mmWsAbort'
+                  // operation to shut off the source.
+                  if (stopNow && content) {
+                    pending.ignore = true;
+                    if (content !== null) {
+                      // After an abort is issued, this client may still
+                      // receive one or more callbacks before the closing
+                      // response.
+                      self.rqAbort(pending.rq);
+                    }
+                  }
+                }
+                catch (e) {
+                  pending.rsD.reject(e);
+                  pending.erred = true;
+                }
+                pending.cbc++;
+              }
+            }
+            else {
+              mm.log.error('Callback message on non-callback request', pending);
+            }
+          }
+        }
+      })
+
     }
     catch (e) {
       /* istanbul ignore next */
@@ -113,7 +193,17 @@
       mm.log.error('Socket IO failure:', e.stack);
     }
 
-    return self.connectedD.promise;
+    var nocmsg = 'Connection to: [' + self.host + '] timed out';
+    self.connectedP = self.connectedD.promise.timeout(
+        clientConnectTimeout * 1000, nocmsg);
+    self.connectedP.fail(function (e) {
+      // No need for the message if another connection finally succeeded.
+      if (!self.connected) {
+        mm.log.error(e);
+      }
+    });
+    
+    return self.connectedP;
   }
   
   /**
@@ -121,10 +211,13 @@
    * @description
    * This provides server connection and control for mMeddle client
    * applications.
+   *
    * @param {string} op the operation being requested.
    * @param {bool} rsRequired true if a return promise response is needed.
    * @param {object} content the content for the operation.
+   * @param {bool|function} rsRequired true or callback function.   
    * @param {number} timeout n optional timeout in seconds.
+   * @param {bool} abort true to abort the rq. op is the pending rq.
    * @returns {bool|Promise} success true or promise to response.
    */  
   MMeddleClient.prototype.rq =
@@ -134,6 +227,8 @@
     var rsD;
     var rsP;
     // Queue a promise to resolve when the correspondimg mmWsRq shows up.
+    var callback = _.isFunction(rsRequired) ? rsRequired : null;
+    var hasCallback = callback ? true : false;
     var rqObj = {
         op: op,
         sessionId: self.clientSession.ws.sessionId,
@@ -141,9 +236,10 @@
         rqId: rqId,
         at: _.now(),
         content: content,
-        rsRequired: rsRequired ? true : false
+        rsRequired: rsRequired ? true : false,
+        callback: hasCallback
     };
-    var tmttext = 'Rq timeout. Removing pending operation to:' + rqId;
+    var tmttext = 'Rq timeout. Removing pending operation: ' + rqId;
     if (rsRequired) {
       rsD = qq.defer();
       /* istanbul ignore else */ // tested independently.
@@ -153,8 +249,11 @@
         id: rqId,
         at: rqObj.at,
         rq: rqObj,
-        rsD: rsD
+        rsD: rsD,
+        callback: callback,
+        cbc: 0
       }
+      
       // Queue the pending wait for the response.
       self.rsPending[rqId] = pending;
       
@@ -170,6 +269,19 @@
     else {
       return true;
     }
+  }
+
+  /**
+   * @summary **Send a request abort to the server**
+   * @description
+   * A cancellation packet is sent to the server.
+   *
+   * @param {object} rq the request that is in progress.
+   */  
+  MMeddleClient.prototype.rqAbort =
+  function rqAbort(rq) {
+    var self = this;
+    self.emit('mmWsRqAbort', rq)
   }
 
   /**
@@ -192,8 +304,10 @@
         self.socket.socket.reconnect();
       }
       else {
-        mm.log('- Socket connect: [' + self.host + ']');
-        self.connectWorkspace();
+        var host = self.host;
+        self.host = null; // Force a restart.
+        mm.log('- Socket connect: [' + host + ']');
+        self.connectWorkspace(host);
       }
     }
   }

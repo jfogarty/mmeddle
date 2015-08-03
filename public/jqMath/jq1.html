@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:m="http://www.w3.org/1998/Math/MathML">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="description" content="jqMath is a JavaScript module that makes it easy to put formatted mathematical expressions in web pages.">
+	
+  <link rel="stylesheet" href="css.css">    
+  <link rel="stylesheet" href="extra.css">  
+	<link rel="stylesheet" href="jqmath-0.4.3.css">
+	<link rel="stylesheet" href="author.css">
+  
+	<script src="jquery-1.4.3.js"></script>
+  <script src="jscurry-0.4.0.js" charset="utf-8"></script>
+	<script src="jqmath-0.4.3.js" charset="utf-8"></script>  
+
+	<script>M.MathPlayer = false; M.trustHtml = true;</script>
+	
+	<title>jqMath - Put Math on the Web</title>
+	
+	<style>
+		#mathSrc1, #mathSrc2	{ font-size: larger; vertical-align: text-bottom }
+		
+		table.prec-form-char	{ text-align: center }
+		table.prec-form-char td:first-child	{ text-align: right }
+	</style>
+</head>
+<body>
+
+<h1>jqMath - Math on the Web</h1>
+
+<p>Smoke test:</p>
+<blockquote>If \$ax^2+bx+c=0\$ with \$a≠0\$, then: \$\$x={-b±√{b^2-4ac}}/{2a}\$\$</blockquote>
+
+<p>produces the following:</p>
+<blockquote>If $ax^2+bx+c=0$ with $a≠0$, then: $$x={-b±√{b^2-4ac}}/{2a}$$</blockquote>
+
+<div>Examples:</div>
+
+<table class="center ruled"><thead><tr><th>HTML Source<th>Result<tbody>
+<tr><td>\$\$<textarea id="mathSrc1" rows=2 cols=30></textarea>\$\$<td id="mathTgt1">
+<tr><td>\$\$y-y_0=m(x-x_0)\$\$<td>$$y-y_0=m(x-x_0)$$
+<tr><td>\$\$\cos^2θ+\sin^2θ=1\$\$<td>$$\cos^2θ+\sin^2θ=1$$
+<tr><td>\$\$∑↙{i=0}↖n i={n(n+1)}/2\$\$<td>$$∑↙{i=0}↖n i={n(n+1)}/2$$
+<tr><td>\$\${1+√5}/2=1+1/{1+1/{1+⋯}}\$\$<td>$${1+√5}/2=1+1/{1+1/{1+⋯}}$$
+<tr><td>\$\$f'(x)=\lim↙{h→0}{f(x+h)-f(x)}/h\$\$<td>$$f'(x)=\lim↙{h→0}{f(x+h)-f(x)}/h$$
+<tr><td>\\[∀x_0∀ε>0∃δ>0∋{|x-x_0|}&amp;lt;δ⇒{|f(x)-f(x_0)|}&amp;lt;ε\\]
+	<td>\[∀x_0∀ε>0∃δ>0∋{|x-x_0|}&lt;δ⇒{|f(x)-f(x_0)|}&lt;ε\]
+<tr><td>\\[∫_\Δd\bo ω=∫_{∂\Δ}\bo ω\\]<td>\[∫_\Δd\bo ω=∫_{∂\Δ}\bo ω\]
+<tr><td>\$(\table \cos θ, - \sin θ; \sin θ, \cos θ)\$ gives a rotation by \$θ\$.
+	<td>$(\table \cos θ, - \sin θ; \sin θ, \cos θ)$ gives a rotation by $θ$.
+<tr><td>\$v↖{→}⋅w↖{→} = vw\cos θ\$<td>$v↖{→}⋅w↖{→} = vw\cos θ$
+<tr><td>\$\{x:x^2∈\ℚ\}\$ has measure 0 in \$\ℝ\$.<td>$\{x:x^2∈\ℚ\}$ has measure 0 in $\ℝ$.
+
+<tr><td>\\(U=⋃↙αU_α⇒0→\fr F(U)→∏↙α\fr F(U_α)→↖{-}∏↙{α,β}\fr F(U_α∩U_β)\\) is exact.
+	<td>xx$$\(U=⋃↙αU_α⇒0→\fr F(U)→∏↙α\fr F(U_α)→↖{-}∏↙{α,β}\fr F(U_α∩U_β)\)$$ is exact.
+
+<tr><td>\\(U=⋃↙αU_α⇒0→\fr F(U)→∏↙α\fr F(U_α)→↖{-}∏↙{α,β}\fr F(U_α∩U_β)\\) is exact.
+	<td>\(U=⋃↙αU_α⇒0→\fr F(U)→∏↙α\fr F(U_α)→↖{-}∏↙{α,β}\fr F(U_α∩U_β)\) is exact.
+<tr><td>\\[1/7 = 0.\ov 142857\\]<td>\[1/7 = 0.\ov 142857\]
+<tr><td>\\[√^n{a}√^n{b} = √^n{ab}\\]<td>\[√^n{a}√^n{b} = √^n{ab}\]
+<tr><td>\\[\table a, =, b+c; , =, d\\]<td>\[\table a, =, b+c; , =, d\]
+<tr><td>\\[\text"average speed" = \text"distance traveled" / \text"elapsed time"\\]
+	<td>\[\text"average speed" = \text"distance traveled" / \text"elapsed time"\]
+<tr><td>\\[y = ax^\html'&amp;lt;input type="text" size=1>'+bx+c\\] (inside a trusted source)
+	<td>\[y = ax^\html'&lt;input type="text" size=1>'+bx+c\] (inside a trusted source)
+<tr><td>\\[\table x_0^2, {_0F_1(; a; z)}, R_i_^j_k_l\\]
+	<td>\[\table x_0^2, {_0F_1(; a; z)}, R_i_^j_k_l\]
+<tr><td>\$\$[\O\H^{-}]=K_\W/[\H^{+}]\$\$<td>$$[\O\H^{-}]=K_\W/[\H^{+}]$$
+
+</table>
+
+<p>jqMath uses a simple TeX-like syntax, with MathML semantics:</p>
+
+<ul>
+	<li><span class="special">\$</span>, or <span class="special">\\(</span> and
+		<span class="special">\\)</span>, to delimit inline mathematics</li>
+	<li><span class="special">\$\$</span>, or <span class="special">\\[</span> and
+		<span class="special">\\]</span>, to delimit block or “display” mathematics</li>
+	<li><span class="special">^</span> for superscript</li>
+	<li><span class="special">_</span> for subscript</li>
+	<li><span class="special">{</span> and <span class="special">}</span> for grouping</li>
+	<li><span class="special">↖</span> for overscript</li>
+	<li><span class="special">↙</span> for underscript</li>
+	<li><span class="special">\</span> or <span class="special">`</span> to quote the next
+		character (turning off its special meaning), start a macro or multi-letter name, or
+		make a name non-italic</li>
+	<li><span class="special">\bo</span>, <span class="special">\it</span>, or
+		<span class="special">\bi</span> for a bold, italic, or bold-italic variable
+	<li><span class="special">\sc</span> or <span class="special">\fr</span> for a script or
+		Fraktur letter
+	<li><span class="special">\ov</span> for an overbar
+	<li><span class="special">\table</span> for a matrix, table, or simply tabular alignment -
+		separate entries with <span class="special">,</span> and rows with
+		<span class="special">;</span></li>
+	<li><span class="special">\text</span> or <span class="special">\html</span> for plain text
+		or html inside mathematics - specify the text or html inside quotes (note \html only
+		works inside a trusted source)</li>
+	<li>spaces, tabs and newlines are ignored - jqMath formats the mathematics</li>
+	<li>you can use <span class="special">\\\$</span> for a real \$, or
+		<span class="special">\\\\</span> for a \\ if necessary
+</ul>
+
+<p>jqMath is compatible with the following web browsers:  Internet Explorer 6.0+, Firefox 2.0+,
+Chrome, Safari 3.0+, Opera 9.0+, and the vast majority of modern mobile browsers.  The Fraktur
+font uses the Google Font API, which works on IE 6.0+, FF 3.5+, Chrome 4.249.4+, Safari 3.1+,
+Opera 10.5+, and again the vast majority of modern mobile browsers.  Either way, these lists
+probably include <a href="http://gs.statcounter.com/">over 99% (and growing) of web
+surfers</a>.</p>
+
+<p>jqMath is free, using the same <a href="http://jquery.org/license">open source license</a>
+as jQuery, the world’s most popular JavaScript library.  We also gratefully adopt jQuery’s
+“write less, do more” philosophy.</p>
+
+<p>To use jqMath on your site, <a id="download" href="#">download jqMath</a>, and open the
+included COPY-ME.html file as UTF-8 in a text editor.  To use jqMath in Google Blogger, just
+see <a href="http://mathscribetheblog.blogspot.com/2011/03/jqmath-in-blogger.html">jqMath in
+Blogger!</a></p>
+
+<h2 id="symbols">Mathematical Symbols for the Web</h2>
+
+<p>Each version of Windows since Windows 98 has included the Lucida Sans Unicode (LSU) font,
+making <a href="http://www.fileformat.info/info/unicode/font/lucida_sans_unicode/grid.htm">its
+1750+ characters</a> the current de facto standard character set for the web.  Mac OS X includes
+the Lucida Grande (1266-2800+ glyphs) and Apple Symbols (now 5000+ glyphs) fonts, covering a
+much larger set of characters.  The free <a href="http://www.stixfonts.org/">STIX Fonts (8000+
+glyphs)</a>, from a consortium of book and journal publishers, are intended to render all
+characters and symbols needed in Scientific, Technical, and Medical (STM) publishing.  Some
+examples of such characters may be found at
+<a href="http://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode">this
+Wikipedia page</a>.</p>
+
+<p>By default, jqMath knows the MathML precedence of every
+<a href="http://www.w3.org/TR/MathML3/appendixc.html">MathML 3 operator symbol</a>,
+except we omit “multiple character operators” like <span class="fm-mo">&amp;&amp;</span> or
+<span class="fm-mo">&lt;=</span>, and choose a single precedence for each of
+<span class="fm-mo">|</span>, <span class="fm-mo no-meta">^</span>, and
+<span class="fm-mo no-meta">_</span>.  In the tables below are all such symbols that are in the
+LSU font, listed by precedence.  We also include our formatting characters, letters in commonly
+available script fonts, and letters in a Fraktur font available dynamically via the Google Font
+API.  If you stick to using these characters in your web pages, along with other letters in the
+LSU font and ordinary numbers, then your mathematical expressions should be visible to virtually
+all current web users.</p>
+
+<p>You can click on a character in the tables to enter it in the text input element below, or
+just hover the mouse over a character to see its Unicode encoding, possibly followed by a note
+or one or more possible uses.  Red characters control formatting, blue characters will be quoted
+as necessary, and green characters will be quoted for HTML.  Operators whose “form” column is
+blank can be prefix, infix, or postfix.  You can also type keyboard characters, including
+letters and numbers, in the input element directly.  If you do this with an html entity name
+like &amp;alpha; or some LaTeX macros like \approx followed by a space, then your browser (if
+modern) will substitute that Unicode character.  jqMath will also insert some thin spaces for
+you, or you can add spaces with <span class="fm-mo special">\,</span> (thin) or
+<span class="fm-mo special">\:</span> (medium) or <span class="fm-mo special">\;</span> (thick)
+yourself.  (Don’t try to get too precise - this is the web, where the exact viewing platform is
+beyond your control.)  When the resulting expression looks the way you want, copy your input
+characters into your HTML file.</p>
+
+<table style="width: 100%"><tbody><tr style="text-align: center; vertical-align: top">
+<td><table class="ruled prec-form-char">
+<colgroup><col><col></colgroup><colgroup><col></colgroup>
+<thead><tr><th>Prec.<th>Form<th>Characters
+<tbody>
+<tr><td colspan=2>Start/end math<td><span class="special">
+	<span title="inline math">\$</span> <span title="block math">\$\$</span>
+	</span>
+<tr><td colspan=2>Greek letters<td><span class="fm-math">
+	<span class="use-backslash">
+		<span title="Gamma">Γ</span> <span title="Delta">Δ</span> <span title="Theta">Θ</span>
+		<span title="Lamda">Λ</span> <span title="Xi">Ξ</span> <span title="Pi">Π</span>
+		<span title="Sigma">Σ</span> <!-- <span title="Upsilon">Υ</span> -->
+		<span title="Phi">Φ</span> <span title="Psi">Ψ</span> <span title="Omega">Ω</span><br>
+	</span><span class="fm-mi-length-1">
+		<span title="alpha">α</span> <span title="beta">β</span> <span title="gamma">γ</span>
+		<span title="delta">δ</span> <span title="epsilon">ε</span> <span title="zeta">ζ</span>
+		<span title="eta">η</span> <span title="theta">θ</span> <span title="iota">ι</span>
+		<span title="kappa">κ</span> <span title="lamda">λ</span> <span title="mu">μ</span><br>
+		<span title="nu">ν</span> <span title="xi">ξ</span>
+		<!-- <span title="omicron">ο</span> --> <span title="pi">π</span>
+		<span title="rho">ρ</span> <span title="final sigma">ς</span>
+		<span title="sigma">σ</span> <span title="tau">τ</span> <span title="upsilon">υ</span>
+		<span title="phi">φ</span> <span title="chi">χ</span> <span title="psi">ψ</span>
+		<span title="omega">ω</span><br>
+		<span title="curled beta">ϐ</span> <span title="script theta">ϑ</span>
+		<span title="Upsilon with hook symbol">ϒ</span>
+		<span title="phi symbol">ϕ</span> <span title="pi symbol">ϖ</span>
+		<span title="Stigma">Ϛ</span> <!-- <span title="Digamma">Ϝ</span> -->
+		<span title="Koppa">Ϟ</span> <span title="Sampi">Ϡ</span>
+		<span title="script kappa">ϰ</span> <span title="tailed rho">ϱ</span>
+		<span title="lunate sigma">ϲ</span>
+	</span></span>
+<tr><td colspan=2>Script letters<td><span class="ma-script use-sc">
+	<span>A</span> <span title="Bernoulli function">B</span> <span>C</span> <span>D</span>
+	<span title="electromotive force">E</span> <span title="Fourier transform">F</span>
+	<span>G</span> <span title="Hamiltonian operator">H</span> <span>I</span> <span>J</span>
+	<span>K</span> <span title="Laplace transform">L</span>
+	<span title="M-matrix (physics)">M</span><br>
+	<span>N</span> <span>O</span> <span>P</span> <span>Q</span>
+	<span title="Riemann Integral">R</span> <span>S</span> <span>T</span> <span>U</span>
+	<span>V</span> <span>W</span> <span>X</span> <span>Y</span> <span>Z</span><br>
+	<span>a</span> <span>b</span> <span>c</span> <span>d</span> <span title="error">e</span>
+	<span>f</span> <span>g</span> <span>h</span> <span>i</span> <span>j</span>
+	<span>k</span> <span>l</span> <span>m</span><br>
+	<span>n</span> <span>o</span> <span>p</span> <span>q</span> <span>r</span>
+	<span>s</span> <span>t</span> <span>u</span> <span>v</span> <span>w</span>
+	<span>x</span> <span>y</span> <span>z</span>
+	</span>
+<tr><td colspan=2>Fraktur letters<td><span class="ma-fraktur use-fr">
+	<span>A</span> <span>B</span> <span>C</span> <span>D</span> <span>E</span>
+	<span>F</span> <span>G</span> <span title="Hilbert space">H</span>
+	<span title="imaginary part">I</span> <span>J</span>
+	<span>K</span> <span>L</span> <span>M</span><br>
+	<span>N</span> <span>O</span> <span>P</span> <span>Q</span> <span title="real part">R</span>
+	<span>S</span> <span>T</span> <span>U</span> <span>V</span> <span>W</span>
+	<span>X</span> <span>Y</span> <span>Z</span><br>
+	<span>a</span> <span>b</span> <span>c</span> <span>d</span> <span>e</span>
+	<span>f</span> <span>g</span> <span>h</span> <span>i</span> <span>j</span>
+	<span>k</span> <span>l</span> <span>m</span><br>
+	<span>n</span> <span>o</span> <span>p</span> <span>q</span> <span>r</span>
+	<span>s</span> <span>t</span> <span>u</span> <span>v</span> <span>w</span>
+	<span>x</span> <span>y</span> <span>z</span>
+	</span>
+<tr><td colspan=2>Other symbols<td><span class="fm-math use-backslash">
+	<span>«</span> <!-- <span title="micro">µ</span> --> <span>»</span>
+	<span>†</span> <span>‡</span> <span>‹</span> <span>›</span> <span title="Ångström">Å</span>
+	<span title="planck constant">ℎ</span>
+	<span title="planck constant over two pi">ℏ</span><br>
+	<span title="the complex numbers">ℂ</span> <span>ℍ</span>
+	<span title="the natural numbers">ℕ</span> <span>ℙ</span>
+	<span title="the rational numbers">ℚ</span> <span title="the real numbers">ℝ</span>
+	<span title="the integers">ℤ</span><br>
+	<!-- <span title="pounds">℔</span> --> <span title="Weierstrass elliptic function">℘</span>
+	<!-- <span title="ounce">℥</span> --> <span title="inverted ohm">℧</span>
+	<span title="turned iota">℩</span> <span title="estimated">℮</span> <span>Ⅎ</span>
+	<span title="alef symbol">ℵ</span> <span title="bet symbol">ℶ</span>
+	<span title="gimel symbol">ℷ</span> <span title="dalet symbol">ℸ</span>
+	<span title="empty set">∅</span> <span title="infinity">∞</span>
+	</span>
+<tr><td>999<td><td><span class="special">
+	<span title="superscript">^</span> <span title="subscript">_</span>
+	<span title="overscript">↖</span> <span title="underscript">↙</span>
+	</span>
+<tr><td rowspan=2>880<td>postfix<td><span class="no-html" title="html &amp;amp;">&amp;</span>
+	<span class="no-meta" title="\' or `'">'</span>
+	<span class="no-meta" title="\` or ``">`</span> <span>~</span>
+	<!-- <span>¨</span> <span>¯</span> --> <span title="degree">°</span> <!-- <span>´</span>
+	<span>¸</span> <span>ˆ</span> <span>ˇ</span> <span>ˉ</span><br>
+	<span>ˊ</span> <span>ˋ</span> <span>ˍ</span> <span>˘</span> <span>˙</span>
+	<span>˚</span> <span>˜</span> <span>˝</span> <span>‾</span> -->
+<tr><td><td><span class="no-meta" title="\^ or `^">^</span>
+	<span class="no-meta" title="\_ or `_">_</span>
+<tr><td>845<td>prefix<td><span title="radical sign">√</span>
+	<span title="cube root, or use √^3{...}">∛</span>
+	<span title="fourth root, or use √^4{...}">∜</span>
+<tr><td>835<td><td><span>?</span>
+<tr><td>825<td><td><span>@</span>
+<tr><td>810<td>postfix<td><span title="factorial, bang">!</span>
+<tr><td>800<td>postfix<td><span title="enter ' or ′; prime, minutes, feet, derivative">′</span>
+	<span title="music flat sign">♭</span> <span title="music natural sign">♮</span>
+	<span title="music sharp sign">♯</span>
+<tr><td>740<td>prefix<td><span title="partial differential">∂</span>
+	<span title="nabla, backward difference, gradient, del">∇</span>
+<tr><td>710<td><td><span>⊙</span>
+<tr><td>680<td>prefix<td><span title="not">¬</span>
+<tr><td>670<td>prefix<td><span title="angle">∠</span> <span title="measured angle">∡</span>
+	<span title="spherical angle">∢</span>
+<tr><td>660<td><td><span title="division, formatted vertically">/</span>
+	<span title="division sign">÷</span>
+<tr><td>650<td><td><span class="no-meta" title="\\ or `\; backslash">\</span>
+	<span title="set minus">∖</span>
+<tr><td>640<td><td><span title="percent">%</span>
+</table>
+
+<td><table class="ruled prec-form-char">
+<colgroup><col><col></colgroup><colgroup><col></colgroup>
+<thead><tr><th>Prec.<th>Form<th>Characters
+<tbody>
+<tr><td>410<td><td><span title="tensor product">⊗</span>
+<tr><td>400<td><td><span title="middle dot">·</span>
+<tr><td>390<td><td><span title="asterisk">*</span>
+	<span title="period, dot, decimal point">.</span>
+	<span title="multiplication sign, Cartesian product">×</span>
+	<span title="bullet">•</span> <span>⊠</span> <span>⊡</span>
+	<span title="dot operator">⋅</span>
+	<span class="special" title="\, or `,; thin space (1/6 em)">\,</span>
+	<span class="special" title="\: or `:; medium space (2/9 em)">\:</span>
+	<span class="special" title="\; or `;; thick space (5/18 em)">\;</span>
+<tr><td rowspan=2>350<td>prefix<td><span title="n-ary product">∏</span>
+	<span title="n-ary coproduct">∐</span>
+<tr><td><td><span title="intersection, cap, hat">∩</span> <span title="union, cup">∪</span>
+<tr><td>340<td><td><span title="wreath product">≀</span>
+<tr><td>330<td>prefix<td class="fm-large-op"><span title="n-ary logical and">⋀</span>
+	<span title="n-ary logical or">⋁</span> <span title="n-ary intersection">⋂</span>
+<tr><td>320<td>prefix<td class="fm-large-op"><span title="n-ary union">⋃</span>
+<tr><td>310<td>prefix<td><span>∫</span> <span title="contour integral">∮</span>
+	<span title="surface integral">∯</span> <span title="volume integral">∰</span>
+	<span title="clockwise integral">∱</span> <span title="clockwise contour integral">∲</span>
+	<span title="anticlockwise contour integral">∳</span>
+<tr><td rowspan=2>300<td>prefix<td><span>∬</span> <span>∭</span>
+<tr><td><td><span title="direct sum">⊕</span> <span title="symmetric difference">⊖</span>
+	<span>⊘</span>
+<tr><td>290<td>prefix<td class="fm-large-op"><span title="n-ary summation">∑</span>
+<tr><td>275<td><td><span>+</span> <span title="converted to U+2212 −">-</span> <span>±</span>
+	<span>−</span> <span>∓</span> <span>∔</span> <span>⊞</span> <span>⊟</span>
+<tr><td>270<td><td><span>←</span> <span>↑</span> <span>→</span> <span>↓</span>
+	<span>↔</span> <span>↕</span>
+	<span class="no-meta" title="\↖ or `↖">↖</span> <span>↗</span>
+	<span>↘</span> <span class="no-meta" title="\↙ or `↙">↙</span>
+	<span>↚</span> <span>↛</span><br>
+	<span>↜</span> <span>↝</span> <span>↞</span> <span>↟</span>
+	<span title="surjection">↠</span> <span>↡</span> <span>↢</span> <span>↣</span>
+	<span>↤</span> <span>↥</span> <span title="maps to">↦</span> <span>↧</span> <span>↨</span>
+	<span>↩</span> <span title="injection">↪</span> <span>↫</span> <span>↬</span><br>
+	<span>↭</span> <span>↮</span> <span>↯</span>
+	<span>↰</span> <span>↱</span> <span>↲</span> <span>↳</span>
+	<span>↴</span> <span>↵</span> <span>↶</span> <span>↷</span>
+	<span>↸</span> <span>↹</span> <span>↺</span> <span>↻</span><br>
+	<span>↼</span> <span>↽</span> <span>↾</span> <span>↿</span>
+	<span>⇀</span> <span>⇁</span> <span>⇂</span> <span>⇃</span>
+	<span>⇄</span> <span>⇅</span> <span>⇆</span>
+	<span>⇇</span> <span>⇈</span> <span>⇉</span> <span>⇊</span>
+	<span>⇋</span> <span>⇌</span><br>
+	<span>⇍</span> <span>⇎</span> <span>⇏</span>
+	<span>⇐</span> <span>⇑</span> <span title="implies">⇒</span> <span>⇓</span>
+	<span>⇔</span> <span>⇕</span>
+	<span>⇖</span> <span>⇗</span> <span>⇘</span> <span>⇙</span> <span>⇚</span> <span>⇛</span><br>
+	<span>⇜</span> <span>⇝</span> <span>⇞</span> <span>⇟</span>
+	<span>⇠</span> <span>⇡</span> <span>⇢</span> <span>⇣</span> <span>⇤</span> <span>⇥</span>
+	<span>⇦</span> <span>⇧</span> <span>⇨</span> <span>⇩</span> <span>⇪</span>
+	<span title="multimap">⊸</span>
+<tr><td>265<td><td><span title="fraction slash (avoid - browsers buggy)">⁄</span>
+	<span title="increment">∆</span>
+	<span title="small element of">∊</span> <span title="small contains as member">∍</span>
+	<span title="end of proof">∎</span> <span title="division, formatted horizontally">∕</span>
+	<span>∗</span> <span title="composite function">∘</span>
+	<span title="bullet operator">∙</span> <span title="right angle">∟</span>
+	<span title="divides">∣</span> <span title="ratio">∶</span>
+	<span title="proportion">∷</span> <span>∸</span> <span title="excess">∹</span>
+	<span title="geometric proportion">∺</span><br>
+	<span title="homothetic">∻</span> <span>∽</span> <span>∽̱</span> <span>∾</span>
+	<span title="sine wave, alternating current">∿</span> <span>≂</span> <span>≂̸</span>
+	<span title="almost equal or equal to">≊</span> <span>≋</span>
+	<span title="all equal to">≌</span><br>
+	<span title="geometrically equivalent to">≎</span>
+	<span title="not geometrically equivalent to">≎̸</span> <span>≏</span> <span>≏̸</span>
+	<span title="approaches the limit">≐</span> <span title="geometrically equal to">≑</span>
+	<span>≒</span> <span>≓</span>
+	<span>≕</span> <span>≖</span>
+	<span>≘</span> <span>≝</span> <span>≞</span> <span>≣</span><br>
+	<span>≦</span> <span>≦̸</span> <span>≧</span> <span>≬</span> <span>≲</span> <span>≳</span>
+	<span>≴</span> <span>≵</span> <span>≶</span> <span>≷</span> <span>≸</span> <span>≹</span>
+	<span>≾</span> <span>≿</span> <span>≿̸</span><br>
+	<span title="multiset">⊌</span> <span title="multiset multiplication">⊍</span>
+	<span title="multiset union">⊎</span>
+	<span title="square image of">⊏</span> <span>⊏̸</span>
+	<span title="square original of">⊐</span> <span>⊐̸</span>
+	<span>⊑</span> <span>⊒</span> <span>⊓</span> <span>⊔</span><br>
+	<span>⊚</span> <span>⊛</span> <span>⊜</span> <span>⊝</span>
+	<span title="assertion">⊦</span> <span title="models">⊧</span> <span>⊪</span> <span>⊫</span>
+	<span title="precedes under relation">⊰</span>
+	<span title="succeeds under relation">⊱</span>
+	<span title="normal subgroup of">⊲</span> <span title="contains as normal subgroup">⊳</span>
+	<span title="original of">⊶</span> <span title="image of">⊷</span>
+	<span title="hermitian conjugate matrix">⊹</span><br>
+	<span title="intercalate">⊺</span>
+	<span title="xor">⊻</span> <span title="nand">⊼</span> <span title="nor">⊽</span>
+	<span title="right angle with arc">⊾</span> <span title="right triangle">⊿</span>
+	<span>⋄</span> <span>⋆</span> <span title="division times">⋇</span>
+	<span title="bowtie">⋈</span> <span>⋍</span> <span>⋎</span> <span>⋏</span>
+	<span>⋐</span> <span>⋑</span> <span>⋒</span> <span>⋓</span><br>
+	<span>⋕</span> <span>⋚</span> <span>⋛</span> <span>⋜</span> <span>⋝</span>
+	<span>⋞</span> <span>⋟</span> <span>⋠</span> <span>⋡</span>
+	<span>⋢</span> <span>⋣</span> <span>⋤</span> <span>⋥</span>
+	<span>⋦</span> <span>⋧</span> <span>⋨</span> <span>⋩</span>
+	<span>⋰</span> <span>▲</span>
+<tr><td>260<td><td><span>=</span> <span title="proportional to">∝</span>
+	<span title="does not divide">∤</span>
+	<span title="parallel to">∥</span> <span title="not parallel to">∦</span>
+	<span>≁</span> <span title="asymptotically equal to">≃</span> <span>≄</span>
+	<span title="approximately equal to">≅</span> <span>≆</span>
+	<span title="not approximately equal to">≇</span> <span>≍</span> <span>≔</span>
+	<span>≗</span> <span>≙</span> <span title="equiangular to">≚</span> <span>≜</span>
+	<span>≟</span> <span>≡</span><br>
+	<span>≨</span> <span>≩</span> <span title="much less-than">≪</span> <span>≪̸</span>
+	<span title="much greater-than">≫</span> <span>≫̸</span> <span>≭</span>
+	<span>≰</span> <span>≱</span>
+	<span title="precedes">≺</span> <span title="succeeds">≻</span>
+	<span>≼</span> <span>≽</span> <span>⊀</span> <span>⊁</span><br>
+	<span>⊥</span> <span title="normal subgroup of or equal to">⊴</span>
+	<span title="contains as normal subgroup or equal to">⊵</span>
+	<span title="left normal factor semidirect product">⋉</span>
+	<span title="right normal factor semidirect product">⋊</span>
+	<span title="left semidirect product">⋋</span>
+	<span title="right semidirect product">⋌</span>
+	<span>⋔</span> <span>⋖</span> <span>⋗</span>
+	<span title="very much less-than">⋘</span> <span title="very much greater-than">⋙</span>
+	<span>⋪</span> <span>⋫</span> <span>⋬</span> <span>⋭</span><br>
+	<span>■</span> <span>□</span> <span>▪</span> <span>▫</span>
+	<span>▭</span> <span>▮</span> <span>▯</span> <span>▰</span> <span>▱</span><br>
+	<span>△</span> <span>▴</span> <span>▵</span>
+	<span>▶</span> <span>▷</span> <span>▸</span> <span>▹</span>
+	<span>▼</span> <span>▽</span> <span>▾</span> <span>▿</span>
+	<span>◀</span> <span>◁</span> <span>◂</span> <span>◃</span>
+	<span>◄</span> <span>◅</span><br>
+	<span>◆</span> <span>◇</span> <span>◈</span> <span>◉</span>
+	<span>◌</span> <span>◍</span> <span>◎</span> <span>●</span>
+	<span>◖</span> <span>◗</span> <span>◦</span>
+</table>
+
+<td><table class="ruled prec-form-char">
+<colgroup><col><col></colgroup><colgroup><col></colgroup>
+<thead><tr><th>Prec.<th>Form<th>Characters
+<tbody>
+<tr><td>255<td><td><span>≠</span>
+<tr><td>252<td><td><span>≢</span>
+<tr><td>250<td><td><span title="tilde operator - proportional to, similar to">∼</span>
+	<span title="not almost equal to">≉</span>
+<tr><td>247<td><td><span title="almost equal to, asymptotic to">≈</span>
+<tr><td>246<td><td><span>≮</span>
+<tr><td>245<td><td><span class="no-html" title="html &amp;lt;">&lt;</span>
+<tr><td>244<td><td><span>≯</span>
+<tr><td>243<td><td><span>></span>
+<tr><td>242<td><td><span>≥</span>
+<tr><td>241<td><td><span>≤</span>
+<tr><td>240<td><td><span title="complement">∁</span> <span title="element of">∈</span>
+	<span title="not an element of">∉</span> <span title="does not contain as member">∌</span>
+	<span title="subset of">⊂</span> <span title="superset of">⊃</span>
+	<span>⊄</span> <span>⊅</span><br>
+	<span>⊆</span> <span>⊇</span> <span>⊈</span> <span>⊉</span> <span>⊊</span> <span>⊋</span>
+<tr><td>230<td>prefix<td><span title="for all">∀</span>
+	<span title="there exists">∃</span> <span>∄</span>
+<tr><td>200<td><td><span title="logical and">∧</span>
+<tr><td>190<td><td><span title="logical or">∨</span>
+<tr><td>170<td><td><span title="proves, implies, yields; reducible">⊢</span> <span>⊣</span>
+	<span>⊤</span> <span title="true">⊨</span> <span title="forces">⊩</span>
+	<span title="does not prove">⊬</span> <span title="not true">⊭</span>
+	<span title="does not force">⊮</span> <span>⊯</span>
+<tr><td>160<td><td><span title="contains as member, such that">∋</span>
+<tr><td>150<td><td><span>…</span> <span>⋮</span> <span>⋯</span> <span>⋱</span>
+<tr><td>100<td><td><span>:</span>
+<tr><td>70<td><td><span title="therefore">∴</span> <span title="because">∵</span>
+<tr><td>40<td><td><span>,</span>
+<tr><td>30<td><td><span>;</span>
+<tr><td>21<td><td><span title="use {|...|} for absolute value">|</span>
+<tr><td rowspan=2>20<td>prefix<td><span>(</span> <span>[</span>
+	<span class="no-meta" title="\{ or `{">{</span> <span title="norm">‖</span>
+	<span title="left ceiling">⌈</span> <span title="left floor">⌊</span>
+<tr><td>postfix<td><span>)</span> <span>]</span>
+	<span class="no-meta" title="\} or `}">}</span> <span title="norm">‖</span>
+	<span title="right ceiling">⌉</span> <span title="right floor">⌋</span>
+<tr><td rowspan=2>10<td>prefix<td><span>‘</span> <span>“</span>
+<tr><td>postfix<td><span>’</span> <span>”</span>
+<tr><td colspan=2>Grouping<td><span class="special"><span>{</span> <span>}</span></span>
+<tr><td colspan=2>Quote/Macro<td><span class="special"><span>\</span> <span>`</span></span>
+</table>
+</table>
+
+<p>\$\$<textarea id="mathSrc2" rows=1 cols=60></textarea>\$\$ produces:</p>
+	<!-- <input type=text> doesn't allow room for font-size: larger in Safari -->
+
+<div id="mathTgt2"></div>
+
+<h2>Future &amp; Related Work</h2>
+
+<p>You can see more examples on <a href="../mathscribe/test/tests.html?!perf">our test page</a>.
+Thanks to Joe Java for these examples!</p>
+
+<p>It would seem more convenient for the implication arrows
+<span class="fm-mo">⇍ ⇎ ⇏ ⇐ ⇑ ⇒ ⇓ ⇔ ⇕ ⇖ ⇗ ⇘ ⇙</span> to have lower precedence.  Ideally, the
+MathML committee might revisit these and perhaps some other precedences.  (Precedences matter
+sometimes for exact spacing, and passing structured mathematical expressions to other
+software.)</p>
+
+<p>Some parts of the MathML standard are not yet implemented in jqMath, such as elementary
+school mathematics (e.g. “long division”), and “Content MathML.”</p>
+
+<p>It would be nice to link to a small open source web font that implemented calligraphic script
+characters, and a few other characters such as left and right angle brackets, U+27E8 and
+U+27E9.</p>
+
+<p>The <span class="special">\html</span> macro is incompatible with the otherwise excellent
+<a href="http://www.dessci.com/en/products/mathplayer/">MathPlayer plug-in</a> for Internet
+Explorer, and also only works inside an explicitly trusted source.  If you need to use the
+<span class="special">\html</span> macro, you should disable MathPlayer and enable the macro
+with the following JavaScript statements, after loading jqmath:
+<code>M.MathPlayer = false; M.trustHtml = true;</code>. But if you are going to parse untrusted
+user input using jqMath, even in a blog comment, you must ensure that <code>M.trustHtml</code>
+is set back to <code>false</code> first.</p>
+
+<p>MathML rendering engines in current web browsers are still a work in progress.  Nonetheless,
+improvements are being made steadily, especially since MathML is now part of the HTML 5
+standard.  MathML does have the advantages over pixel-map images that were noted above, and is
+definitely the right design for the future.  Therefore jqMath stays small and fast, and leaves
+attempts at pixel-precise layout of individual glyphs to these MathML engines, where such issues
+can be best and most efficiently handled. By default, jqMath uses native MathML support in
+Firefox, Chrome 24, and Safari 6.1+.</p>
+
+<p><a href="http://www.mathjax.org/">MathJax</a> (the successor of
+<a href="http://www.math.union.edu/~dpvc/jsMath/">jsMath</a>) is the best alternative to jqMath
+that I know of.  Its author, Davide Cervone, pioneered the use of a JavaScript library for
+formatting mathematics.  MathJax is much bigger and more complicated than jqMath, and
+<a href="jqmath-mathjax-perf.html">roughly 5 times slower</a>.</p>
+
+<p><a href="http://www.tug.org/">TeX</a>, <a href="http://www.latex-project.org/">LaTeX</a>, and
+<a href="http://www.ams.org/publications/authors/tex/amslatex">AMS-LaTeX</a> are the classic
+solutions for publishing mathematics on paper, in books or journals.  We all owe Donald Knuth
+(and many others) much gratitude for their efforts.  TeX vs. MathML is analogous to PDF vs. HTML
+- TeX and PDF are ideal when the exact output size, resolution, fonts, styles, etc. are known in
+advance, and the author wants complete control over layout, line breaking, precise spacing,
+etc.</p>
+
+<p>Finally, jqMath support is probably better provided by a wiki or forum than by e-mail.  I
+therefore suggest using <a href="http://stackoverflow.com/questions/tagged/jqmath">Stack
+Overflow</a> for technical questions, especially if the answers might be of interest to others.
+(It's easy - you don't even need to create an account there.)  You can also
+<a id="sendMsg" href="#">send me a message</a>.  Thanks for trying jqMath!</p>
+
+<script>
+"use strict";
+
+M.MathML = false; // JF
+
+var ents_ = { nwarr: '\u2196', swarr: '\u2199' };
+function doMathSrc(n) {
+	var srcE = $('#mathSrc'+n)[0],
+		ms = srcE.value.replace(/&([-#.\w]+);|\\([a-z]+)(?: |(?=[^a-z]))/ig,
+				function(s, e, m) {
+					if (m && (M.macros_[m] || M.macro1s_[m]))	return s;	// e.g. \it or \sc
+					var t = '&'+(e || m)+';', res = $('<span>'+t+'</span>').text();
+					return res != t ? res : ents_[e || m] || s;
+				}),
+		h = ms.replace(/</g, '&lt;');
+	if (srcE.value != h)	srcE.value = h;	// assignment may clear insertion point
+	
+	var t;
+	try {
+		t = M.sToMathE(ms, true);
+	} catch(exc) {
+		t = String(exc);
+	}
+	$('#mathTgt'+n).empty().append(t);
+}
+
+function checkUnicodeTitle(event) /* if the event's target is a 1 or 2 character string, then
+		its unicode code point(s) are made visible */ {
+	var e = event.target, t = e.firstChild;
+	if (e.nodeType == 1 /* Element */ && t && e.lastChild == t && t.nodeType == 3 /* Text */) {
+		var s = t.data, len = s.length;
+		if (0 < len && len <= 2) {
+			var iToU = function(i) {
+					var h = s.charCodeAt(i).toString(16).toUpperCase();
+					while (h.length < 4)	h = '0'+h;
+					return 'U+'+h;
+				}, u = F.fToA(iToU, len).join(' ');
+			if (! e.title)	e.title = u;
+			else if (e.title.indexOf(u) == -1)	e.title = u+': '+e.title;
+		}
+	}
+}
+function insertToSrc2(event) /* if the event's target is a 1 or 2 character string, then
+		it is inserted into $('#mathSrc2') */ {
+	var e = event.target, t = e.firstChild;
+	if (e.nodeType == 1 /* Element */ && t && e.lastChild == t && t.nodeType == 3 /* Text */) {
+		var s = t.data, len = s.length;
+		if (0 < len && len <= 2) {
+			if (s == '\u2044' /* fraction slash */) {
+				alert('This buggy "fraction slash" is being replaced by a regular / (U+002F).');
+				s = '/';
+			} else if (s == '&')	s = '&amp;';
+			else if (s == '<')	s = '&lt;';
+			else if ($(e).hasClass('no-meta') || $(e).is('.use-backslash *'))	s = '\\'+s;
+			else if ($(e).is('.use-sc *'))	s = '\\sc '+s;
+			else if ($(e).is('.use-fr *'))	s = '\\fr '+s;
+			
+			var te = $('#mathSrc2')[0];
+			te.value += s;
+			te.focus();
+			var n = te.value.length;
+			if (te.setSelectionRange)	te.setSelectionRange(n, n);
+			else if (te.createTextRange) {
+				var range = te.createTextRange();
+				range.collapse(false);
+				range.select();
+			}
+			
+			doMathSrc(2);
+		}
+	}
+}
+
+$(function() {
+	M.trustHtml = false;
+	$('#mathSrc1').keyup(F(doMathSrc, 1)).mouseup(F(doMathSrc, 1));
+	$('#mathSrc2').keyup(F(doMathSrc, 2)).mouseup(F(doMathSrc, 2));
+	$('table.prec-form-char td:last-child')
+		.addClass('fm-mo')
+		.mouseover(checkUnicodeTitle)
+		.click(insertToSrc2);
+	
+	var s = /^Win/.test(navigator.platform) ? 'win' : 'unix';
+	$('#download').attr('href', '/downloads/mathscribe-'+s+'-0.4.3.zip');	//@@ version #
+	
+	$('#sendMsg').attr('href',
+		'mail'+'to:'+encodeURIComponent('Dave Barton <dbarton'+'@mathscribe.c'+'om>'));
+});
+</script>
+
+</body>
+</html>

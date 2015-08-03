@@ -267,11 +267,38 @@ The browsers I had installed when I last updated this document are:
 - Internet Explorer 11.0.9600.17842
 - PhantomJS 2.0.0 (headless test browser)
 
+
+## GIT and Git-Bash setup
+
+I tend to switch between the windows command shell and Git Bash quite a
+bit. I setup GIT to execute notepad instead of vi:
+
+```
+	git config --global core.editor "'c:/Program Files (x86)/Notepad++/notepad++.exe' -multiInst -notabbar -nosession -noPlugin "
+```
+
+Create a `.bashrc` in the home directory to setup default behavior.
+
+```
+	"\C-i": menu-complete
+	set completion-ignore-case on
+```
+
+
+Create a `.inputrc` the home directory like this for case insensitive tab
+command completion:
+
+```
+	"\C-i": menu-complete
+	set completion-ignore-case on
+```
+
+
+	
 ## Other Tools that may matter
 
 I usually have Perl and Ruby installed, so I may be taking dependencies on
 these that I am not aware of.
-
 
 ## The End.
 	

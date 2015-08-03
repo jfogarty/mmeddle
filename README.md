@@ -28,6 +28,13 @@ For the next few months this project is closed to external developers.
 
 **Please stand by...**
 
+mMeddle provides a community service for engineers, scientists, students and
+teachers to work with and share mathematical problems, definitions and
+solutions. It focuses on symbolic algebraic math with integration of units,
+dimensions, and other elements to assist users in solving real world
+problems. Users can easily develop and document solutions to share with 
+others as live mathematics rather than dead symbols on a page.
+
 ## Features
 * Follows [semantic versioning](http://semver.org/) for releases
 

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:m="http://www.w3.org/1998/Math/MathML">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="description" content="jqMath is a JavaScript module that makes it easy to put formatted mathematical expressions in web pages.">
+	
+  <link rel="stylesheet" href="css.css">    
+  <link rel="stylesheet" href="extra.css">  
+	<link rel="stylesheet" href="jqmath-0.4.3.css">
+	<link rel="stylesheet" href="author.css">
+  
+	<script src="jquery-1.4.3.js"></script>
+  <script src="jscurry-0.4.0.js" charset="utf-8"></script>
+	<script src="jqs.js" charset="utf-8"></script>
+
+	<script>
+    M.MathPlayer = false;
+    M.trustHtml = true;
+    M.MathML = false;  // JS - Render in spans and css not MathML
+  </script>
+	
+	<title>jqMath - Put Math on the Web</title>
+	
+	<style>
+		#mathSrc1, #mathSrc2	{ font-size: larger; vertical-align: text-bottom }
+		
+		table.prec-form-char	{ text-align: center }
+		table.prec-form-char td:first-child	{ text-align: right }
+	</style>
+</head>
+<body>
+
+<h1>jqMath - Math on the Web</h1>
+
+<!-- left mark-up -->
+<span class="icon middle"></span>
+Centered?
+
+<!-- right mark-up -->
+<span class="icon middle"></span>
+<span class="middle">Centered!</span>
+
+<style type="text/css">
+  .icon   { display: inline-block;
+            /* size, color, etc. */ }
+
+  .middle { vertical-align: middle; }
+  .middle { border: solid thin }
+  .fm-radicand { border: solid thin }
+  
+
+#circle {
+	width: 100px;
+	height: 100px;
+	background: red;
+	-moz-border-radius: 50px;
+	-webkit-border-radius: 50px;
+	border-radius: 50px;
+</style>
+
+<span class="xelement">sdfsdf sd fsd fs df sd fs df sd f sd</span>
+
+<div class="shape">
+					<h2>Circle</h2>
+					<div id="circle"></div>
+				
+<p>Smoke test:</p>
+<blockquote>If \$ax^2+bx+c=0\$ with \$a≠0\$, then: \$\$x={-b±√{b^2-4ac}}/{2a}\$\$</blockquote>
+
+<p>produces the following:</p>
+<blockquote>If $ax^2+bx+c=0$ with $a≠0$, then: $$x={-b±√{b^2-4ac}}/{2a}$$</blockquote>
+
+<!--
+<div>Examples:</div>
+
+<table class="center ruled"><thead><tr><th>HTML Source<th>Result<tbody>
+<tr><td>\$\$y-y_0=m(x-x_0)\$\$<td>$$y-y_0=m(x-x_0)$$
+<tr><td>\$\$\cos^2θ+\sin^2θ=1\$\$<td>$$\cos^2θ+\sin^2θ=1$$
+<tr><td>\$\$∑↙{i=0}↖n i={n(n+1)}/2\$\$<td>$$∑↙{i=0}↖n i={n(n+1)}/2$$
+<tr><td>\$\${1+√5}/2=1+1/{1+1/{1+⋯}}\$\$<td>$${1+√5}/2=1+1/{1+1/{1+⋯}}$$
+<tr><td>\$\$f'(x)=\lim↙{h→0}{f(x+h)-f(x)}/h\$\$<td>$$f'(x)=\lim↙{h→0}{f(x+h)-f(x)}/h$$
+<tr><td>\\[∀x_0∀ε>0∃δ>0∋{|x-x_0|}&amp;lt;δ⇒{|f(x)-f(x_0)|}&amp;lt;ε\\]
+	<td>\[∀x_0∀ε>0∃δ>0∋{|x-x_0|}&lt;δ⇒{|f(x)-f(x_0)|}&lt;ε\]
+<tr><td>\\[∫_\Δd\bo ω=∫_{∂\Δ}\bo ω\\]<td>\[∫_\Δd\bo ω=∫_{∂\Δ}\bo ω\]
+<tr><td>\$(\table \cos θ, - \sin θ; \sin θ, \cos θ)\$ gives a rotation by \$θ\$.
+	<td>$(\table \cos θ, - \sin θ; \sin θ, \cos θ)$ gives a rotation by $θ$.
+<tr><td>\$v↖{→}⋅w↖{→} = vw\cos θ\$<td>$v↖{→}⋅w↖{→} = vw\cos θ$
+<tr><td>\$\{x:x^2∈\ℚ\}\$ has measure 0 in \$\ℝ\$.<td>$\{x:x^2∈\ℚ\}$ has measure 0 in $\ℝ$.
+
+<tr><td>\\(U=⋃↙αU_α⇒0→\fr F(U)→∏↙α\fr F(U_α)→↖{-}∏↙{α,β}\fr F(U_α∩U_β)\\) is exact.
+	<td>xx$$\(U=⋃↙αU_α⇒0→\fr F(U)→∏↙α\fr F(U_α)→↖{-}∏↙{α,β}\fr F(U_α∩U_β)\)$$ is exact.
+
+<tr><td>\\(U=⋃↙αU_α⇒0→\fr F(U)→∏↙α\fr F(U_α)→↖{-}∏↙{α,β}\fr F(U_α∩U_β)\\) is exact.
+	<td>\(U=⋃↙αU_α⇒0→\fr F(U)→∏↙α\fr F(U_α)→↖{-}∏↙{α,β}\fr F(U_α∩U_β)\) is exact.
+<tr><td>\\[1/7 = 0.\ov 142857\\]<td>\[1/7 = 0.\ov 142857\]
+<tr><td>\\[√^n{a}√^n{b} = √^n{ab}\\]<td>\[√^n{a}√^n{b} = √^n{ab}\]
+<tr><td>\\[\table a, =, b+c; , =, d\\]<td>\[\table a, =, b+c; , =, d\]
+<tr><td>\\[\text"average speed" = \text"distance traveled" / \text"elapsed time"\\]
+	<td>\[\text"average speed" = \text"distance traveled" / \text"elapsed time"\]
+<tr><td>\\[\table x_0^2, {_0F_1(; a; z)}, R_i_^j_k_l\\]
+	<td>\[\table x_0^2, {_0F_1(; a; z)}, R_i_^j_k_l\]
+<tr><td>\$\$[\O\H^{-}]=K_\W/[\H^{+}]\$\$<td>$$[\O\H^{-}]=K_\W/[\H^{+}]$$
+
+</table>
+-->
+
+<script>
+"use strict";
+
+M.MathML = false; // JF
+
+</script>
+
+</body>
+</html>

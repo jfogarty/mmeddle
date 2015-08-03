@@ -8,9 +8,6 @@ module.exports = function registerCliCommands(mm) {
   var _          = check(mm._);
   var qq         = check(mm.Q);
   var CmdSet     = check(mm.core.CmdSet);
-  var MMath      = check(mm.core.MMath);
-    
-  var mmath = check(new MMath());
   
   /**
    * @summary **CLI command handlers**
@@ -73,8 +70,9 @@ module.exports = function registerCliCommands(mm) {
       function(u) {
         return mConsole.ask('Enter your contact email address: ', u, 'email')
       }]
-
-      return funcs.reduce(qq.when, qq(u));
+      
+      var rq = funcs.reduce(qq.when, qq(u));
+      return rq
     }
     
     /**
@@ -82,16 +80,17 @@ module.exports = function registerCliCommands(mm) {
      */    
     self.loginUser = function loginUser(userName, ptpwd, isPdk) {
       var start = _.now();
-      cs.userLogin(userName, ptpwd, isPdk)
+      return cs.userLogin(userName, ptpwd, isPdk)
       .then(function (user) {
         mm.log('- Welcome back to mMeddle, {0} {1}.', 
             user.firstName, user.lastName);
-        //mm.log('- Logged in ({0} ms). {1:inspect}', user.elapsed, user);
+        //mm.log('- Logged in ({0} ms). {1:inspect}', user._elapsed, user);
         mm.log('- Logged in ({0} ms)', _.now() - start);
+        return user;
       },
       function (e) {
         var errString = e.toString();
-        if (errString.indexOf('ENOENT, ') >= 0) {
+        if (mm.util.ENOENT(errString)) {
           if (isPdk) {
             mm.log('- User [{0}] not found. Rebuilding deleted user.', userName);
             // TODO - Add password recheck.
@@ -99,19 +98,21 @@ module.exports = function registerCliCommands(mm) {
           }
           else {
             mm.log('- User [{0}] not found. Creating a new user.', userName);
-            self.fillNewUser(userName, ptpwd)
+            return self.fillNewUser(userName, ptpwd)
             .then(function (newUser) {
               mm.log('- Creating new user on server [{0}]...', userName);
               return self.doUserCreate(newUser);
             },
             function (e) {
               mm.log(e);
+              return e;
             });
           }
         }
         else {
           ptpwd = '';
-          mm.log.error('*** Login failed. [{0}]', errString);
+          //mm.log.error('*** Login failed. [{0}]', errString);
+          return e;
         }
       });
     }
@@ -134,7 +135,7 @@ module.exports = function registerCliCommands(mm) {
               displayName, cs.user.name, cs.mmc.host);
           cs.saveWorkspace()
           .then(function (rs) {
-            mm.log('- Saved{0} in {1} ms.', displayName, rs.elapsed);
+            mm.log('- Saved{0} in {1} ms.', displayName, rs._elapsed);
           });
         }
       }
@@ -143,6 +144,10 @@ module.exports = function registerCliCommands(mm) {
         if (mm.config.inNode) {
           mConsole.close();
           process.exit();
+        }
+        // exit application page (back to home page)
+        else {
+          mm.window.location = '../';
         }
       }
       return true;
@@ -154,8 +159,7 @@ module.exports = function registerCliCommands(mm) {
     self.saveCmdHandler = function saveCmdHandler(context, args) {
       /* istanbul ignore if */ // Tested independently.
       if (!cs.loggedIn && !cs.user.isAnonymous()) {
-        var e = new Error('Sorry, Please login before saving.');
-        return e
+        mm.log.warn('You are not logged in so this will save only locally.');
       }
       var oldName = cs.ws.name;
       var wsName = args.name ? args.name : oldName;
@@ -172,15 +176,46 @@ module.exports = function registerCliCommands(mm) {
       mm.log('- Saved Workspace{0} (local): {1} variables',
           displayName, cs.ws.varsCount);
       /* istanbul ignore else */ // Tested independently.
-      if (cs.mmc.connected) {
+      if (cs.mmc.connected && cs.loggedIn) {
+        if (cs.ws.saved) {
+          mm.log('- Save Workspace{0} skipped. Already saved.', displayName);
+          return true;
+        }
         mm.log('- Saving Workspace{0} for {1} to {2}', 
             displayName, cs.user.name, cs.mmc.host);
-        cs.saveWorkspace()
+        return cs.saveWorkspace()
         .then(function (rs) {
-          mm.log('- Saved{0} in {1} ms.', displayName, rs.elapsed);
+          mm.log('- Saved{0} in {1} ms.', displayName, rs._elapsed);
+          cs.ws.saved = true;
         });
       }
       return true;
+    }
+
+    /**
+     * @summary **loadCmdHandler**
+     */    
+    self.loadCmdHandler = function loadCmdHandler(context, args) {
+      /* istanbul ignore if */ // Tested independently.
+      if (!cs.loggedIn) {
+        mm.log.warn('Please log in first.');
+        return true;
+      }
+      
+      var oldName = cs.ws.name;
+      var wsName = args.name ? args.name : oldName;
+      if (wsName !== oldName && !cs.ws.saved) {
+        mm.log.warn('Please save or clear the current workspace first.');
+        return true;
+      }
+
+      var displayName = wsName ? ' [' + wsName + ']' : '';
+      mm.log('- Loading workspace [' + wsName + ']');
+      return cs.loadWorkspace(wsName)
+      .then(function (ws) {
+        mm.log('- Loaded{0} in {1} ms.', displayName, ws._elapsed);
+        cs.ws.saved = true;
+      });
     }
     
     //------------------------------------------------------------------------    
@@ -198,27 +233,32 @@ module.exports = function registerCliCommands(mm) {
         }
         else {
           if (userName === user.name && user.pdk) {
-            return self.loginUser(userName, user.pdk, true);
+            return self.loginUser(userName, user.pdk, true)
+            .fail(function (e) {
+              mm.log.warn('Invalid locally saved password has been deleted');
+              delete user.pdk;
+              return e;
+            });
           }
           else {
-            mConsole.ask('Please enter your password: ', null, null, true)
+            return mConsole.ask('Please enter your password: ', null, null, true)
             .then(function (ptpwd) {
               return self.loginUser(userName, ptpwd);
-            },
-            function(e) {
-              mm.log.error(e);
-              return e;
             });
           }
         }
       }
       // If a locally saved user is available, login with that.
       else {
-        if (!user.isAnonymous()) {
-          return self.loginUser(user.name, user.pdk, true);
+        if (!user.isAnonymous() && user.pdk) {
+          return self.loginUser(user.name, user.pdk, true)
+          .fail(function (e) {
+            mm.log.warn('Invalid locally saved password has been deleted');
+            delete user.pdk;
+            return e;
+          });
         }
         var e = new Error('Please login with a user name');
-        mm.log.error(e);
         return e
       }
     }
@@ -253,16 +293,6 @@ module.exports = function registerCliCommands(mm) {
           }
         });
 
-        // mmath functions and constants
-        var ignore = ['expr', 'type'];
-        for (var func in mmath) {
-          if (mmath.hasOwnProperty(func)) {
-            if (func.indexOf(keyword) === 0 && ignore.indexOf(func) === -1) {
-              matches.push(func);
-            }
-          }
-        }
-        
         // remove duplicates
         matches = matches.filter(function(elem, pos, arr) {
           return arr.indexOf(elem) === pos;
@@ -295,6 +325,12 @@ module.exports = function registerCliCommands(mm) {
             'for later recall. You can have many workspaces under different',
             'names, although you have only one current workspace session.')
        .setHandler(self.saveCmdHandler);
+    rcs.cmd('load [name]', 
+            'Load a workspace from the server',
+            'Supply a [name] to load a workspace of a specific name that',
+            'was previosly saved.')
+       .setHandler(self.loadCmdHandler);
+       
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     rcs.cmd('login [userName] [password]',
             'Log in to the server with a user name and password',
@@ -316,6 +352,11 @@ module.exports = function registerCliCommands(mm) {
        .alias('??')
        .setHandler(self.listCmdHandler);
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    rcs.cmd('cls',
+            'Clear the display')
+       .setHandler(function () { mConsole.clearScreen(); return true; });
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
     rcs.addSubset('.', cs.ws.dotCmdSet());
     //mm.log('----- cs.ws.dotCmdSet():', cs.ws.dotCmdSet());    
     rcs.done();

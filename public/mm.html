@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>mMeddle-mMeddle Test Workspace</title>
+  <link rel="shortcut icon" href="/images/icons/mMeddle.ico">
+  <link rel="stylesheet" href="/css/mmeddle.css" />
+	<script src="/lib/jquery.js"></script>
+  <script src="/dist/mmeddle.js"></script>
+  <script src="/dist/config.js"></script>  
+</head>
+<body>
+  <div id="topstatusfixed">Network Status</div>
+  <div id="botstatusfixed">Workspace Status</div>
+
+  <style>
+    .line {
+      position: absolute;
+      background-color: #000000;
+    }
+
+    .vertical { 
+       width: 1.5px;
+       height: 500px;
+    }
+
+    .horizontal {
+       width: 500px;
+       height: 1px;
+    }
+
+    #line1 {
+       top: 20px;
+       left: 50%;
+    }
+
+    #line2 {
+       top: 260px;
+       left: 25%;
+    }
+
+    /* for added rotation effects */
+    .forty-five {
+       transform: rotate(45deg);
+    }
+</style>  
+  
+  <article id="mm" >
+    <header>
+      <h2>mMeddle Test Workspace</h2>
+    </header>  
+    <section class="main-review">
+      <p id="main-intro" class="intro mono">
+      Loading the mMeddle execution engine...
+      This may take a few seconds, please be patient ...
+      </p>
+    </section>
+    <section class="equation">
+    
+      <button class="mmeqb" >&#x00A7;</button> <!-- Section -->    
+      <button class="mmeqb" >&#x2414;</button> <!-- Paragraph -->
+      <button class="mmeqb" >&#x2211;</button> <!-- sigma -->
+      
+      <button class="mmeqb" >&#x204C;</button> <!-- left rounded -->
+      <button class="mmeqb" >&#x204D;</button> <!-- right rounded -->
+      <button class="mmeqb" >&#x2206;</button> <!-- triangle -->
+      <button class="mmeqb" >&#x2207;</button> <!-- down triangle -->
+      <button class="mmeqb" >&#x2261;</button> <!-- 3 bar equivalence -->
+      <button class="mmeqb" >&#x221A;</button> <!-- radical -->
+      <button class="mmeqb" >&#x2370;</button> <!-- Question box -->
+      <button class="mmeqb" >&#x2410;</button> <!-- black triangle right -->
+      <button class="mmeqb" >&#x2411;</button> <!-- black triangle left -->
+      <button class="mmeqb" >&#x241E;</button> <!-- black triangle up -->      
+      <button class="mmeqb" >&#x241F;</button> <!-- black triangle down -->
+      
+      <button class="mmeqb" >&#x2400;</button> <!-- Dotted box -->
+      <button class="mmeqb" >&#x2610;</button> <!-- Checkable Box -->
+      <button class="mmeqb" >&#x2611;</button> <!-- Checked Box -->
+      <button class="mmeqb" >&#x261E;</button> <!-- Hand pointing right -->
+      <button class="mmeqb" >&#x25FF;</button> <!-- Right triangle -->
+      <button class="mmeqb" >&#x2397;</button> <!-- Copy out (this to that) -->
+      <button class="mmeqb" >&#x2398;</button> <!-- Copy in (that to this) -->
+      <button class="mmeqb" >&#x2704;</button> <!-- Cut -->
+      <button class="mmeqb" >&#x29C8;</button> <!-- Box in box (go in) -->
+      <button class="mmeqb" >&#x29C9;</button> <!-- Box to box (clone) -->      
+      <button class="mmeqb" >&#x2421;</button> <!-- Delete -->      
+      <button class="mmeqb" >&#x2420;</button> <!-- SP (hard space) -->      
+      <button class="mmeqb" >&#x2424;</button> <!-- NL (hard return) -->      
+      <button class="mmeqb" >&#x29CE;</button> <!-- Left/Right Triagles (exchange) -->
+      <button class="mmeqb" >&#xFFFC;</button> <!-- Object box -->
+      <button class="mmeqb" >&#x0528;</button> <!-- Diag line box -->
+      
+      <br>      
+      <button class="mmeqb" >&#x00B1;</button> <!-- +/- -->
+      <button class="mmeqb" >&#x00B7;</button> <!-- dot (mul) -->
+      <button class="mmeqb" >&#x00D7;</button> <!-- cross (mul) -->
+      <button class="mmeqb" >&#x00F7;</button> <!-- divide -->
+      
+      <button class="mmeqb" >&#x01C1;</button> <!-- || -->
+      
+      <button class="mmeqb" >&#x00B0;</button> <!-- degree -->
+      <button class="mmeqb" >&#x2109;</button> <!-- degrees F -->
+      <button class="mmeqb" >&#x2103;</button> <!-- degrees C -->
+      <button class="mmeqb" >&#x212A;</button> <!-- degrees K -->
+      <button class="mmeqb" >&#x212B;</button> <!-- Angstrom -->
+      <button class="mmeqb" >&#x2026;</button> <!-- ellipsis -->
+      
+      <button class="mmeqb" >&#x213C;</button> <!-- PI - Constant -->
+      
+      <button class="mmeqb" >&#x2115;</button> <!-- N - Natural -->
+      <button class="mmeqb" >&#x2124;</button> <!-- Z - Integers -->
+      <button class="mmeqb" >&#x211A;</button> <!-- Q - Rational -->     
+      <button class="mmeqb" >&#x211D;</button> <!-- R - Real -->   
+      <button class="mmeqb" >&#x2102;</button> <!-- C - Complex -->
+      
+      <button class="mmeqb" >&#x2260;0</button> <!-- Not equal to 0 -->
+      <button class="mmeqb" >&#x003E;0</button> <!-- Greater than 0 -->
+      <button class="mmeqb" >&#x2265;0</button> <!-- Greater than or equal to 0 -->
+
+      <br>
+      <button class="mmeqb" >&#x2152;</button> <!-- 1/10 0.1000 -->
+      <button class="mmeqb" >&#x2151;</button> <!-- 1/9  0.1111 -->
+      <button class="mmeqb" >&#x215B;</button> <!-- 1/8  0.1250 -->
+      <button class="mmeqb" >&#x2150;</button> <!-- 1/7  0.1428 -->
+      <button class="mmeqb" >&#x2159;</button> <!-- 1/6  0.1666-->
+      <button class="mmeqb" >&#x2155;</button> <!-- 1/5  0.2000 -->
+      <button class="mmeqb" >&#x00BC;</button> <!-- 1/4  0.2500 -->
+      <button class="mmeqb" >&#x2153;</button> <!-- 1/3  0.3333 -->
+      <button class="mmeqb" >&#x215C;</button> <!-- 3/8  0.3750 -->
+      <button class="mmeqb" >&#x2156;</button> <!-- 2/5  0.4000 -->
+      <button class="mmeqb" >&#x00BD;</button> <!-- 1/2  0.5000 -->
+      <button class="mmeqb" >&#x2157;</button> <!-- 3/5  0.6000 -->
+      <button class="mmeqb" >&#x215D;</button> <!-- 5/8  0.6250 -->
+      <button class="mmeqb" >&#x2154;</button> <!-- 2/3  0.6666 -->
+      <button class="mmeqb" >&#x00BE;</button> <!-- 3/4  0.7500 -->
+      <button class="mmeqb" >&#x2158;</button> <!-- 4/5  0.8000 -->
+      <button class="mmeqb" >&#x215A;</button> <!-- 5/6  0.8333 -->
+      <button class="mmeqb" >&#x215E;</button> <!-- 7/8  0.8750 -->
+      <button class="mmeqb" >&#x215F;</button> <!-- 1/? -->
+      <button class="mmeqb" >&#x221E;</button> <!-- Infinity -->
+      <br>    
+      <button class="mmeqb" >ln</button>
+      <button class="mmeqb" >log</button>
+      <button class="mmeqb" >sin</button>
+      <button class="mmeqb" >cos</button>
+      <button class="mmeqb" >tan</button>
+      <button class="mmeqb" >x&#x02B8;</button> <!-- x^y -->
+      <button class="mmeqb" >&#x212F;&#x02DF;</button> <!-- e^x -->
+      <button class="mmeqbi" >x</button>
+      <button class="mmeqbi" >y</button>
+      <button class="mmeqbi" >z</button>
+      <button class="mmeqbbi" >a</button>
+      <button class="mmeqbbi" >b</button>
+      <button class="mmeqbbi" >c</button>
+      
+      <button class="mmeqb" >&#x2BC0;&#x2BC1;&#x2BC2;&#x2BC3;&#x2BC4;</button> <!-- e^x -->      
+      
+      
+    </section>
+ 
+    <section class="equation">    
+      <table class="mmeqButtonTable">
+        <tr>
+          <td>
+            <button class="mmeqb" >&#x204C;</button> <!-- left rounded -->
+          </td><td>
+            <button class="mmeqb" >&#x204D;</button> <!-- right rounded -->
+          </td><td>
+            <button class="mmeqb" >&#x2211;</button> <!-- sigma -->
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button class="mmeqb" >&#x2206;</button> <!-- triangle -->
+          </td><td>
+            <button class="mmeqb mmeqbhuge" >&#x2328;</button> <!-- Keyboard -->            
+          </td><td>
+            <button class="mmeqb" >&#x2261;</button> <!-- 3 bar equivalence -->
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <button class="mmeqb" >&#x22B2;</button> <!-- left triangle -->
+          </td><td>
+            <button class="mmeqb" >&#x22B3;</button> <!-- right triangle -->
+          </td><td>
+            <button class="mmeqb" >&#x2207;</button> <!-- down triangle -->
+          </td>
+        </tr>
+      </table>
+    </section>  
+
+    <br>
+
+    <section class="equation">
+      <div style="display: inline">
+      <span style="vertical-align:middle">
+        <table class="eqsum" cellspacing="0">
+          <tr><td><div class="eqsumUpper">n</div></td></tr>
+          <tr class="overUnderBase">
+            <td><div class="eqsumMain">&#x2211;</div></td></tr>
+          <tr>
+          <td><div class="eqsumLower">i = 0</div></td></tr>
+        </table>
+      </span>
+      <span style="vertical-align:middle">      
+        <table class="eqsum" cellspacing="0">
+          <tr><td><div class="eqsumUpper">n</div></td></tr>
+          <tr class="overUnderBase">
+            <td><div class="eqsumMain">&#x2211;</div></td></tr>
+          <tr>
+          <td><div class="eqsumLower">i = 0 and b = 333</div></td></tr>
+        </table>
+      </span>
+      <span style="vertical-align:middle">      
+       <table class="eqsum" cellspacing="0">
+          <tr><td><div class="eqsumUpper">n that is a long thing = 88</div></td></tr>
+          <tr class="overUnderBase">
+            <td><div an class="eqsumMain">&#x2211;</div></td></tr>
+          <tr>
+          <td><div class="eqsumLower">i = 0</div></td></tr>
+        </table>
+      </span>
+      <span style="vertical-align:middle">      
+        ax + b
+      </span>
+      </div>
+    </section>  
+  </article>
+  
+  <div id="line1" class="line vertical"></div>
+  <div id="line2" class="line horizontal"></div>
+  
+  <script src="/public/mm.js"></script>  
+</body>
+</html>
+

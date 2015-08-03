@@ -41,7 +41,7 @@
         },
         function(e) { 
           mm.log.error('Workspace save failed: ', e)
-          self.respond(rq, '', e);
+          self.respondError(rq, e);
         })
       }
       else {
@@ -52,7 +52,7 @@
     /* istanbul ignore next */
     function(e) { 
       mm.log.error('Workspace session save failed: ', e)
-      self.respond(rq, '', e);
+      self.respondError(rq, e);
     })
   }
 

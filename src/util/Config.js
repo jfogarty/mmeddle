@@ -63,6 +63,36 @@ module.exports = function registerConfig(mm) {
   }
 
   /**
+   * @summary **Get a value from a config or use a default**
+   * @description
+   * If the value is present in the config then it is returned otherwise
+   * the default value supplied is returned.
+   * @param {string} fieldName the name of the field in the config 
+   * @param {Object} defaultValue the value to return
+   * @returns the value.
+   */
+  Config.prototype.get = function get(fieldName, defaultValue) {
+    var self = this;  
+    if (fieldName in self) return self[fieldName];
+    return defaultValue;
+  }
+
+  /**
+   * @summary **Load a config file by exact name **
+   * @description
+   * This is normally used internally.  The exact file is loaded into
+   * the Config. No errors are trapped so file access and not found 
+   * exceptions will be thrown.
+   * @param {string} cfgPath the exact file name to load
+   */
+  Config.prototype.loadFile = function loadFile(cfgPath) {
+    var self = this;
+    var cfg = String(mm.fs.readFileSync(cfgPath));
+    var config = mm.util.JSONparse(cfg, SANITIZE);
+    self.init(config);
+  }
+
+  /**
    * @summary **Load a config file**
    * @description
    * The file is looked for in the base directory first, and then the 
@@ -90,9 +120,7 @@ module.exports = function registerConfig(mm) {
       for (var i in dirs) {
         try {          
           var cfgPath = path.join(dirs[i], fileName);
-          var cfg = String(mm.fs.readFileSync(cfgPath));
-          var config = mm.util.JSONparse(cfg, SANITIZE);
-          self.init(config);
+          self.loadFile(cfgPath);
           mm.log.debug(ctx + '- Config:', cfgPath);
           self.configFilesLoaded++;
         }

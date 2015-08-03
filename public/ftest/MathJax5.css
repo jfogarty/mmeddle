@@ -1,0 +1,55 @@
+
+#MathJax_Zoom {
+    background-color: #f0f0f0;
+    border: 1px solid black;
+    box-shadow: 5px 5px 15px #aaaaaa;
+    display: block;
+    float: none;
+    font-style: normal;
+    font-weight: normal;
+    letter-spacing: normal;
+    line-height: normal;
+    margin: 0;
+    overflow: auto;
+    padding: 0.5em;
+    position: absolute;
+    text-align: left;
+    text-indent: 0;
+    text-transform: none;
+    white-space: nowrap;
+    word-spacing: normal;
+    word-wrap: normal;
+    z-index: 301;
+}
+#MathJax_ZoomOverlay {
+    background-color: white;
+    border: 0 none;
+    display: inline-block;
+    height: 100%;
+    left: 0;
+    margin: 0;
+    opacity: 0;
+    padding: 0;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 300;
+}
+#MathJax_ZoomFrame {
+    display: inline-block;
+    height: 0;
+    position: relative;
+    width: 0;
+}
+#MathJax_ZoomEventTrap {
+    background-color: white;
+    border: 0 none;
+    display: inline-block;
+    left: 0;
+    margin: 0;
+    opacity: 0;
+    padding: 0;
+    position: absolute;
+    top: 0;
+    z-index: 302;
+}

@@ -9,6 +9,7 @@ module.exports = function registerCliConsole(mm) {
   var qq         = check(mm.Q);
   var EggTimer   = check(mm.obj.EggTimer);
 
+  var codeESC = 27;
   var BS    = String.fromCharCode(0x08);                   // jshint ignore:line 
   var CR    = String.fromCharCode(0x0D);                   // jshint ignore:line 
   var LF    = String.fromCharCode(0x0A);                   // jshint ignore:line 
@@ -17,6 +18,37 @@ module.exports = function registerCliConsole(mm) {
   var HOME  = String.fromCharCode(0x1b, 0x5b, 0x31, 0x7e); // jshint ignore:line 
   var UP    = String.fromCharCode(0x1b, 0x5b, 0x41);       // jshint ignore:line 
   var DOWN  = String.fromCharCode(0x1b, 0x5b, 0x42);       // jshint ignore:line 
+
+  var CtrlCodes = [
+    'null',  // [0x00],
+    'ctrlA', // [0x01], // A
+    'ctrlB', // [0x02], // B
+    'ctrlC', // [0x03], // C
+    'ctrlD', // [0x03], // D
+    'ctrlE', // [0x03], // E
+    'ctrlF', // [0x03], // F
+    'bell',  // [0x07], // G
+    'bs',    // [0x08], // H
+    'tab',   // [0x09], // I
+    'lf',    // [0x0A], // J
+    'ff',    // [0x0B], // K
+    'ctrlL', // [0x0C], // L
+    'cr',    // [0x0D], // M
+    'ctrlN', // [0x0E], // N
+    'ctrlO', // [0x0F], // O
+    'ctrlP', // [0x10], // P
+    'ctrlQ', // [0x11], // Q
+    'ctrlR', // [0x12], // R
+    'ctrlS', // [0x13], // S
+    'ctrlT', // [0x14], // T
+    'ctrlU', // [0x15], // U 
+    'ctrlV', // [0x16], // V
+    'ctrlW', // [0x17], // W
+    'ctrlX', // [0x18], // X
+    'ctrlY', // [0x19], // Y
+    'ctrlZ', // [0x1A], // Z
+    'esc'    // [0x1B]
+  ];
   
   var KeyCodes = {
     null  : [0x00],
@@ -71,6 +103,31 @@ module.exports = function registerCliConsole(mm) {
     F12   : [0x1b, 0x5b, 0x32, 0x34, 0x7e],
   };
   
+  var EscapeCodes = {
+    up    : [0x5b, 0x41],
+    down  : [0x5b, 0x42],
+    right : [0x5b, 0x43],
+    left  : [0x5b, 0x44],
+    ins   : [0x5b, 0x32, 0x7e],
+    del   : [0x5b, 0x33, 0x7e],
+    home  : [0x5b, 0x31, 0x7e],
+    end   : [0x5b, 0x34, 0x7e],
+    pgup  : [0x5b, 0x35, 0x7e],
+    pgdn  : [0x5b, 0x36, 0x7e],
+    F1    : [0x5b, 0x5b, 0x41],
+    F2    : [0x5b, 0x5b, 0x42],
+    F3    : [0x5b, 0x5b, 0x43],
+    F4    : [0x5b, 0x5b, 0x44],
+    F5    : [0x5b, 0x5b, 0x45],
+    F6    : [0x5b, 0x31, 0x37, 0x7e],
+    F7    : [0x5b, 0x31, 0x38, 0x7e],
+    F8    : [0x5b, 0x31, 0x39, 0x7e],
+    F9    : [0x5b, 0x32, 0x30, 0x7e],
+    F10   : [0x5b, 0x32, 0x31, 0x7e],
+    F11   : [0x5b, 0x32, 0x33, 0x7e],
+    F12   : [0x5b, 0x32, 0x34, 0x7e],
+  };
+  
   /**
    * @summary **console input and output for mMeddle CLI**
    * @description
@@ -97,7 +154,7 @@ module.exports = function registerCliConsole(mm) {
     var self = this;
     var inNode = mm.config.inNode;
     var inBrowser = inNode ? false : true;
-    var activity = false;
+    var reading = false;
     var isConsole = true;
 
     // Defined on Node clients.
@@ -166,15 +223,13 @@ module.exports = function registerCliConsole(mm) {
       };
     }
 
-    var handlers = []; // The stack of input handlers;
-    self.handler = {
-      func: null,     // caller must supply one.
-      prompt: (inNode ? '-->' : 'Cmd:'),
-      pwdMode: false  // show * during input.
-    };
+    self.readLineD = null; // The line reading deferred.
+    self.prompt = inNode ? '-->' : 'Cmd:';
+    self.pwdMode = false;  // show * during input.
+
     /* istanbul ignore if */ 
     if (inBrowser) {
-      consolePrompt.innerHTML = self.handler.prompt;
+      consolePrompt.innerHTML = self.prompt;
     }
     
     var pendingInputs = [];
@@ -210,6 +265,8 @@ self.annoyTimer.onDing(function () {
   self.annoyTimer.reset();
 });
 */
+
+/*
     // Examines a keysequence to see of it is a control char,
     // alt code, or control code.
     function getKeyCode(unicodes) {
@@ -245,7 +302,65 @@ self.annoyTimer.onDing(function () {
       }
       return null;
     }
+*/
     
+    // Removes a keysequence from an array of charCodes and returns a
+    // single keyEvent object.  Call repeatedly to drain the array.
+    // alt code, or control code.
+    function pullKeyEvent(charCodes) {
+      if (!charCodes || charCodes.length === 0) {
+        return null;
+      }
+      var c1 = charCodes.shift();
+      var cch = String.fromCharCode(c1);
+      // Handle simple key codes.
+      if (c1 <= codeESC) {
+        var k = CtrlCodes[c1];
+        if (charCodes.length === 0 || c1 !== codeESC) {
+          return { keyCode: k };
+        }
+      }
+
+      // Now the most common letters.
+      if (c1 >= 32 && c1 < 128) {
+         return { visibleChar: cch }
+      }
+
+      // These are not really control codes since most unicode
+      // chars are visible, but fix this later. TODO: fixme
+      if (c1 !== codeESC) {
+        return { ctrlCode: cch }
+      }
+
+      // This a multicharacter escape sequence.
+      for (var key in EscapeCodes) {
+        var escSeq = EscapeCodes[key];
+        var i = 0;
+        while (i < escSeq.length && i < charCodes.length) {
+          if (escSeq[i] === charCodes[i]) {
+            i++;
+            if (i === escSeq.length) {
+              // Shift off the matching key codes.
+              while (i > 0) {
+                charCodes.shift(); // Toss it.
+                i--;
+              }
+              return { keyCode: key };
+            }
+          }
+          else {
+            break;
+          }
+        }
+      }
+
+      // Return a two character ESC code.
+      var c2 = charCodes.shift();
+      cch += String.fromCharCode(c2);
+      return { ctrlCode: cch }
+    }
+    
+/*    
     function isPrintableAscii(cc) {
       if (cc.length === 1) {
         var c = cc.charCodeAt(0);
@@ -253,6 +368,7 @@ self.annoyTimer.onDing(function () {
       }
       return false;
     }
+*/
 
     function hexString(unicode) {
       var h = '';
@@ -306,7 +422,7 @@ self.annoyTimer.onDing(function () {
     // Handle saving of the text line stack.
     function saveInput(currentInput) {
       // Passwords are never saved.
-      if (self.handler.pwdMode) {
+      if (self.pwdMode) {
         return false;
       }
       currentSavedInputIndex = 0;
@@ -335,15 +451,8 @@ self.annoyTimer.onDing(function () {
       return true;
     }
     
-    function fetchPendingInput() {
-      self.lastInput = pendingInputs.shift();
-      self.lastLine = self.lastInput.textLine;
-      saveInput(self.lastInput);
-    }
-
     function out(chars) {
       if (self.idleTimer) self.idleTimer.reset();
-      if (self.pauseTimer) self.pauseTimer.reset();
       
       /* istanbul ignore next */ 
       if (self.mute) return self;
@@ -371,21 +480,27 @@ self.annoyTimer.onDing(function () {
     function showPrompt(reprompt) {
       /* istanbul ignore else */ 
       if (inNode) {
-        if (!promptVisible || reprompt) {
+//      if (!promptVisible || reprompt) {
           promptVisible = true;
           if (partialOutputLine) {
             out(NL); // Always goes to the next line.
             partialOutputLine = false;
           }
+//mm.log('showPrompt( xxxxxxxxxxxxxxxxxxxxxxxxx', self.prompt, self.mute);          
           setLineOffset(0);
           if (!self.mute) {
             cursor.eraseLine();
             //cursor.red();
-            out(self.handler.prompt);
+            out(self.prompt);
             cursor.show();
           }
-        }
+//      }
       }
+      else {
+        consolePrompt.innerHTML = self.prompt;
+        consoleInput.type = self.pwdMode ? 'password' : 'text';
+      }
+
       return self;
     }
     
@@ -394,15 +509,15 @@ self.annoyTimer.onDing(function () {
       showPrompt(reprompt);
       /* istanbul ignore else */ 
       if (inNode) {
-        setLineOffset(self.handler.prompt.length);
+        setLineOffset(self.prompt.length);
         //cursor.green();
         var text = currentInput.textLine;
-        if (self.handler.pwdMode) {
+        if (self.pwdMode) {
           text = _.repeat('*', text.length);
         }
         out(text);
         if (!self.mute) cursor.eraseLine();
-        var lineOffset = self.handler.prompt.length + inputOffset;
+        var lineOffset = self.prompt.length + inputOffset;
         setLineOffset(lineOffset);
         
         // TODO - allow the entry to be longer than the visible line.
@@ -411,15 +526,15 @@ self.annoyTimer.onDing(function () {
         //     'prompt>...line of text is too long.'
         //  or 'prompt>This line of text is too ...'
       }
+      else {
+        consoleInput.value = currentInput.textLine;
+      }
       return self;
     }
   
     // Displays the prompt, current input, and positions  the cursor.
     function updateCurrentLine() {      
-      /* istanbul ignore else */
-      if (inNode) {
-        if (!promptVisible) showCurrentLine();
-      }
+      if (!promptVisible) showCurrentLine();
     }
 
     function rightArrow() {
@@ -469,7 +584,7 @@ self.annoyTimer.onDing(function () {
 
     function clearLine() {
       inputOffset = 0;
-      currentInput.textLine = '';
+      currentInput = makeLine('');
       return showCurrentLine();
     }
 
@@ -526,69 +641,24 @@ self.annoyTimer.onDing(function () {
         return endOfLine();
       }
     }
-
-    // Provide the input to a client.
-    function handlePendingInput() {
-      if (pendingInputs.length > 0) {
-        // If there's a consumer for the input, handle it.
-        if (self.handler.func) {
-          fetchPendingInput();
-        }
-        while (self.handler.func) {
-          var response = self.handler.func(self.lastLine);
-          // This handler no longer wants to do the job.
-          if (response === false) {
-            self.handler = handlers.pop();
-            if (inBrowser) {
-              consolePrompt.innerHTML = self.handler.prompt;
-              consoleInput.type = self.handler.pwdMode ? 'password' : 'text';
-            }
-            return self; // All done.
-          }
-          else if (response === true) {
-            return self; // All is well, all done.
-          }
-          else if (_.isString(response)) {
-            // Allow the handler to act as a translator for the input.
-            self.handler = handlers.pop();
-            self.lastLine = response;
-          }
-          else {
-            throw new Error('Invalid line handler response');
-          }
-        }
-      }
-      return self;
-    }
     
     // Handles Enter for single line entries.
     function enter() {
-      activity = true;
-      if (inNode) {
-        if (self.handler.pwdMode) {
-          showPrompt(true);
-          out(_.repeat('*', self.maxPasswordLength));
-        }
-        else {
-          showCurrentLine();
-        }
-        out(NL);
-      }
-      else {
+      if (inBrowser) {
         // Enters the current line even if it has not changed.
         currentInput = makeLine(consoleInput.value);
         consoleInput.value = '';
-        var textLine = currentInput.textLine;
-        if (self.handler.pwdMode) {
-          textLine = _.repeat('*', self.maxPasswordLength);
-        }
-        out('--> ' + self.handler.prompt + textLine + '\n');
+      }
+      else {
+        // TODO: Clear full multiline inputs /
+        setLineOffset(0); // Clear the entire line.
+        if (!self.mute) cursor.eraseLine();
       }
       pendingInputs.push(currentInput);
       currentInput = makeLine('');
       inputOffset = 0;
       promptVisible = false;
-      return handlePendingInput();
+      self.readingD.resolve('Well thats another fine kettle of fish');
     }
 
     function handleKeyEvent(kc) {
@@ -645,7 +715,6 @@ self.annoyTimer.onDing(function () {
     CliConsole.prototype.clearScreen = inNode ? 
       function clearScreen() {
         if (self.mute) return;
-        activity = true;
         var windowSize = process.stdout.getWindowSize();
         var linesPerScreen = windowSize[1];
         var lineFeeds = _.repeat('\n', linesPerScreen);
@@ -656,7 +725,6 @@ self.annoyTimer.onDing(function () {
     : /* istanbul ignore next */
       function clearScreen() {
         if (self.mute) return;
-        activity = true;
         consoleOutput.innerHTML = '';
       };
 
@@ -700,7 +768,6 @@ self.annoyTimer.onDing(function () {
      */    
     CliConsole.prototype.writeLine = inNode ? 
       function writeLine(textLine) {
-        activity = true;
         self.write(textLine);
         out(NL);
         partialOutputLine = false;
@@ -708,43 +775,73 @@ self.annoyTimer.onDing(function () {
       }
     : /* istanbul ignore next */
       function writeLine(textLine) {
-        activity = true;
         self.write(textLine + '\n');
         return self
       };
-
+      
     /**
-     * @summary **Establish the line handler**
+     * @summary **Read a line from the console**
      * @description
-     * There is only one line handler at a time. Each new handler
-     * pushes the previous one on a stack. If a handler returns true,
-     * then it will continue to accept new messages. A handler returns
-     * false to indicate that it the previous handler should accept the
-     * next input. Return the input string (or a different one) to pop
-     * to the prior handler and provide it with the string.
-     * @param {function} handler the function(text)
+     * New prompts are issued only when a readLine is in progress,
+     * and characters are accepted for editing only during the readLine.
+     * At all other times, input is bufferred until a read is issued.
+     * If a timeout is supplied then the promise will fail with
+     * a timeout error (0 will wait forever).
      * @param {string} prompt a new prompt to use (optional).
-     * @param {bool} password true for password entry mode (optional)
+     * @param {bool} pwdMode true for password entry mode (optional)
+     * @param {number} an optional timeout in seconds
+     * @returns a promise to a string
      */    
-    CliConsole.prototype.setLineHandler =
-    function setLineHandler(handler, prompt, passwordMode) {
-      activity = true;
-      // Use the previous prompt if one is not supplied.
-      if (!prompt) prompt = self.handler.prompt;
-      handlers.push(self.handler);
-      self.handler = {
-        func: handler,
-        prompt: prompt,
-        pwdMode: passwordMode
-      };
-      /* istanbul ignore else */
-      if (inNode) {
-        showCurrentLine(true);
+    CliConsole.prototype.readLine =
+    function readLine(prompt, pwdMode, timeout) {
+      // If an input has been pushed into the pending inputs stack, then
+      // output it (with the prompt it should have had if typed in by a
+      // human) and return it to the caller.
+      if (pendingInputs.length > 0) {
+        self.lastInput = pendingInputs.shift();
+        self.lastLine = self.lastInput.textLine;
+        saveInput(self.lastInput);
+        self.writeLine(prompt + ( pwdMode ?
+            _.repeat('*', self.maxPasswordLength) : self.lastLine ));
+        return qq(self.lastLine);
       }
-      else {
-        consolePrompt.innerHTML = self.handler.prompt;
-        consoleInput.type = self.handler.pwdMode ? 'password' : 'text';
+      
+      // Some client has managed to issue two reads at once.  When the
+      // current one finishes, we'll try this one again.
+      if (reading) {
+        return self.readingP.then(function readAgain() {
+          return readLine(prompt, pwdMode, timeout);
+        });
       }
+
+      // The only time we should rescroll to an input is when a read was
+      // just issued, otherwise let the user position the viewport.
+      if (inBrowser) {
+        var alignToTop = false;
+        consoleInput.scrollIntoView(alignToTop);
+      }
+      
+      self.prompt = prompt;
+      self.pwdMode = pwdMode;
+      self.readingD = qq.defer();
+      var p = self.readingD.promise;
+      if (timeout) {
+        p = p.timeout(timeout * 1000, 'Timeout on console readline');
+      }
+      self.readingP = p;
+      reading = true;
+      promptVisible = false;
+//mm.log('readLine xxxxxxxxxxxxxxxxxxxxxxxxx', prompt);      
+      showCurrentLine(true);
+      return self.readingP.then(function () {
+        reading = false;
+        self.lastInput = pendingInputs.shift();
+        self.lastLine = self.lastInput.textLine;
+        saveInput(self.lastInput);
+        self.writeLine(prompt + ( pwdMode ?
+            _.repeat('*', self.maxPasswordLength) : self.lastLine ));
+        return qq(self.lastLine);
+      });
     }
     
     /**
@@ -776,23 +873,21 @@ self.annoyTimer.onDing(function () {
       if (obj && obj.field) {
         return qq(obj);
       }
-      var qD = qq.defer();
-      self.setLineHandler(function(answer) {
+      return self.readLine(query, isPwd)
+      .then(function(answer) {
         if (answer) {
           if (obj) {
             obj[field] = answer;
-            qD.resolve(obj);
+            return obj;
           }
           else {
-            qD.resolve(answer);
+            return(answer);
           }
         }
         else {
-          qD.reject(new Error('Blank line not allowed. Entry abandoned'));
+          throw new Error('Blank line not allowed. Entry abandoned');
         }
-        return false; // Only ask once.
-      }, query, isPwd === true ? true : false);
-      return qD.promise;
+      });
     }
 
     /**
@@ -806,7 +901,10 @@ self.annoyTimer.onDing(function () {
     CliConsole.prototype.spoofInput = function spoofInput(text) {
       var line = makeLine(text);
       pendingInputs.push(line);
-      out('--- Spoofed>' + text + NL);
+      if (self.readingD) {
+        self.readingD.resolve('Spoofed!');
+      }
+//mm.log('sssssssssssssssssssssssssssssss', line, reading);      
     }
 
     /**
@@ -823,6 +921,7 @@ self.annoyTimer.onDing(function () {
       var chars = [];
       if (_.isString(text)) {
         var inputLine = text + CR;
+        // Push chars one at a time.
         for (var i = 0; i < inputLine.length; i++) {
           var cc = inputLine.charCodeAt(i);
           pushRawKey(String.fromCharCode(cc));
@@ -835,34 +934,7 @@ self.annoyTimer.onDing(function () {
       else {
         chars.push(text);
       }
-      var rc = '';
-      chars.forEach(function (cc) { rc += String.fromCharCode(cc); });
-      pushRawKey(rc);
-    }
-    
-    /**
-     * @summary **Call a function when a pause has occurred**
-     * @description
-     * Test routines that need to answer questions like password entry
-     * must wait for the question to be asked.  This lets the test
-     * pause until the output is idle for a few ms.
-     * @param {number} ms optional pause time in ms (default 100).
-     * @param {function} handler the handler to call after the pause.
-     */    
-    CliConsole.prototype.onPause = function onPause(ms, func) {
-      var t = 100;
-      var f = func;
-      if (_.isNumber(ms)) {
-        t = ms;
-        f = func;
-      }
-      else {
-        f = ms;
-      }
-      self.pauseTimer = new EggTimer(t).onDing(function() {
-        self.pauseTimer = null;
-        f();
-      });
+      pushRawKey(chars);
     }
 
     /**
@@ -885,89 +957,95 @@ self.annoyTimer.onDing(function () {
     // Whenever output stops for a while, this timer handles any keys
     // that the user has managed to type in the meantime.
     timer.onDing(function processPendingInputs() {
-try {
-      // In a browser client, the inputs are pushed directly into the
-      // pendingInputs list so no keys ever end up in the keyQueue.
-      var n = keyQueue.length;
-      var keys = keyQueue;
-      keyQueue = [];
-      if (n > 0) {
-        keys.forEach(function handleKey(key) {
-          if (key.keyCode) {
-            handleKeyEvent(key.keyCode);
+      try {
+        if (reading) {
+          if (keyQueue.length === 0) {
+            if (inNode) updateCurrentLine();
           }
-          else if (key.visibleChar) {
-            handleVisibleInputChar(key.visibleChar);
+          var n = keyQueue.length;
+          var keys = keyQueue;
+          keyQueue = [];
+          if (n > 0) {
+            keys.forEach(function handleKey(key) {
+              if (key.keyCode) {
+                handleKeyEvent(key.keyCode);
+              }
+              else if (key.visibleChar) {
+                if (inNode) {
+                  handleVisibleInputChar(key.visibleChar);
+                }
+              }
+              /* istanbul ignore next */
+              else if (key.ctrlCode) {
+                mm.log.warn('Unhandled key code', key);
+                var e = 'Unhandled key code:' + hexString(key.ctrlCode);
+                self.error = new Error(e);
+                keyQueue = [];
+              }
+              /* istanbul ignore next */
+              else {
+                mm.log.warn('Unrecognized key event', key);            
+                var ee = 'Unrecognized key event' + JSON.stringify(key);
+                self.error = new Error(ee);
+                keyQueue = [];
+              }
+            });
           }
-          /* istanbul ignore next */
-          else if (key.ctrlCode) {
-console.log('********** Unhandled key code', key);                        
-            var e = 'Unhandled key code:' + hexString(key.ctrlCode);
-            self.error = new Error(e);
-            keyQueue = [];
-          }
-          /* istanbul ignore next */
-          else {
-console.log('********** Unrecognized key event', key);            
-            var ee = 'Unrecognized key event' + JSON.stringify(key);
-            self.error = new Error(ee);
-            keyQueue = [];
-          }
-        });
+        }
+        // If we're not reading then there is no reason to update
+        // the prompt - and it would often be wrong anyway.
+        timer.reset();
       }
-      else {
-        // Prompt the user for more input.
-        handlePendingInput();
-        updateCurrentLine();
+      catch (e) {
+        /* istanbul ignore next */
+        mm.log.fail(e);
       }
-
-      // The keyboard is more peppy when there are pending keystrokes.
-      timer.reset();
-      /* istanbul ignore if */
-      if (inBrowser & activity) {
-        var alignToTop = false;
-        consoleInput.scrollIntoView(alignToTop);
-        activity = false;
-      }
-}
-catch (e) {
-  /* istanbul ignore next */
-  console.log('********** timer.onDing', e.stack);
-}      
     });
 
     // Character input just saves the characters for later.
     // Control C is the only exception - by default, it will kill the
     // process graveyard dead.
-    function pushRawKey(cch) {
-      if (cch !== null) {
-        var k = getKeyCode(cch);
-        if (k) {
-          if (k === 'ctrlC') {
-            if (self.closeHandler) {
-              self.closeHandler();
-            }
-            self.writeLine('[' + k + '] - Exit');
-            process.exit();
+    // Note that pushRawKey can also receive an array of keycodes instead of
+    // a string.
+    function pushRawKey(charArray) {
+      var cch = [];
+      if (charArray !== null) {
+        // Convert characters into an array of charCodes.
+        if (_.isString(charArray) ) {
+          var n = charArray.length;
+          for (var i = 0; i < n; i++) {
+            cch.push(charArray.charCodeAt(i));
           }
-          keyQueue.push({ keyCode: k });
+        }
+        else if (_.isArray(charArray)) {
+          if (charArray.length === 0) {
+            var e = 'Zero length array to pushRawKey';
+            mm.log.error(e);
+            throw new Error(e);
+          }
+          cch = charArray.slice();
         }
         else {
-          if (cch.length > 1) {
-            keyQueue.push({ ctrlCode: cch });
-          }
-          else {
-            if (isPrintableAscii(cch)){
-              keyQueue.push({ visibleChar: cch });
-            }
-            else {
-              keyQueue.push({ ctrlCode: cch });
-            }
-          }
+          mm.log.error('Invalid argument to pushRawKey', charArray);
+          throw new Error('Invalid argument to pushRawKey');
         }
+        do {
+          var k = pullKeyEvent(cch);
+          if (k) {
+            if (k.keyCode === 'ctrlC') {
+              if (self.closeHandler) {
+                self.closeHandler();
+              }
+              self.writeLine('[' + k + '] - Exit');
+              process.exit();
+            }
+
+            keyQueue.push(k);
+          }
+        } while (cch.length > 0);
       }
 
-      timer.forceDing();
+      if (reading) timer.forceDing();
     }
 
     function inReadableHandler() {
@@ -994,8 +1072,8 @@ catch (e) {
     // visible rows.
     /* istanbul ignore next */
     function resizeHandler () {
-      console.log('- screen size has changed to ',
-         outStream.columns + ' columns by ' + outStream.rows + ' rows.');
+      //console.log('- screen size has changed to ',
+      //   outStream.columns + ' columns by ' + outStream.rows + ' rows.');
       self.displayRows = outStream.rows;
       self.displayCols = outStream.columns;
     }
@@ -1025,8 +1103,7 @@ catch (e) {
     if (inBrowser) {
       // TODO: Switch to using addEventListener.
       consoleInput.onchange = function () {
-        enter();
-        timer.forceDing();
+        pushRawKey(KeyCodes.cr);
       };
 
       // TODO: Switch this to use event.key instead of 'which'.
@@ -1035,22 +1112,19 @@ catch (e) {
         var handled = false;
         var keynum = event.which;
         if (keynum === 13) { // Enter
-          enter();
-          timer.forceDing();
+          pushRawKey(KeyCodes.cr);
           handled = true;
         }
         else if (keynum === 27) { // Escape
-          consoleInput.value = '';
+          pushRawKey(KeyCodes.esc);
           handled = true;
         }
         else if (keynum === 38) { // Arrow Up
-          previousSavedLine();
-          consoleInput.value = currentInput.textLine;
+          pushRawKey(KeyCodes.up);
           handled = true;
         }
         else if (keynum === 40) { // Arrow Down
-          nextSavedLine();
-          consoleInput.value = currentInput.textLine;
+          pushRawKey(KeyCodes.down);
           handled = true;
         }
 

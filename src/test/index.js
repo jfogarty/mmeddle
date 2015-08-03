@@ -1,9 +1,7 @@
 'use strict';
 //
-// Register Most utils register their dependency routines directly into the global
-// environment object rather than returning an object themselves.  This
-// seems to be a bit more flexible, but I'm not sure that I'm in love with
-// the style. As always, I reserve the right to change my mind later.
+// This registers the permanently available test support features into
+// the mMeddle global.
 //
 module.exports = function(mm) {
   // Hooks for client/server test cases
@@ -11,6 +9,9 @@ module.exports = function(mm) {
   mm.test.client = {};
   mm.test.server = {};
 
+  // Fakes up both sides of a Sockets.io connection.
   mm.mockSock = require('./MockSock')(mm);
+  
+  // Does self registration.
   require('./testClientSupport')(mm);
 };

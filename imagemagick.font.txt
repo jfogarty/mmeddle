@@ -1,0 +1,2990 @@
+
+Path: Windows Fonts
+  Font: Academy-Engraved-LET-Plain:1.0
+    family: Academy Engraved LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\46152___.ttf
+  Font: Agency-FB
+    family: Agency FB
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\agencyr.ttf
+  Font: Agency-FB-Bold
+    family: Agency FB
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\agencyb.ttf
+  Font: Aharoni-Bold
+    family: Aharoni
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\ahronbd.ttf
+  Font: Algerian
+    family: Algerian
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\alger.ttf
+  Font: Andalus
+    family: Andalus
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\andlso.ttf
+  Font: Angsana-New
+    family: Angsana New
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\angsa.ttf
+  Font: Angsana-New-Bold
+    family: Angsana New
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\angsab.ttf
+  Font: Angsana-New-Bold-Italic
+    family: Angsana New
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\angsaz.ttf
+  Font: Angsana-New-Italic
+    family: Angsana New
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\angsai.ttf
+  Font: AngsanaUPC
+    family: AngsanaUPC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\angsau.ttf
+  Font: AngsanaUPC-Bold
+    family: AngsanaUPC
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\angsaub.ttf
+  Font: AngsanaUPC-Bold-Italic
+    family: AngsanaUPC
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\angsauz.ttf
+  Font: AngsanaUPC-Italic
+    family: AngsanaUPC
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\angsaui.ttf
+  Font: Aparajita
+    family: Aparajita
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\aparaj.ttf
+  Font: Aparajita-Bold
+    family: Aparajita
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\aparajb.ttf
+  Font: Aparajita-Italic
+    family: Aparajita
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\aparaji.ttf
+  Font: Arabic-Typesetting
+    family: Arabic Typesetting
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\arabtype.ttf
+  Font: Arial
+    family: Arial
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\arial.ttf
+  Font: Arial-Black
+    family: Arial
+    style: Normal
+    stretch: Normal
+    weight: 900
+    glyphs: c:\windows\fonts\ariblk.ttf
+  Font: Arial-Bold
+    family: Arial
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\arialbd.ttf
+  Font: Arial-Bold-Italic
+    family: Arial
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\arialbi.ttf
+  Font: Arial-Italic
+    family: Arial
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\ariali.ttf
+  Font: Arial-Narrow
+    family: Arial Narrow
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\arialn.ttf
+  Font: Arial-Narrow-Bold
+    family: Arial Narrow
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\arialnb.ttf
+  Font: Arial-Narrow-Bold-Italic
+    family: Arial Narrow
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\arialnbi.ttf
+  Font: Arial-Narrow-Italic
+    family: Arial Narrow
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\arialni.ttf
+  Font: Arial-Rounded-MT-Bold
+    family: Arial Rounded MT
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\arlrdbd.ttf
+  Font: Arial-Unicode-MS
+    family: Arial Unicode MS
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\arialuni.ttf
+  Font: Baskerville-Old-Face
+    family: Baskerville Old Face
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\baskvill.ttf
+  Font: Batang-&-BatangChe-&-Gungsuh-&-GungsuhChe
+    family: Batang & BatangChe & Gungsuh & GungsuhChe
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\batang.ttc
+  Font: Bauhaus-93
+    family: Bauhaus 93
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\bauhs93.ttf
+  Font: Bell-MT
+    family: Bell MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\bell.ttf
+  Font: Bell-MT-Bold
+    family: Bell MT
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\bellb.ttf
+  Font: Bell-MT-Italic
+    family: Bell MT
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\belli.ttf
+  Font: Berlin-Sans-FB
+    family: Berlin Sans FB
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\brlnsr.ttf
+  Font: Berlin-Sans-FB-Bold
+    family: Berlin Sans FB
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\brlnsb.ttf
+  Font: Berlin-Sans-FB-Demi-Bold
+    family: Berlin Sans FB Demi
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\brlnsdb.ttf
+  Font: Bernard-MT-Condensed
+    family: Bernard MT
+    style: Normal
+    stretch: Condensed
+    weight: 400
+    glyphs: c:\windows\fonts\bernhc.ttf
+  Font: Bitstream-Vera-Sans
+    family: Bitstream Vera Sans
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\vera.ttf
+  Font: Blackadder-ITC
+    family: Blackadder ITC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\itcblkad.ttf
+  Font: Blackletter-686-BT
+    family: Blackletter 686 BT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tt1044m_.ttf
+  Font: Bodoni-MT
+    family: Bodoni MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\bod_r.ttf
+  Font: Bodoni-MT-Black
+    family: Bodoni MT
+    style: Normal
+    stretch: Normal
+    weight: 900
+    glyphs: c:\windows\fonts\bod_blar.ttf
+  Font: Bodoni-MT-Black-Italic
+    family: Bodoni MT
+    style: Italic
+    stretch: Normal
+    weight: 900
+    glyphs: c:\windows\fonts\bod_blai.ttf
+  Font: Bodoni-MT-Bold
+    family: Bodoni MT
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\bod_b.ttf
+  Font: Bodoni-MT-Bold-Italic
+    family: Bodoni MT
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\bod_bi.ttf
+  Font: Bodoni-MT-Condensed
+    family: Bodoni MT
+    style: Normal
+    stretch: Condensed
+    weight: 400
+    glyphs: c:\windows\fonts\bod_cr.ttf
+  Font: Bodoni-MT-Condensed-Bold
+    family: Bodoni MT
+    style: Normal
+    stretch: Condensed
+    weight: 700
+    glyphs: c:\windows\fonts\bod_cb.ttf
+  Font: Bodoni-MT-Condensed-Bold-Italic
+    family: Bodoni MT
+    style: Italic
+    stretch: Condensed
+    weight: 700
+    glyphs: c:\windows\fonts\bod_cbi.ttf
+  Font: Bodoni-MT-Condensed-Italic
+    family: Bodoni MT
+    style: Italic
+    stretch: Condensed
+    weight: 400
+    glyphs: c:\windows\fonts\bod_ci.ttf
+  Font: Bodoni-MT-Italic
+    family: Bodoni MT
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\bod_i.ttf
+  Font: Bodoni-MT-Poster-Compressed
+    family: Bodoni MT Poster Compressed
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\bod_pstc.ttf
+  Font: Book-Antiqua
+    family: Book Antiqua
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\bkant.ttf
+  Font: Book-Antiqua-Bold
+    family: Book Antiqua
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\antquab.ttf
+  Font: Book-Antiqua-Bold-Italic
+    family: Book Antiqua
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\antquabi.ttf
+  Font: Book-Antiqua-Italic
+    family: Book Antiqua
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\antquai.ttf
+  Font: Bookman-Old-Style
+    family: Bookman Old Style
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\bookos.ttf
+  Font: Bookman-Old-Style-Bold
+    family: Bookman Old Style
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\bookosb.ttf
+  Font: Bookman-Old-Style-Bold-Italic
+    family: Bookman Old Style
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\bookosbi.ttf
+  Font: Bookman-Old-Style-Italic
+    family: Bookman Old Style
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\bookosi.ttf
+  Font: Bookshelf-Symbol-7
+    family: Bookshelf Symbol 7
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\bssym7.ttf
+  Font: Bradley-Hand-ITC
+    family: Bradley Hand ITC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\bradhitc.ttf
+  Font: Britannic-Bold
+    family: Britannic
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\britanic.ttf
+  Font: Broadway
+    family: Broadway
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\broadw.ttf
+  Font: Broadway-BT
+    family: Broadway BT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tt0131m_.ttf
+  Font: Browallia-New
+    family: Browallia New
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\browa.ttf
+  Font: Browallia-New-Bold
+    family: Browallia New
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\browab.ttf
+  Font: Browallia-New-Bold-Italic
+    family: Browallia New
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\browaz.ttf
+  Font: Browallia-New-Italic
+    family: Browallia New
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\browai.ttf
+  Font: BrowalliaUPC
+    family: BrowalliaUPC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\browau.ttf
+  Font: BrowalliaUPC-Bold
+    family: BrowalliaUPC
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\browaub.ttf
+  Font: BrowalliaUPC-Bold-Italic
+    family: BrowalliaUPC
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\browauz.ttf
+  Font: BrowalliaUPC-Italic
+    family: BrowalliaUPC
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\browaui.ttf
+  Font: Brush-Script-MT-Italic
+    family: Brush Script MT
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\brushsci.ttf
+  Font: Buxton-Sketch
+    family: Buxton Sketch
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\buxtonsketch.ttf
+  Font: Calibri
+    family: Calibri
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\calibri.ttf
+  Font: Calibri-Bold
+    family: Calibri
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\calibrib.ttf
+  Font: Calibri-Bold-Italic
+    family: Calibri
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\calibriz.ttf
+  Font: Calibri-Italic
+    family: Calibri
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\calibrii.ttf
+  Font: Calibri-Light
+    family: Calibri
+    style: Normal
+    stretch: Normal
+    weight: 300
+    glyphs: c:\windows\fonts\calibril.ttf
+  Font: Calibri-Light-Italic
+    family: Calibri
+    style: Italic
+    stretch: Normal
+    weight: 300
+    glyphs: c:\windows\fonts\calibrili.ttf
+  Font: Californian-FB
+    family: Californian FB
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\califr.ttf
+  Font: Californian-FB-Bold
+    family: Californian FB
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\califb.ttf
+  Font: Californian-FB-Italic
+    family: Californian FB
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\califi.ttf
+  Font: Calisto-MT
+    family: Calisto MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\calist.ttf
+  Font: Calisto-MT-Bold
+    family: Calisto MT
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\calistb.ttf
+  Font: Calisto-MT-Bold-Italic
+    family: Calisto MT
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\calistbi.ttf
+  Font: Calisto-MT-Italic
+    family: Calisto MT
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\calisti.ttf
+  Font: Calligraphic-421-BT
+    family: Calligraphic 421 BT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tt1139m_.ttf
+  Font: Cambria-&-Cambria-Math
+    family: Cambria & Cambria Math
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\cambria.ttc
+  Font: Cambria-Bold
+    family: Cambria
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\cambriab.ttf
+  Font: Cambria-Bold-Italic
+    family: Cambria
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\cambriaz.ttf
+  Font: Cambria-Italic
+    family: Cambria
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\cambriai.ttf
+  Font: Candara
+    family: Candara
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\candara.ttf
+  Font: Candara-Bold
+    family: Candara
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\candarab.ttf
+  Font: Candara-Bold-Italic
+    family: Candara
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\candaraz.ttf
+  Font: Candara-Italic
+    family: Candara
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\candarai.ttf
+  Font: Castellar
+    family: Castellar
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\castelar.ttf
+  Font: Cataneo-BT
+    family: Cataneo BT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tt0952m_.ttf
+  Font: Centaur
+    family: Centaur
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\centaur.ttf
+  Font: Century
+    family: Century
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\century.ttf
+  Font: Century-Gothic
+    family: Century Gothic
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\gothic.ttf
+  Font: Century-Gothic-Bold
+    family: Century Gothic
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\gothicb.ttf
+  Font: Century-Gothic-Bold-Italic
+    family: Century Gothic
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\gothicbi.ttf
+  Font: Century-Gothic-Italic
+    family: Century Gothic
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\gothici.ttf
+  Font: Century-Schoolbook
+    family: Century Schoolbook
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\censcbk.ttf
+  Font: Century-Schoolbook-Bold
+    family: Century Schoolbook
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\schlbkb.ttf
+  Font: Century-Schoolbook-Bold-Italic
+    family: Century Schoolbook
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\schlbkbi.ttf
+  Font: Century-Schoolbook-Italic
+    family: Century Schoolbook
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\schlbki.ttf
+  Font: Chiller
+    family: Chiller
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\chiller.ttf
+  Font: Colonna-MT
+    family: Colonna MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\colonna.ttf
+  Font: Comic-Sans-MS
+    family: Comic Sans MS
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\comic.ttf
+  Font: Comic-Sans-MS-Bold
+    family: Comic Sans MS
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\comicbd.ttf
+  Font: Consolas
+    family: Consolas
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\consola.ttf
+  Font: Consolas-Bold
+    family: Consolas
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\consolab.ttf
+  Font: Consolas-Bold-Italic
+    family: Consolas
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\consolaz.ttf
+  Font: Consolas-Italic
+    family: Consolas
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\consolai.ttf
+  Font: Constantia
+    family: Constantia
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\constan.ttf
+  Font: Constantia-Bold
+    family: Constantia
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\constanb.ttf
+  Font: Constantia-Bold-Italic
+    family: Constantia
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\constanz.ttf
+  Font: Constantia-Italic
+    family: Constantia
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\constani.ttf
+  Font: Cooper-Black
+    family: Cooper
+    style: Normal
+    stretch: Normal
+    weight: 900
+    glyphs: c:\windows\fonts\coopbl.ttf
+  Font: Copperplate-Gothic-Bold
+    family: Copperplate Gothic
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\coprgtb.ttf
+  Font: Copperplate-Gothic-Light
+    family: Copperplate Gothic
+    style: Normal
+    stretch: Normal
+    weight: 300
+    glyphs: c:\windows\fonts\coprgtl.ttf
+  Font: Corbel
+    family: Corbel
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\corbel.ttf
+  Font: Corbel-Bold
+    family: Corbel
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\corbelb.ttf
+  Font: Corbel-Bold-Italic
+    family: Corbel
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\corbelz.ttf
+  Font: Corbel-Italic
+    family: Corbel
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\corbeli.ttf
+  Font: Cordia-New
+    family: Cordia New
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\cordia.ttf
+  Font: Cordia-New-Bold
+    family: Cordia New
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\cordiab.ttf
+  Font: Cordia-New-Bold-Italic
+    family: Cordia New
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\cordiaz.ttf
+  Font: Cordia-New-Italic
+    family: Cordia New
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\cordiai.ttf
+  Font: CordiaUPC
+    family: CordiaUPC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\cordiau.ttf
+  Font: CordiaUPC-Bold
+    family: CordiaUPC
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\cordiaub.ttf
+  Font: CordiaUPC-Bold-Italic
+    family: CordiaUPC
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\cordiauz.ttf
+  Font: CordiaUPC-Italic
+    family: CordiaUPC
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\cordiaui.ttf
+  Font: Courier-New
+    family: Courier New
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\cour.ttf
+  Font: Courier-New-Bold
+    family: Courier New
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\courbd.ttf
+  Font: Courier-New-Bold-Italic
+    family: Courier New
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\courbi.ttf
+  Font: Courier-New-Italic
+    family: Courier New
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\couri.ttf
+  Font: Curlz-MT
+    family: Curlz MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\curlz___.ttf
+  Font: DaunPenh
+    family: DaunPenh
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\daunpenh.ttf
+  Font: David
+    family: David
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\david.ttf
+  Font: David-Bold
+    family: David
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\davidbd.ttf
+  Font: DFKai-SB
+    family: DFKai-SB
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\kaiu.ttf
+  Font: DilleniaUPC
+    family: DilleniaUPC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcdl.ttf
+  Font: DilleniaUPC-Bold
+    family: DilleniaUPC
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upcdb.ttf
+  Font: DilleniaUPC-Bold-Italic
+    family: DilleniaUPC
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upcdbi.ttf
+  Font: DilleniaUPC-Italic
+    family: DilleniaUPC
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcdi.ttf
+  Font: DokChampa
+    family: DokChampa
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\dokchamp.ttf
+  Font: Ebrima
+    family: Ebrima
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\ebrima.ttf
+  Font: Ebrima-Bold
+    family: Ebrima
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\ebrimabd.ttf
+  Font: Edwardian-Script-ITC
+    family: Edwardian Script ITC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\itcedscr.ttf
+  Font: Elephant
+    family: Elephant
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\elephnt.ttf
+  Font: Elephant-Italic
+    family: Elephant
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\elephnti.ttf
+  Font: Engravers-MT
+    family: Engravers MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\engr.ttf
+  Font: Eras-Bold-ITC
+    family: Eras Bold ITC
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\erasbd.ttf
+  Font: Eras-Demi-ITC
+    family: Eras Demi ITC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\erasdemi.ttf
+  Font: Eras-Light-ITC
+    family: Eras Light ITC
+    style: Normal
+    stretch: Normal
+    weight: 300
+    glyphs: c:\windows\fonts\eraslght.ttf
+  Font: Eras-Medium-ITC
+    family: Eras Medium ITC
+    style: Normal
+    stretch: Normal
+    weight: 500
+    glyphs: c:\windows\fonts\erasmd.ttf
+  Font: Estrangelo-Edessa
+    family: Estrangelo Edessa
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\estre.ttf
+  Font: EucrosiaUPC
+    family: EucrosiaUPC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcel.ttf
+  Font: EucrosiaUPC-Bold
+    family: EucrosiaUPC
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upceb.ttf
+  Font: EucrosiaUPC-Bold-Italic
+    family: EucrosiaUPC
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upcebi.ttf
+  Font: EucrosiaUPC-Italic
+    family: EucrosiaUPC
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcei.ttf
+  Font: Euphemia
+    family: Euphemia
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\euphemia.ttf
+  Font: FangSong
+    family: FangSong
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\simfang.ttf
+  Font: Felix-Titling
+    family: Felix Titling
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\felixti.ttf
+  Font: Footlight-MT-Light
+    family: Footlight MT
+    style: Normal
+    stretch: Normal
+    weight: 300
+    glyphs: c:\windows\fonts\ftltlt.ttf
+  Font: Forte
+    family: Forte
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\forte.ttf
+  Font: Franklin-Gothic-Book
+    family: Franklin Gothic Book
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\frabk.ttf
+  Font: Franklin-Gothic-Book-Italic
+    family: Franklin Gothic Book
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\frabkit.ttf
+  Font: Franklin-Gothic-Demi
+    family: Franklin Gothic Demi
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\fradm.ttf
+  Font: Franklin-Gothic-Demi-Cond
+    family: Franklin Gothic Demi Cond
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\fradmcn.ttf
+  Font: Franklin-Gothic-Demi-Italic
+    family: Franklin Gothic Demi
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\fradmit.ttf
+  Font: Franklin-Gothic-Heavy
+    family: Franklin Gothic
+    style: Normal
+    stretch: Normal
+    weight: 900
+    glyphs: c:\windows\fonts\frahv.ttf
+  Font: Franklin-Gothic-Heavy-Italic
+    family: Franklin Gothic
+    style: Italic
+    stretch: Normal
+    weight: 900
+    glyphs: c:\windows\fonts\frahvit.ttf
+  Font: Franklin-Gothic-Medium
+    family: Franklin Gothic
+    style: Normal
+    stretch: Normal
+    weight: 500
+    glyphs: c:\windows\fonts\framd.ttf
+  Font: Franklin-Gothic-Medium-Cond
+    family: Franklin Gothic Medium Cond
+    style: Normal
+    stretch: Normal
+    weight: 500
+    glyphs: c:\windows\fonts\framdcn.ttf
+  Font: Franklin-Gothic-Medium-Italic
+    family: Franklin Gothic
+    style: Italic
+    stretch: Normal
+    weight: 500
+    glyphs: c:\windows\fonts\framdit.ttf
+  Font: FrankRuehl
+    family: FrankRuehl
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\frank.ttf
+  Font: FreesiaUPC
+    family: FreesiaUPC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcfl.ttf
+  Font: FreesiaUPC-Bold
+    family: FreesiaUPC
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upcfb.ttf
+  Font: FreesiaUPC-Bold-Italic
+    family: FreesiaUPC
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upcfbi.ttf
+  Font: FreesiaUPC-Italic
+    family: FreesiaUPC
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcfi.ttf
+  Font: Freestyle-Script
+    family: Freestyle Script
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\freescpt.ttf
+  Font: French-Script-MT
+    family: French Script MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\frscript.ttf
+  Font: FZDengXian-Regular
+    family: FZDengXian
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\dengxian.ttf
+  Font: Gabriola
+    family: Gabriola
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\gabriola.ttf
+  Font: Gadugi
+    family: Gadugi
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\gadugi.ttf
+  Font: Gadugi-Bold
+    family: Gadugi
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\gadugib.ttf
+  Font: Garamond
+    family: Garamond
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\gara.ttf
+  Font: Garamond-Bold
+    family: Garamond
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\garabd.ttf
+  Font: Garamond-Italic
+    family: Garamond
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\garait.ttf
+  Font: Gautami
+    family: Gautami
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\gautami.ttf
+  Font: Gautami-Bold
+    family: Gautami
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\gautamib.ttf
+  Font: Georgia
+    family: Georgia
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\georgia.ttf
+  Font: Georgia-Bold
+    family: Georgia
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\georgiab.ttf
+  Font: Georgia-Bold-Italic
+    family: Georgia
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\georgiaz.ttf
+  Font: Georgia-Italic
+    family: Georgia
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\georgiai.ttf
+  Font: Gigi
+    family: Gigi
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\gigi.ttf
+  Font: Gill-Sans-MT
+    family: Gill Sans MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\gil_____.ttf
+  Font: Gill-Sans-MT-Bold
+    family: Gill Sans MT
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\gilb____.ttf
+  Font: Gill-Sans-MT-Bold-Italic
+    family: Gill Sans MT
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\gilbi___.ttf
+  Font: Gill-Sans-MT-Condensed
+    family: Gill Sans MT
+    style: Normal
+    stretch: Condensed
+    weight: 400
+    glyphs: c:\windows\fonts\gilc____.ttf
+  Font: Gill-Sans-MT-Ext-Condensed-Bold
+    family: Gill Sans MT Ext
+    style: Normal
+    stretch: Condensed
+    weight: 700
+    glyphs: c:\windows\fonts\glsnecb.ttf
+  Font: Gill-Sans-MT-Italic
+    family: Gill Sans MT
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\gili____.ttf
+  Font: Gill-Sans-Ultra-Bold
+    family: Gill Sans Ultra
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\gilsanub.ttf
+  Font: Gill-Sans-Ultra-Bold-Condensed
+    family: Gill Sans Ultra
+    style: Normal
+    stretch: Condensed
+    weight: 700
+    glyphs: c:\windows\fonts\gillubcd.ttf
+  Font: Gisha
+    family: Gisha
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\gisha.ttf
+  Font: Gisha-Bold
+    family: Gisha
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\gishabd.ttf
+  Font: Gloucester-MT-Extra-Condensed
+    family: Gloucester MT Extra
+    style: Normal
+    stretch: Condensed
+    weight: 400
+    glyphs: c:\windows\fonts\glecb.ttf
+  Font: Goudy-Old-Style
+    family: Goudy Old Style
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\goudos.ttf
+  Font: Goudy-Old-Style-Bold
+    family: Goudy Old Style
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\goudosb.ttf
+  Font: Goudy-Old-Style-Italic
+    family: Goudy Old Style
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\goudosi.ttf
+  Font: Goudy-Stout
+    family: Goudy Stout
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\goudysto.ttf
+  Font: Gulim-&-GulimChe-&-Dotum-&-DotumChe
+    family: Gulim & GulimChe & Dotum & DotumChe
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\gulim.ttc
+  Font: Haettenschweiler
+    family: Haettenschweiler
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\hatten.ttf
+  Font: Harlow-Solid-Italic
+    family: Harlow Solid
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\harlowsi.ttf
+  Font: Harrington
+    family: Harrington
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\harngton.ttf
+  Font: High-Tower-Text
+    family: High Tower Text
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\htowert.ttf
+  Font: High-Tower-Text-Italic
+    family: High Tower Text
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\htowerti.ttf
+  Font: Highlight-LET-Plain:1.0
+    family: Highlight LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\78640___.ttf
+  Font: Holiday-Pi-BT
+    family: Holiday Pi BT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tt9832l_.ttf
+  Font: Impact
+    family: Impact
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\impact.ttf
+  Font: Imprint-MT-Shadow
+    family: Imprint MT Shadow
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\imprisha.ttf
+  Font: Informal-Roman
+    family: Informal Roman
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\infroman.ttf
+  Font: IrisUPC
+    family: IrisUPC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcil.ttf
+  Font: IrisUPC-Bold
+    family: IrisUPC
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upcib.ttf
+  Font: IrisUPC-Bold-Italic
+    family: IrisUPC
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upcibi.ttf
+  Font: IrisUPC-Italic
+    family: IrisUPC
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcii.ttf
+  Font: Iskoola-Pota
+    family: Iskoola Pota
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\iskpota.ttf
+  Font: Iskoola-Pota-Bold
+    family: Iskoola Pota
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\iskpotab.ttf
+  Font: JasmineUPC
+    family: JasmineUPC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcjl.ttf
+  Font: JasmineUPC-Bold
+    family: JasmineUPC
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upcjb.ttf
+  Font: JasmineUPC-Bold-Italic
+    family: JasmineUPC
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upcjbi.ttf
+  Font: JasmineUPC-Italic
+    family: JasmineUPC
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcji.ttf
+  Font: John-Handy-LET-Plain:1.0
+    family: John Handy LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\35191___.ttf
+  Font: Jokerman
+    family: Jokerman
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\jokerman.ttf
+  Font: Jokerman-Alts-LET-Plain:1.0
+    family: Jokerman Alts LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\2120a___.ttf
+  Font: Jokerman-LET-Plain:1.0
+    family: Jokerman LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\21205___.ttf
+  Font: Juice-ITC
+    family: Juice ITC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\juice___.ttf
+  Font: KaiTi
+    family: KaiTi
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\simkai.ttf
+  Font: Kalinga
+    family: Kalinga
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\kalinga.ttf
+  Font: Kalinga-Bold
+    family: Kalinga
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\kalingab.ttf
+  Font: Kartika
+    family: Kartika
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\kartika.ttf
+  Font: Kartika-Bold
+    family: Kartika
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\kartikab.ttf
+  Font: Khmer-UI
+    family: Khmer UI
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\khmerui.ttf
+  Font: Khmer-UI-Bold
+    family: Khmer UI
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\khmeruib.ttf
+  Font: KodchiangUPC
+    family: KodchiangUPC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upckl.ttf
+  Font: KodchiangUPC-Bold
+    family: KodchiangUPC
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upckb.ttf
+  Font: KodchiangUPC-Bold-Italic
+    family: KodchiangUPC
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upckbi.ttf
+  Font: KodchiangUPC-Italic
+    family: KodchiangUPC
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcki.ttf
+  Font: Kokila
+    family: Kokila
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\kokila.ttf
+  Font: Kokila-Bold
+    family: Kokila
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\kokilab.ttf
+  Font: Kokila-Italic
+    family: Kokila
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\kokilai.ttf
+  Font: Kristen-ITC
+    family: Kristen ITC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\itckrist.ttf
+  Font: Kunstler-Script
+    family: Kunstler Script
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\kunstler.ttf
+  Font: La-Bamba-LET-Plain:1.0
+    family: La Bamba LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\63193___.ttf
+  Font: Lao-UI
+    family: Lao UI
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\laoui.ttf
+  Font: Lao-UI-Bold
+    family: Lao UI
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\laouib.ttf
+  Font: Latha
+    family: Latha
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\latha.ttf
+  Font: Latha-Bold
+    family: Latha
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\lathab.ttf
+  Font: Leelawadee
+    family: Leelawadee
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\leelawad.ttf
+  Font: Leelawadee-Bold
+    family: Leelawadee
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\leelawdb.ttf
+  Font: Levenim-MT
+    family: Levenim MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\lvnm.ttf
+  Font: Levenim-MT-Bold
+    family: Levenim MT
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\lvnmbd.ttf
+  Font: LilyUPC
+    family: LilyUPC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcll.ttf
+  Font: LilyUPC-Bold
+    family: LilyUPC
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upclb.ttf
+  Font: LilyUPC-Bold-Italic
+    family: LilyUPC
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\upclbi.ttf
+  Font: LilyUPC-Italic
+    family: LilyUPC
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\upcli.ttf
+  Font: Lucida-Bright
+    family: Lucida Bright
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\lbrite.ttf
+  Font: Lucida-Bright-Demibold
+    family: Lucida Bright
+    style: Normal
+    stretch: Normal
+    weight: 600
+    glyphs: c:\windows\fonts\lbrited.ttf
+  Font: Lucida-Bright-Demibold-Italic
+    family: Lucida Bright
+    style: Italic
+    stretch: Normal
+    weight: 600
+    glyphs: c:\windows\fonts\lbritedi.ttf
+  Font: Lucida-Bright-Italic
+    family: Lucida Bright
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\lbritei.ttf
+  Font: Lucida-Bright-Regular
+    family: Lucida Bright
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\program files (x86)\corel\corelwindvd2010\bdj\jre\lib\fonts\lucidabrightregular.ttf
+  Font: Lucida-Calligraphy-Italic
+    family: Lucida Calligraphy
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\lcallig.ttf
+  Font: Lucida-Console
+    family: Lucida Console
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\lucon.ttf
+  Font: Lucida-Fax-Demibold
+    family: Lucida Fax
+    style: Normal
+    stretch: Normal
+    weight: 600
+    glyphs: c:\windows\fonts\lfaxd.ttf
+  Font: Lucida-Fax-Demibold-Italic
+    family: Lucida Fax
+    style: Italic
+    stretch: Normal
+    weight: 600
+    glyphs: c:\windows\fonts\lfaxdi.ttf
+  Font: Lucida-Fax-Italic
+    family: Lucida Fax
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\lfaxi.ttf
+  Font: Lucida-Fax-Regular
+    family: Lucida Fax
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\lfax.ttf
+  Font: Lucida-Handwriting-Italic
+    family: Lucida Handwriting
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\lhandw.ttf
+  Font: Lucida-Sans-Demibold
+    family: Lucida Sans
+    style: Normal
+    stretch: Normal
+    weight: 600
+    glyphs: c:\program files (x86)\corel\corelwindvd2010\bdj\jre\lib\fonts\lucidasansdemibold.ttf
+  Font: Lucida-Sans-Demibold-Italic
+    family: Lucida Sans
+    style: Italic
+    stretch: Normal
+    weight: 600
+    glyphs: c:\windows\fonts\lsansdi.ttf
+  Font: Lucida-Sans-Demibold-Oblique
+    family: Lucida Sans
+    style: Oblique
+    stretch: Normal
+    weight: 600
+    glyphs: c:\program files (x86)\corel\corelwindvd2010\bdj\jre\lib\fonts\lucidasansdemioblique.ttf
+  Font: Lucida-Sans-Demibold-Roman
+    family: Lucida Sans Demibold Roman
+    style: Normal
+    stretch: Normal
+    weight: 600
+    glyphs: c:\windows\fonts\lsansd.ttf
+  Font: Lucida-Sans-Italic
+    family: Lucida Sans
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\lsansi.ttf
+  Font: Lucida-Sans-Oblique
+    family: Lucida Sans
+    style: Oblique
+    stretch: Normal
+    weight: 400
+    glyphs: c:\program files (x86)\corel\corelwindvd2010\bdj\jre\lib\fonts\lucidasansoblique.ttf
+  Font: Lucida-Sans-Regular
+    family: Lucida Sans
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\lsans.ttf
+  Font: Lucida-Sans-Typewriter-Bold
+    family: Lucida Sans Typewriter
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\ltypeb.ttf
+  Font: Lucida-Sans-Typewriter-Bold-Oblique
+    family: Lucida Sans Typewriter
+    style: Oblique
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\ltypebo.ttf
+  Font: Lucida-Sans-Typewriter-Oblique
+    family: Lucida Sans Typewriter
+    style: Oblique
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\ltypeo.ttf
+  Font: Lucida-Sans-Typewriter-Regular
+    family: Lucida Sans Typewriter
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\ltype.ttf
+  Font: Lucida-Sans-Unicode
+    family: Lucida Sans Unicode
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\l_10646.ttf
+  Font: Magneto-Bold
+    family: Magneto
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\magnetob.ttf
+  Font: Maiandra-GD
+    family: Maiandra GD
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\maian.ttf
+  Font: Malgun-Gothic
+    family: Malgun Gothic
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\malgun.ttf
+  Font: Malgun-Gothic-Bold
+    family: Malgun Gothic
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\malgunbd.ttf
+  Font: Mangal
+    family: Mangal
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\mangal.ttf
+  Font: Mangal-Bold
+    family: Mangal
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\mangalb.ttf
+  Font: Matura-MT-Script-Capitals
+    family: Matura MT Script Capitals
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\maturasc.ttf
+  Font: Meiryo-&-Meiryo-Italic-&-Meiryo-UI-&-Meiryo-UI-Italic
+    family: Meiryo & Meiryo Italic & Meiryo UI & Meiryo UI
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\meiryo.ttc
+  Font: Meiryo-Bold-&-Meiryo-Bold-Italic-&-Meiryo-UI-Bold-&-Meiryo-UI-Bold-Italic
+    family: Meiryo Bold & Meiryo Bold Italic & Meiryo UI Bold & Meiryo UI
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\meiryob.ttc
+  Font: Mekanik-LET-Plain:
+    family: Mekanik LET Plain:
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\75678___.ttf
+  Font: Microsoft-Himalaya
+    family: Microsoft Himalaya
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\himalaya.ttf
+  Font: Microsoft-JhengHei
+    family: Microsoft JhengHei
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\msjh.ttf
+  Font: Microsoft-JhengHei-&-Microsoft-JhengHei-UI
+    family: Microsoft JhengHei & Microsoft JhengHei UI
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\msjh.ttc
+  Font: Microsoft-JhengHei-Bold
+    family: Microsoft JhengHei
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\msjhbd.ttf
+  Font: Microsoft-JhengHei-Bold-&-Microsoft-JhengHei-UI-Bold
+    family: Microsoft JhengHei Bold & Microsoft JhengHei UI
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\msjhbd.ttc
+  Font: Microsoft-MHei
+    family: Microsoft MHei
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\msmhei.ttf
+  Font: Microsoft-MHei-Bold
+    family: Microsoft MHei
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\msmhei-bold.ttf
+  Font: Microsoft-NeoGothic
+    family: Microsoft NeoGothic
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\msneogothic.ttf
+  Font: Microsoft-NeoGothic-Bold
+    family: Microsoft NeoGothic
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\msneogothic-bold.ttf
+  Font: Microsoft-New-Tai-Lue
+    family: Microsoft New Tai Lue
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\ntailu.ttf
+  Font: Microsoft-New-Tai-Lue-Bold
+    family: Microsoft New Tai Lue
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\ntailub.ttf
+  Font: Microsoft-PhagsPa
+    family: Microsoft PhagsPa
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\phagspa.ttf
+  Font: Microsoft-PhagsPa-Bold
+    family: Microsoft PhagsPa
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\phagspab.ttf
+  Font: Microsoft-Sans-Serif
+    family: Microsoft Sans Serif
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\micross.ttf
+  Font: Microsoft-Tai-Le
+    family: Microsoft Tai Le
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\taile.ttf
+  Font: Microsoft-Tai-Le-Bold
+    family: Microsoft Tai Le
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\taileb.ttf
+  Font: Microsoft-Uighur
+    family: Microsoft Uighur
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\msuighur.ttf
+  Font: Microsoft-Uighur-Bold
+    family: Microsoft Uighur
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\msuighub.ttf
+  Font: Microsoft-YaHei
+    family: Microsoft YaHei
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\msyh.ttf
+  Font: Microsoft-YaHei-&-Microsoft-YaHei-UI
+    family: Microsoft YaHei & Microsoft YaHei UI
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\msyh.ttc
+  Font: Microsoft-YaHei-Bold
+    family: Microsoft YaHei
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\msyhbd.ttf
+  Font: Microsoft-YaHei-Bold-&-Microsoft-YaHei-UI-Bold
+    family: Microsoft YaHei Bold & Microsoft YaHei UI
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\msyhbd.ttc
+  Font: Microsoft-Yi-Baiti
+    family: Microsoft Yi Baiti
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\msyi.ttf
+  Font: Milano-LET
+    family: Milano LET
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\52162___.ttf
+  Font: MingLiU-&-PMingLiU-&-MingLiU_HKSCS
+    family: MingLiU & PMingLiU & MingLiU_HKSCS
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\mingliu.ttc
+  Font: MingLiU-ExtB-&-PMingLiU-ExtB-&-MingLiU_HKSCS-ExtB
+    family: MingLiU-ExtB & PMingLiU-ExtB & MingLiU_HKSCS-ExtB
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\mingliub.ttc
+  Font: Miriam
+    family: Miriam
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\mriam.ttf
+  Font: Miriam-Fixed
+    family: Miriam Fixed
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\mriamc.ttf
+  Font: Mister-Earl-BT
+    family: Mister Earl BT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tt1221m_.ttf
+  Font: Mistral
+    family: Mistral
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\mistral.ttf
+  Font: Modern-No.-20
+    family: Modern No. 20
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\mod20.ttf
+  Font: Mongolian-Baiti
+    family: Mongolian Baiti
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\monbaiti.ttf
+  Font: Monotype-Corsiva
+    family: Monotype Corsiva
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\mtcorsva.ttf
+  Font: MoolBoran
+    family: MoolBoran
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\moolbor.ttf
+  Font: MS-Gothic-&-MS-PGothic-&-MS-UI-Gothic
+    family: MS Gothic & MS PGothic & MS UI Gothic
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\msgothic.ttc
+  Font: MS-Mincho
+    family: MS Mincho
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\msmincho.ttf
+  Font: MS-Mincho-&-MS-PMincho
+    family: MS Mincho & MS PMincho
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\msmincho.ttc
+  Font: MS-Outlook
+    family: MS Outlook
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\outlook.ttf
+  Font: MS-Reference-Sans-Serif
+    family: MS Reference Sans Serif
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\refsan.ttf
+  Font: MS-Reference-Specialty
+    family: MS Reference Specialty
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\refspcl.ttf
+  Font: MT-Extra
+    family: MT Extra
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\mtextra.ttf
+  Font: MV-Boli
+    family: MV Boli
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\mvboli.ttf
+  Font: Narkisim
+    family: Narkisim
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\nrkis.ttf
+  Font: Niagara-Engraved
+    family: Niagara Engraved
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\niageng.ttf
+  Font: Niagara-Solid
+    family: Niagara Solid
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\niagsol.ttf
+  Font: Nirmala-UI
+    family: Nirmala UI
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\nirmala.ttf
+  Font: Nirmala-UI-Bold
+    family: Nirmala UI
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\nirmalab.ttf
+  Font: Nyala
+    family: Nyala
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\nyala.ttf
+  Font: OCR-A-Extended
+    family: OCR A Extended
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\ocraext.ttf
+  Font: OCR-A-II
+    family: OCR-A II
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\ocra2_p.ttf
+  Font: OCR-B-MT
+    family: OCR B MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\ocrbmt.ttf
+  Font: Odessa-LET-Plain:1.0
+    family: Odessa LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\78936___.ttf
+  Font: Old-Dreadful-No.7-BT
+    family: Old Dreadful No.7 BT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tt7009m_.ttf
+  Font: Old-English-Text-MT
+    family: Old English Text MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\oldengl.ttf
+  Font: One-Stroke-Script-LET-Plain:
+    family: One Stroke Script LET Plain:
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\75749___.ttf
+  Font: Onyx
+    family: Onyx
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\onyx.ttf
+  Font: Orange-LET-Plain:1.0
+    family: Orange LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\40240___.ttf
+  Font: Palace-Script-MT
+    family: Palace Script MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\palscri.ttf
+  Font: Palatino-Linotype
+    family: Palatino Linotype
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\pala.ttf
+  Font: Palatino-Linotype-Bold
+    family: Palatino Linotype
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\palab.ttf
+  Font: Palatino-Linotype-Bold-Italic
+    family: Palatino Linotype
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\palabi.ttf
+  Font: Palatino-Linotype-Italic
+    family: Palatino Linotype
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\palai.ttf
+  Font: Papyrus
+    family: Papyrus
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\papyrus.ttf
+  Font: Parchment
+    family: Parchment
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\parchm.ttf
+  Font: Park-Avenue-BT
+    family: Park Avenue BT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tt0362m_.ttf
+  Font: Perpetua
+    family: Perpetua
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\per_____.ttf
+  Font: Perpetua-Bold
+    family: Perpetua
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\perb____.ttf
+  Font: Perpetua-Bold-Italic
+    family: Perpetua
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\perbi___.ttf
+  Font: Perpetua-Italic
+    family: Perpetua
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\peri____.ttf
+  Font: Perpetua-Titling-MT-Bold
+    family: Perpetua Titling MT
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\pertibd.ttf
+  Font: Perpetua-Titling-MT-Light
+    family: Perpetua Titling MT
+    style: Normal
+    stretch: Normal
+    weight: 300
+    glyphs: c:\windows\fonts\pertili.ttf
+  Font: Plantagenet-Cherokee
+    family: Plantagenet Cherokee
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\plantc.ttf
+  Font: Playbill
+    family: Playbill
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\playbill.ttf
+  Font: Poor-Richard
+    family: Poor Richard
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\poorich.ttf
+  Font: Pristina
+    family: Pristina
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\pristina.ttf
+  Font: Pump-Demi-Bold-LET-Plain:1.0
+    family: Pump Demi Bold LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\70214___.ttf
+  Font: QuickType-II
+    family: QuickType II
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\qt2_p.ttf
+  Font: QuickType-II-Bold
+    family: QuickType II
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\qt2_b.ttf
+  Font: QuickType-II-Condensed
+    family: QuickType II
+    style: Normal
+    stretch: Condensed
+    weight: 400
+    glyphs: c:\windows\fonts\qt2c_p.ttf
+  Font: QuickType-II-Condensed-Bold
+    family: QuickType II
+    style: Normal
+    stretch: Condensed
+    weight: 700
+    glyphs: c:\windows\fonts\qt2c_b.ttf
+  Font: QuickType-II-Condensed-Italic
+    family: QuickType II
+    style: Italic
+    stretch: Condensed
+    weight: 400
+    glyphs: c:\windows\fonts\qt2c_i.ttf
+  Font: QuickType-II-Italic
+    family: QuickType II
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\qt2_i.ttf
+  Font: QuickType-II-Mono
+    family: QuickType II Mono
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\qt2m_p.ttf
+  Font: QuickType-II-Pi
+    family: QuickType II Pi
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\qt2pi_p.ttf
+  Font: Quixley-LET-Plain:1.0
+    family: Quixley LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\65659___.ttf
+  Font: Raavi
+    family: Raavi
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\raavi.ttf
+  Font: Raavi-Bold
+    family: Raavi
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\raavib.ttf
+  Font: Rage-Italic
+    family: Rage
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\rage.ttf
+  Font: Rage-Italic-LET-Plain:1.0
+    family: Rage Italic LET Plain:1.0
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\59250___.ttf
+  Font: Ravie
+    family: Ravie
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\ravie.ttf
+  Font: Rockwell
+    family: Rockwell
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\rock.ttf
+  Font: Rockwell-Bold
+    family: Rockwell
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\rockb.ttf
+  Font: Rockwell-Bold-Italic
+    family: Rockwell
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\rockbi.ttf
+  Font: Rockwell-Condensed
+    family: Rockwell
+    style: Normal
+    stretch: Condensed
+    weight: 400
+    glyphs: c:\windows\fonts\rocc____.ttf
+  Font: Rockwell-Condensed-Bold
+    family: Rockwell
+    style: Normal
+    stretch: Condensed
+    weight: 700
+    glyphs: c:\windows\fonts\roccb___.ttf
+  Font: Rockwell-Extra-Bold
+    family: Rockwell Extra
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\rockeb.ttf
+  Font: Rockwell-Italic
+    family: Rockwell
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\rocki.ttf
+  Font: Rod
+    family: Rod
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\rod.ttf
+  Font: Ruach-LET-Plain:1.0
+    family: Ruach LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\57961___.ttf
+  Font: Sakkal-Majalla
+    family: Sakkal Majalla
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\majalla.ttf
+  Font: Sakkal-Majalla-Bold
+    family: Sakkal Majalla
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\majallab.ttf
+  Font: Script-MT-Bold
+    family: Script MT
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\scriptbl.ttf
+  Font: Scruff-LET-Plain:1.0
+    family: Scruff LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\89198___.ttf
+  Font: Segoe-Marker
+    family: Segoe Marker
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\segoemarker.ttf
+  Font: Segoe-Print
+    family: Segoe Print
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\segoepr.ttf
+  Font: Segoe-Print-Bold
+    family: Segoe Print
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\segoeprb.ttf
+  Font: Segoe-Script
+    family: Segoe Script
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\segoesc.ttf
+  Font: Segoe-Script-Bold
+    family: Segoe Script
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\segoescb.ttf
+  Font: Segoe-UI
+    family: Segoe UI
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\segoeui.ttf
+  Font: Segoe-UI-Bold
+    family: Segoe UI
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\segoeuib.ttf
+  Font: Segoe-UI-Bold-Italic
+    family: Segoe UI
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\segoeuiz.ttf
+  Font: Segoe-UI-Italic
+    family: Segoe UI
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\segoeuii.ttf
+  Font: Segoe-UI-Light
+    family: Segoe UI
+    style: Normal
+    stretch: Normal
+    weight: 300
+    glyphs: c:\windows\fonts\segoeuil.ttf
+  Font: Segoe-UI-Semibold
+    family: Segoe UI
+    style: Normal
+    stretch: Normal
+    weight: 600
+    glyphs: c:\windows\fonts\seguisb.ttf
+  Font: Segoe-UI-Semilight
+    family: Segoe UI Semilight
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\segoeuisl.ttf
+  Font: Segoe-UI-Symbol
+    family: Segoe UI Symbol
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\seguisym.ttf
+  Font: Segoe-WP
+    family: Segoe WP
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\segoewp.ttf
+  Font: Segoe-WP-Black
+    family: Segoe WP
+    style: Normal
+    stretch: Normal
+    weight: 900
+    glyphs: c:\windows\fonts\segoewp-black.ttf
+  Font: Segoe-WP-Bold
+    family: Segoe WP
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\segoewp-bold.ttf
+  Font: Segoe-WP-Light
+    family: Segoe WP
+    style: Normal
+    stretch: Normal
+    weight: 300
+    glyphs: c:\windows\fonts\segoewp-light.ttf
+  Font: Segoe-WP-Semibold
+    family: Segoe WP
+    style: Normal
+    stretch: Normal
+    weight: 600
+    glyphs: c:\windows\fonts\segoewp-semibold.ttf
+  Font: Segoe-WP-SemiLight
+    family: Segoe WP SemiLight
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\segoewp-semilight.ttf
+  Font: Shonar-Bangla
+    family: Shonar Bangla
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\shonar.ttf
+  Font: Shonar-Bangla-Bold
+    family: Shonar Bangla
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\shonarb.ttf
+  Font: Showcard-Gothic
+    family: Showcard Gothic
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\showg.ttf
+  Font: Shruti
+    family: Shruti
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\shruti.ttf
+  Font: Shruti-Bold
+    family: Shruti
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\shrutib.ttf
+  Font: SimHei
+    family: SimHei
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\simhei.ttf
+  Font: Simplified-Arabic
+    family: Simplified Arabic
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\simpo.ttf
+  Font: Simplified-Arabic-Bold
+    family: Simplified Arabic
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\simpbdo.ttf
+  Font: Simplified-Arabic-Fixed
+    family: Simplified Arabic Fixed
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\simpfxo.ttf
+  Font: SimSun-&-NSimSun
+    family: SimSun & NSimSun
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\simsun.ttc
+  Font: SimSun-ExtB
+    family: SimSun-ExtB
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\simsunb.ttf
+  Font: SketchFlow-Print
+    family: SketchFlow Print
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\sketchflow print.ttf
+  Font: Smudger-Alts-LET-Plain:1.0
+    family: Smudger Alts LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\5415a___.ttf
+  Font: Smudger-LET-Plain:1.0
+    family: Smudger LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\54151___.ttf
+  Font: Snap-ITC
+    family: Snap ITC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\snap____.ttf
+  Font: Square-721-BT
+    family: Square 721 BT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tt0246m_.ttf
+  Font: Staccato-222-BT
+    family: Staccato 222 BT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tt0610m_.ttf
+  Font: Stencil
+    family: Stencil
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\stencil.ttf
+  Font: Sylfaen
+    family: Sylfaen
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\sylfaen.ttf
+  Font: Symbol
+    family: Symbol
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\symbol.ttf
+  Font: Tahoma
+    family: Tahoma
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tahoma.ttf
+  Font: Tahoma-Bold
+    family: Tahoma
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\tahomabd.ttf
+  Font: Tempus-Sans-ITC
+    family: Tempus Sans ITC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tempsitc.ttf
+  Font: Times-New-Roman
+    family: Times New Roman
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\times.ttf
+  Font: Times-New-Roman-Bold
+    family: Times New Roman
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\timesbd.ttf
+  Font: Times-New-Roman-Bold-Italic
+    family: Times New Roman
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\timesbi.ttf
+  Font: Times-New-Roman-Italic
+    family: Times New Roman
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\timesi.ttf
+  Font: Tiranti-Solid-LET-Plain:1.0
+    family: Tiranti Solid LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\70729___.ttf
+  Font: Traditional-Arabic
+    family: Traditional Arabic
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\trado.ttf
+  Font: Traditional-Arabic-Bold
+    family: Traditional Arabic
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\tradbdo.ttf
+  Font: Trebuchet-MS
+    family: Trebuchet MS
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\trebuc.ttf
+  Font: Trebuchet-MS-Bold
+    family: Trebuchet MS
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\trebucbd.ttf
+  Font: Trebuchet-MS-Bold-Italic
+    family: Trebuchet MS
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\trebucbi.ttf
+  Font: Trebuchet-MS-Italic
+    family: Trebuchet MS
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\trebucit.ttf
+  Font: Tunga
+    family: Tunga
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tunga.ttf
+  Font: Tunga-Bold
+    family: Tunga
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\tungab.ttf
+  Font: Tw-Cen-MT
+    family: Tw Cen MT
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tcm_____.ttf
+  Font: Tw-Cen-MT-Bold
+    family: Tw Cen MT
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\tcb_____.ttf
+  Font: Tw-Cen-MT-Bold-Italic
+    family: Tw Cen MT
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\tcbi____.ttf
+  Font: Tw-Cen-MT-Condensed
+    family: Tw Cen MT
+    style: Normal
+    stretch: Condensed
+    weight: 400
+    glyphs: c:\windows\fonts\tccm____.ttf
+  Font: Tw-Cen-MT-Condensed-Bold
+    family: Tw Cen MT
+    style: Normal
+    stretch: Condensed
+    weight: 700
+    glyphs: c:\windows\fonts\tccb____.ttf
+  Font: Tw-Cen-MT-Condensed-Extra-Bold
+    family: Tw Cen MT Condensed Extra
+    style: Normal
+    stretch: Condensed
+    weight: 700
+    glyphs: c:\windows\fonts\tcceb.ttf
+  Font: Tw-Cen-MT-Italic
+    family: Tw Cen MT
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\tcmi____.ttf
+  Font: University-Roman-Alts-LET-Plain:1.0
+    family: University Roman Alts LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\5041a___.ttf
+  Font: University-Roman-LET-Plain:1.0
+    family: University Roman LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\50416___.ttf
+  Font: Utsaah
+    family: Utsaah
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\utsaah.ttf
+  Font: Utsaah-Bold
+    family: Utsaah
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\utsaahb.ttf
+  Font: Utsaah-Italic
+    family: Utsaah
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\utsaahi.ttf
+  Font: Vani
+    family: Vani
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\vani.ttf
+  Font: Vani-Bold
+    family: Vani
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\vanib.ttf
+  Font: Verdana
+    family: Verdana
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\verdana.ttf
+  Font: Verdana-Bold
+    family: Verdana
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\verdanab.ttf
+  Font: Verdana-Bold-Italic
+    family: Verdana
+    style: Italic
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\verdanaz.ttf
+  Font: Verdana-Italic
+    family: Verdana
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\verdanai.ttf
+  Font: Victorian-LET-Plain:1.0
+    family: Victorian LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\51253___.ttf
+  Font: Vijaya
+    family: Vijaya
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\vijaya.ttf
+  Font: Vijaya-Bold
+    family: Vijaya
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\vijayab.ttf
+  Font: Viner-Hand-ITC
+    family: Viner Hand ITC
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\vineritc.ttf
+  Font: Vivaldi-Italic
+    family: Vivaldi
+    style: Italic
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\vivaldii.ttf
+  Font: Vladimir-Script
+    family: Vladimir Script
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\vladimir.ttf
+  Font: Vrinda
+    family: Vrinda
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\vrinda.ttf
+  Font: Vrinda-Bold
+    family: Vrinda
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\vrindab.ttf
+  Font: Webdings
+    family: Webdings
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\webdings.ttf
+  Font: Westwood-LET-Plain:1.0
+    family: Westwood LET Plain:1.0
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\57930___.ttf
+  Font: Wide-Latin
+    family: Wide Latin
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\latinwd.ttf
+  Font: Wingdings
+    family: Wingdings
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\wingding.ttf
+  Font: Wingdings-2
+    family: Wingdings 2
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\wingdng2.ttf
+  Font: Wingdings-3
+    family: Wingdings 3
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\wingdng3.ttf
+  Font: YuGothic
+    family: YuGothic
+    style: Normal
+    stretch: Normal
+    weight: 400
+    glyphs: c:\windows\fonts\yugothic.ttf
+  Font: YuGothic-Bold
+    family: YuGothic
+    style: Normal
+    stretch: Normal
+    weight: 700
+    glyphs: c:\windows\fonts\yugothic-bold.ttf

@@ -1,0 +1,190 @@
+
+.MJXc-script {
+    font-size: 0.8em;
+}
+.MJXc-right {
+    transform-origin: right center 0;
+}
+.MJXc-bold {
+    font-weight: bold;
+}
+.MJXc-italic {
+    font-style: italic;
+}
+.MJXc-scr {
+    font-family: MathJax_Script,"Times New Roman",Times,STIXGeneral,serif;
+}
+.MJXc-frak {
+    font-family: MathJax_Fraktur,"Times New Roman",Times,STIXGeneral,serif;
+}
+.MJXc-sf {
+    font-family: MathJax_SansSerif,"Times New Roman",Times,STIXGeneral,serif;
+}
+.MJXc-cal {
+    font-family: MathJax_Caligraphic,"Times New Roman",Times,STIXGeneral,serif;
+}
+.MJXc-mono {
+    font-family: MathJax_Typewriter,"Times New Roman",Times,STIXGeneral,serif;
+}
+.MJXc-largeop {
+    font-size: 150%;
+}
+.MJXc-largeop.MJXc-int {
+    vertical-align: -0.2em;
+}
+.MJXc-math {
+    border-collapse: collapse;
+    display: inline-block;
+    font-family: "Times New Roman",Times,STIXGeneral,serif;
+    line-height: 1.2;
+    text-indent: 0;
+    white-space: nowrap;
+}
+.MJXc-display {
+    display: block;
+    margin: 1em 0;
+    text-align: center;
+}
+.MJXc-math span {
+    display: inline-block;
+}
+.MJXc-box {
+    display: block !important;
+    text-align: center;
+}
+.MJXc-box::after {
+    content: " ";
+}
+.MJXc-rule {
+    display: block !important;
+    margin-top: 0.1em;
+}
+.MJXc-char {
+    display: block !important;
+}
+.MJXc-mo {
+    margin: 0 0.15em;
+}
+.MJXc-mfrac {
+    margin: 0 0.125em;
+    vertical-align: 0.25em;
+}
+.MJXc-denom {
+    display: inline-table !important;
+    width: 100%;
+}
+.MJXc-denom > * {
+    display: table-row !important;
+}
+.MJXc-surd {
+    vertical-align: top;
+}
+.MJXc-surd > * {
+    display: block !important;
+}
+.MJXc-script-box > * {
+    display: table !important;
+    height: 50%;
+}
+.MJXc-script-box > * > * {
+    display: table-cell !important;
+    vertical-align: top;
+}
+.MJXc-script-box > *:last-child > * {
+    vertical-align: bottom;
+}
+.MJXc-script-box > * > * > * {
+    display: block !important;
+}
+.MJXc-mphantom {
+    visibility: hidden;
+}
+.MJXc-munderover {
+    display: inline-table !important;
+}
+.MJXc-over {
+    display: inline-block !important;
+    text-align: center;
+}
+.MJXc-over > * {
+    display: block !important;
+}
+.MJXc-munderover > * {
+    display: table-row !important;
+}
+.MJXc-mtable {
+    margin: 0 0.125em;
+    vertical-align: 0.25em;
+}
+.MJXc-mtable > * {
+    display: inline-table !important;
+    vertical-align: middle;
+}
+.MJXc-mtr {
+    display: table-row !important;
+}
+.MJXc-mtd {
+    display: table-cell !important;
+    padding: 0.5em 0 0 0.5em;
+    text-align: center;
+}
+.MJXc-mtr > .MJXc-mtd:first-child {
+    padding-left: 0;
+}
+.MJXc-mtr:first-child > .MJXc-mtd {
+    padding-top: 0;
+}
+.MJXc-mlabeledtr {
+    display: table-row !important;
+}
+.MJXc-mlabeledtr > .MJXc-mtd:first-child {
+    padding-left: 0;
+}
+.MJXc-mlabeledtr:first-child > .MJXc-mtd {
+    padding-top: 0;
+}
+.MJXc-merror {
+    background-color: #ffff88;
+    border: 1px solid #cc0000;
+    color: #cc0000;
+    font-size: 90%;
+    font-style: normal;
+    padding: 1px 3px;
+}
+.MJXc-scale0 {
+    transform: scaleX(0);
+}
+.MJXc-scale1 {
+    transform: scaleX(0.1);
+}
+.MJXc-scale2 {
+    transform: scaleX(0.2);
+}
+.MJXc-scale3 {
+    transform: scaleX(0.3);
+}
+.MJXc-scale4 {
+    transform: scaleX(0.4);
+}
+.MJXc-scale5 {
+    transform: scaleX(0.5);
+}
+.MJXc-scale6 {
+    transform: scaleX(0.6);
+}
+.MJXc-scale7 {
+    transform: scaleX(0.7);
+}
+.MJXc-scale8 {
+    transform: scaleX(0.8);
+}
+.MJXc-scale9 {
+    transform: scaleX(0.9);
+}
+.MathJax_CHTML .noError {
+    border: 1px solid;
+    color: black;
+    font-size: 90%;
+    padding: 1px 3px;
+    text-align: left;
+}

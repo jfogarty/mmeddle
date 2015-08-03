@@ -5,8 +5,7 @@
  */ 
  module.exports = function(mm) {
   var _       = mm.check(mm._);
-  var storage = mm.check(mm.storage);
-  var StoragePath = mm.check(storage.StoragePath);
+  var StoragePath = mm.check(mm.storage.StoragePath);
 
   /**
    * @summary **Client for access to persistent storage**
@@ -26,7 +25,8 @@
       _.defaults(self, options);
       /* istanbul ignore if */
       if (typeof self.engine === 'undefined') {
-        self.engine = mm.check(storage.storageEngine);
+        // TODO: Remove this if it serves no purpose. 
+        self.engine = mm.check(mm.storage.storageEngine);
       }
     };
 
@@ -65,7 +65,7 @@
       path = new StoragePath(self, path);
     }
  
-    return self.engine.store(path, obj);
+    return self.engine.rq('store', path, obj.name, obj);
   }
 
   /**
@@ -85,11 +85,12 @@
     if (!(path instanceof StoragePath)) {
       path = new StoragePath(self, path);
     }
-    
-    return self.engine.load(path, name)
-      .then(function (info) {
-        return info.content;
-      });
+    return self.engine.rq('load', path, name)
+    .then(function (info) {
+      // Timing info is also returned in the content.
+      if (info._elapsed) info.content._elapsed = info._elapsed;
+      return info.content;
+    });
   }
 
   /**
@@ -102,23 +103,43 @@
    * matching pattern). Currently, an engine specific limit is
    * placed on the maximum number of items returned (based on the 
    * largest possible single response.
+   *
+   * When the callback function is used, there is no limit to how many
+   * objects can be read. If an error occurs no more (if any) callbacks
+   * will occur and the result promise is rejected with the error.
+   * When reading normally that callback `obj` will contain one
+   * item of the result or null when there are no more results available.
+   * If your callback returns `true` then it is done and no more callbacks
+   * will occur. The result promise will resolve with an array of
+   * names for all objects that were handled (or [] if `terse` is set).
+   * An error thrown by any callback will result in a rejected result
+   * promise.
+   *
+   * The callback is called once with null if no objects match the pattern.
+   * Terse is useful if the full set of names could itself be a problem of
+   * scale. Not often true, but its there if you need it.
    * @param {StoragePath} path the text path or object
    * @param {string} name pattern for items to retrieve
+   * @param {function} optional callback(obj)
+   * @param {boolean} terse promise result is true or error only.
    * @returns {Promise} a promise to the object array.
    */
   StorageClient.prototype.loadMultiple =
-  function clientLoadMultiple(path, namePattern) 
+  function clientLoadMultiple(path, namePattern, callback, terse) 
   {
     var self = this;
     /* istanbul ignore else */
     if (!(path instanceof StoragePath)) {
       path = new StoragePath(self, path);
     }
-    
-    return self.engine.loadMultiple(path, namePattern)
-      .then(function (info) {
-        return info.content;
-      });
+    if (_.isFunction(callback)) {
+      path.callback = callback;
+      path.terse = terse;
+    }
+    return self.engine.rq('loadMultiple', path, namePattern)
+    .then(function (info) {
+      return info.content;
+    });
   }
 
   /**
@@ -136,8 +157,7 @@
     if (!(path instanceof StoragePath)) {
       path = new StoragePath(self, path);
     }
-
-    return self.engine.remove(path, name);
+    return self.engine.rq('remove', path, name);
   }
   
   /**

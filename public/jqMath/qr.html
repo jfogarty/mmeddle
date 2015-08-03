@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:m="http://www.w3.org/1998/Math/MathML">
+<head>
+<meta charset="utf-8">
+<meta content="jqMath is a JavaScript module that makes it easy to put formatted mathematical expressions in web pages." name="description">
+<link href="css.css" rel="stylesheet">
+<link href="extra.css" rel="stylesheet">
+<link href="jqmath-0.4.3.css" rel="stylesheet">
+<link href="author.css" rel="stylesheet">
+
+<title>jqMath - Put Math on the Web</title>
+</head>
+<body>
+<h1>[STATICALLY RENDERED] xxx</h1>
+
+<div>Examples:</div>
+<table class="center ruled">
+<thead>
+<tr>
+<th>HTML Source</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td>$$\⋃↙αU_α⇒0$$</td>
+<td>
+<math alttext="U=⋃↙αU_α⇒0→\fr F(U)→∏↙α\fr F(U_α)→↖{-}∏↙{α,β}\fr F(U_α∩U_β)">
+  <mrow>
+    <mrow class="ma-repel-adj">
+      <munder style="vertical-align: -0.362em;">
+        <mo>⋃</mo>
+        <mrow>
+          <mi>α</mi>
+        </mrow>
+      </munder>
+      <msub>
+        <mi>U</mi>
+        <mi>α</mi>
+      </msub>
+    </mrow>
+    <mo>⇒</mo>
+    <mn>0</mn>
+  </mrow>
+</math>
+</td>
+</tr>
+
+<tr>
+<td>$$∑↙{i=0}↖n i$$</td>
+<td>
+<math class="ma-block" alttext="∑↙{i=0}↖n i={n(n+1)}/2" display="block">
+  <mrow>
+    <mrow class="ma-repel-adj">
+      <munderover>
+        <mo>∑</mo>
+        <mrow>
+          <mi>i</mi>
+          <mo>=</mo>
+          <mn>0</mn>
+        </mrow>
+        <mi>n</mi>
+      </munderover>
+      <mi>i</mi>
+    </mrow>
+  </mrow>
+</math>
+</td>
+</tr>
+
+<tr>
+<td>$$∑↙{i=0}↖n i={n(n+1)}/2$$</td>
+<td>
+<math class="ma-block" alttext="∑↙{i=0}↖n i={n(n+1)}/2" display="block">
+  <mrow>
+    <mrow class="ma-repel-adj">
+      <munderover>
+        <mo>∑</mo>
+        <mrow>
+          <mi>i</mi>
+          <mo>=</mo>
+          <mn>0</mn>
+        </mrow>
+        <mi>n</mi>
+      </munderover>
+      <mi>i</mi>
+    </mrow>
+    <mo>=</mo>
+    <mfrac>
+      <mrow>
+        <mi>n</mi>
+        <mrow>
+          <mo>(</mo>
+          <mrow>
+            <mi>n</mi>
+            <mo>+</mo>
+            <mn>1</mn>
+          </mrow>
+          <mo>)</mo>
+        </mrow>
+      </mrow>
+      <mn>2</mn>
+    </mfrac>
+  </mrow>
+</math>
+</td>
+</tr>
+
+<tr>
+<td>\(U=⋃↙αU_α⇒0→\fr F(U)→∏↙α\fr F(U_α)→↖{-}∏↙{α,β}\fr F(U_α∩U_β)\) is exact. </td>
+<td>
+<math alttext="U=⋃↙αU_α⇒0→\fr F(U)→∏↙α\fr F(U_α)→↖{-}∏↙{α,β}\fr F(U_α∩U_β)">
+  <mrow>
+    <mi>U</mi>
+    <mo>=</mo>
+    <mrow>
+      <mrow>
+        <mrow>
+          <mrow>
+            <mrow class="ma-repel-adj">
+              <munder>
+                <mo class="fm-underover-base">⋃</mo>
+                <mi>α</mi>
+              </munder>
+              <msub>
+                <mi>U</mi>
+                <mi>α</mi>
+              </msub>
+            </mrow>
+            <mo>⇒</mo>
+            <mn>0</mn>
+          </mrow>
+          <mo>→</mo>
+          <mrow>
+            <mi class="ma-upright ma-fraktur" mathvariant="fraktur">F</mi>
+            <mrow>
+              <mo>(</mo>
+              <mi>U</mi>
+              <mo>)</mo>
+            </mrow>
+          </mrow>
+        </mrow>
+        <mo>→</mo>
+        <mrow class="ma-repel-adj">
+            <munder>
+              <mo>∏</mo>
+              <mi>α</mi>
+            </munder>
+          <mrow>
+            <mi class="ma-upright ma-fraktur" mathvariant="fraktur">F</mi>
+            <mrow>
+              <mo>(</mo>
+              <msub>
+                <mi>U</mi>
+                <mi>α</mi>
+              </msub>
+              <mo>)</mo>
+            </mrow>
+          </mrow>
+        </mrow>
+      </mrow>
+      <mover>
+      <mo>→</mo>
+      <mo>−</mo>
+      </mover>
+      <mrow class="ma-repel-adj">
+        <munder>
+          <mo>∏</mo>
+          <mrow>
+            <mi>α</mi>
+            <mo>,</mo>
+            <mi>β</mi>
+          </mrow>
+        </munder>
+        <mrow>
+          <mi class="ma-upright ma-fraktur" mathvariant="fraktur">F</mi>
+          <mrow>
+            <mo>(</mo>
+            <mrow>
+              <msub>
+                <mi>U</mi>
+                <mi>α</mi>
+              </msub>
+              <mo>∩</mo>
+              <msub>
+                <mi>U</mi>
+                <mi>β</mi>
+              </msub>
+            </mrow>
+            <mo>)</mo>
+          </mrow>
+        </mrow>
+      </mrow>
+    </mrow>
+  </mrow>
+</math>
+is exact.
+</td>
+</tr>
+
+</tbody>
+</table>
+
+</body>
+</html>

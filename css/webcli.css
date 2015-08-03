@@ -1,0 +1,26 @@
+#topstatusfixed {
+  position: fixed;
+  top: -1em;
+  right: 5px;
+  color: red;
+}
+
+#botstatusfixed {
+  position: fixed;
+  bottom: -1em;
+  right: 5px;
+  color: green;
+}
+
+#inTextPrompt{
+  font-family: "Courier",monospace;
+  font-weight: bold; 
+  font-size: 12px;
+}
+
+#cliInText {
+  width: 800px;
+  font-family: "Courier",monospace;
+  font-size: 12px;
+}
+

@@ -1,0 +1,68 @@
+<NotepadPlus>
+    <Session activeView="0">
+        <mainView activeIndex="21">
+            <File firstVisibleLine="125" xOffset="0" scrollWidth="744" startPos="4468" endPos="4468" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\bin\cli.js">
+                <Mark line="54" />
+            </File>
+            <File firstVisibleLine="127" xOffset="0" scrollWidth="1136" startPos="4876" endPos="4876" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\mmeddle.js" />
+            <File firstVisibleLine="34" xOffset="0" scrollWidth="1176" startPos="1580" endPos="1580" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\test\testClientSupport.js" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="760" startPos="7660" endPos="7660" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\core\Workspace.js" />
+            <File firstVisibleLine="199" xOffset="0" scrollWidth="688" startPos="8299" endPos="8299" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\core\Cmd.js" />
+            <File firstVisibleLine="118" xOffset="0" scrollWidth="744" startPos="3726" endPos="3676" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\core\CmdSet.js" />
+            <File firstVisibleLine="311" xOffset="0" scrollWidth="944" startPos="6643" endPos="6643" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\core\MMeddleClient.js">
+                <Mark line="121" />
+            </File>
+            <File firstVisibleLine="109" xOffset="0" scrollWidth="2144" startPos="4714" endPos="4723" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\core\ClientSession.js" />
+            <File firstVisibleLine="84" xOffset="0" scrollWidth="1104" startPos="1693" endPos="1699" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\util\Config.js" />
+            <File firstVisibleLine="376" xOffset="0" scrollWidth="81264" startPos="12847" endPos="12847" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\gulpfile.js" />
+            <File firstVisibleLine="45" xOffset="0" scrollWidth="1176" startPos="3574" endPos="3574" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\util\log.js" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="744" startPos="0" endPos="0" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\header.js" />
+            <File firstVisibleLine="42" xOffset="0" scrollWidth="632" startPos="2132" endPos="2140" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\sal\ClientProvider.js" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="664" startPos="2637" endPos="2639" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\sal\StorageEngine.js" />
+            <File firstVisibleLine="109" xOffset="0" scrollWidth="2144" startPos="4568" endPos="4576" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\server\SocketService.js" />
+            <File firstVisibleLine="100" xOffset="0" scrollWidth="81264" startPos="1101" endPos="1110" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\server\MMeddleServer.js" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1104" startPos="869" endPos="869" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\server.js" />
+            <File firstVisibleLine="121" xOffset="0" scrollWidth="81264" startPos="5008" endPos="5022" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\test\util\test.base.util.datetime.js" />
+            <File firstVisibleLine="450" xOffset="0" scrollWidth="1176" startPos="19798" endPos="19798" selMode="0" lang="Normal Text" encoding="-1" filename="C:\jf\js\mmeddle\docs\DEVELOPERS.md" />
+            <File firstVisibleLine="59" xOffset="0" scrollWidth="1104" startPos="2288" endPos="2288" selMode="0" lang="Normal Text" encoding="-1" filename="C:\jf\js\mmeddle\package.json" />
+            <File firstVisibleLine="137" xOffset="0" scrollWidth="1176" startPos="6547" endPos="6547" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\mMath\MMath.js" />
+            <File firstVisibleLine="77" xOffset="0" scrollWidth="688" startPos="3125" endPos="3125" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\mMath\Parser.js" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1104" startPos="564" endPos="564" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\core\index.js" />
+            <File firstVisibleLine="337" xOffset="0" scrollWidth="9888" startPos="12641" endPos="12641" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\core\CliCommands.js" />
+            <File firstVisibleLine="265" xOffset="0" scrollWidth="1152" startPos="10100" endPos="10100" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\core\ClientSessionUser.js" />
+            <File firstVisibleLine="61" xOffset="0" scrollWidth="688" startPos="2819" endPos="2821" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\core\ClientSessionWorkspace.js" />
+            <File firstVisibleLine="153" xOffset="0" scrollWidth="1176" startPos="7598" endPos="7634" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\sal\FileProvider.js">
+                <Mark line="113" />
+                <Mark line="265" />
+            </File>
+            <File firstVisibleLine="124" xOffset="0" scrollWidth="1024" startPos="5406" endPos="5410" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\sal\StorageClient.js" />
+            <File firstVisibleLine="332" xOffset="0" scrollWidth="1104" startPos="11829" endPos="11829" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\sal\MongoDBProvider.js" />
+            <File firstVisibleLine="105" xOffset="0" scrollWidth="1104" startPos="0" endPos="0" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\util\utilString.js" />
+            <File firstVisibleLine="287" xOffset="0" scrollWidth="1176" startPos="11910" endPos="11910" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\server\WsSessionUser.js" />
+            <File firstVisibleLine="32" xOffset="0" scrollWidth="1176" startPos="1768" endPos="1768" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\server\WsSessionWorkspace.js" />
+            <File firstVisibleLine="58" xOffset="0" scrollWidth="9840" startPos="3295" endPos="3295" selMode="0" lang="Normal Text" encoding="-1" filename="C:\jf\js\mmeddle\src\sal\README.md" />
+            <File firstVisibleLine="1105" xOffset="0" scrollWidth="624" startPos="31582" endPos="31582" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\core\CliConsole.js">
+                <Mark line="317" />
+                <Mark line="643" />
+                <Mark line="648" />
+                <Mark line="795" />
+                <Mark line="1031" />
+                <Mark line="1114" />
+            </File>
+            <File firstVisibleLine="90" xOffset="0" scrollWidth="1176" startPos="2887" endPos="2887" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\test\core\test.cli.js" />
+            <File firstVisibleLine="17" xOffset="0" scrollWidth="1176" startPos="732" endPos="829" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\test\core\test.client.ws.js" />
+            <File firstVisibleLine="90" xOffset="0" scrollWidth="2144" startPos="5038" endPos="5014" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\sal\ClientUser.js" />
+            <File firstVisibleLine="203" xOffset="0" scrollWidth="2144" startPos="7610" endPos="7610" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\server\WsSession.js" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1176" startPos="13" endPos="13" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\test\core\test.client.user.js" />
+            <File firstVisibleLine="2" xOffset="0" scrollWidth="9888" startPos="477" endPos="477" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\test\core\test.base.localUser.js" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="760" startPos="5604" endPos="5604" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\test\sal\test.base.storage.js" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="504" startPos="94" endPos="94" selMode="0" lang="HTML" encoding="-1" filename="C:\jf\js\mmeddle\test\testMocha.html" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="608" startPos="658" endPos="658" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\src\sal\index.js" />
+            <File firstVisibleLine="571" xOffset="0" scrollWidth="2272" startPos="21697" endPos="21712" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\node_modules\mongodb\lib\collection.js" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="512" startPos="163" endPos="170" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\test\test.mmeddle.js" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="368" startPos="0" endPos="0" selMode="0" lang="Javascript" encoding="-1" filename="C:\jf\js\mmeddle\test\mmeddle.js" />
+            <File firstVisibleLine="0" xOffset="0" scrollWidth="1064" startPos="392" endPos="392" selMode="0" lang="HTML" encoding="-1" filename="C:\jf\js\mmeddle\test\webcli.html" />
+        </mainView>
+        <subView activeIndex="0" />
+    </Session>
+</NotepadPlus>

@@ -61,6 +61,7 @@
         }
 
         mm.log.debug('- Connection established to:', url);
+        mm.log.status('- Database opened: ', url);
         self.dbOpen = true;
         self.db = db;
         self.opTimer.reset();
@@ -169,6 +170,14 @@
       if (callbacks > 1) return; // Ignore long replies.
       /* istanbul ignore if */ // Tested independently.
       if (err) {
+        // TODO: When the database connection is lost, fail more
+        // gracefully than a permanent state of failure with the
+        // message:
+        //    [error]:DB find failure { [MongoError: no connection 
+        //            available for operation]
+        //    name: 'MongoError',
+        //    message: 'no connection available for operation' }      
+        // hidden away in the server log.
         mm.log.error('DB find failure', err);
         op.deferred.reject(err);
         return;
@@ -176,9 +185,10 @@
       
       if (items.length === 0) {
         mm.log.debug('MongoDBProvider: * No items found on DB load', objectQuery);
-        op.deferred.reject(
-            // Make a nice looking ENOENT error message.
-            new Error('ENOENT, Item "' + itemName + '" not found.'));
+        // Make a nice looking ENOENT error message.
+        var e = new Error('ENOENT, Item "' + itemName + '" not found.');
+        e.code = 'ENOENT';
+        op.deferred.reject(e);
         return;
       }
 
@@ -209,32 +219,60 @@
    */  
   MongoDBProvider.prototype.loadMultiple = 
   function loadMultiple(db, op) {
+    var erred = false;
+    function doCallBack(obj) {
+      try {
+        return op.path.callback(obj); // true to stop.
+      }
+      catch (e) {
+        erred = true;
+        mm.log.error('DB loadMultiple callback failed', e);
+        op.deferred.reject(e);
+        return true; // No more callbacks on error.
+      }
+    }
+  
     var collectionName = op.path.collectionName;
+    var userName = op.path.userName;
     var itemName = op.path.itemName;
     var collection = db.collection(collectionName);
     var info = new StorageInfo();
     info.collectionName = op.path.collectionName;
-    info.itemName = op.path.itemName;
+    info.itemName = itemName;
     info.count = 0;
     info.text = [];
     info.content = [];
     var wildcardRegex = itemName.replace( /\./g, '\.');   // Escape '.'
     wildcardRegex = wildcardRegex.replace( /\*/g, '.*');
     wildcardRegex = '^' + wildcardRegex.replace(/\?/g, '.');
-    var objectQuery = {name: { $regex: wildcardRegex, $options: 'i' } };
+    var objectQuery = {name: { $regex: wildcardRegex, $options: 'i' },
+                       owner: userName };
     mm.log.debug('- loadMultiple Collection:', 
         collectionName, ', Pattern:', objectQuery);
     var cursor = collection.find(objectQuery);
+    var stopNow = false;    
     cursor.each(function (err, item) {
+      if (erred) return; // Stop processing the remaining objects.
       /* istanbul ignore if */  // I haven't seen this yet. Inspected.
       if (err) {
+        erred = true;
         mm.log.error('DB loadMultiple each failure', err);
         op.deferred.reject(err);
         return;
       }
-      if (item) {
-        info.content.push(item);
-        info.count++;
+      if (item && !stopNow) {
+        if (op.path.callback) {
+//mm.log('--> DB pushilate: ', item);  
+          stopNow = doCallBack(item);
+          if (!op.path.terse && !erred) {
+            // Return an array of objectnames as the final result.
+            info.content.push(item.name);
+          }
+        }
+        else {
+          info.content.push(item);
+        }
+        info.count++;        
       }
       else {
         /* istanbul ignore if */  // Tested independently
@@ -244,6 +282,11 @@
         else {
           mm.log.debug('loadMultiple ---> :', info);
         }
+        if (op.path.callback) {
+          doCallBack(null);
+          erred = true; // This is just to force stop, not really an error.
+        }
+
         op.deferred.resolve(info);
       }
     })
@@ -262,9 +305,12 @@
     var itemName = op.path.itemName;
     var collection = db.collection(collectionName);
     var objectQuery = {name: itemName, owner: userName};
+    op.content.owner = userName; // Stuff the owner in the object.
+    
     //Collection.prototype.findAndModify = function(query, sort, doc, options, callback)
     //Collection.prototype.findOneAndUpdate = function(filter, update, options, callback)
-    collection.findOneAndUpdate(objectQuery, op.content,
+    //collection.findOneAndUpdate(objectQuery, op.content,
+    collection.findOneAndReplace(objectQuery, op.content,
     { upsert: true, returnOriginal: false },
     function(err, r) {
       /* istanbul ignore if */  // I haven't seen this yet. Inspected.
@@ -308,7 +354,7 @@
       }
 
       var result = r.result;
-      // { result: { ok: 1, n: 39 },
+      // example: { result: { ok: 1, n: 39 },
       var nRemoved = result.n;
       /* istanbul ignore if */  // Tested.
       if (nRemoved === 0) {

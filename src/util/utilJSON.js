@@ -6,7 +6,7 @@
 module.exports = function registerJSONUtilities(util, mm) {
 
   /**
-   * @summary **JSON.stringuify an object with function conversions**
+   * @summary **JSON.stringify an object with function conversions**
    * @description
    * Does a JSON.stringify with conversion of functions into strings
    * for recovery through evals during loading.

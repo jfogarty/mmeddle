@@ -10,6 +10,8 @@
   var storage     = mm.check(mm.storage);
   var StorageInfo = mm.check(storage.StorageInfo);
   var wildMatch   = mm.check(mm.util.wildMatch);
+  
+  var FILE_SUFFIX = '.mm.json';
 
   //--------------------------------------------------------------------------
   /**
@@ -35,7 +37,7 @@
    */  
   FileProvider.register = function registerFileProvider(engine) {
     engine.basePath = mm.path.join(mm.config.baseDir, 'storage');
-    engine.fileExtension = '.mm.json';
+    engine.fileExtension = FILE_SUFFIX;
     engine.fileProvider = new FileProvider(engine);
   }    
 
@@ -125,6 +127,19 @@
    */  
   FileProvider.prototype.loadMultiple =
   function loadMultiple(fs, op, fileName, filePath, fileDir) {
+    var erred = false;  
+    function doCallBack(obj) {
+      try {
+        return op.path.callback(obj); // true to stop.
+      }
+      catch (e) {
+        erred = true;
+        mm.log.error('loadMultiple callback failed', e);
+        op.deferred.reject(e);
+        return true; // No more callbacks on error.
+      }
+    }
+  
     // where files is an array of the names of the files in the
     // directory excluding '.' and '..'. 
     mm.log.debug('- loadMultiple Dir:{0}  Pattern;"{1}"', fileDir, fileName);
@@ -144,40 +159,57 @@
       info.text = [];
       info.content = [];
       var fileSet = [];
+      var objNames = [];
       files.forEach(function (candidateFileName) {
         if (wildMatch(candidateFileName, fileName)) {
           fileSet.push(path.join(fileDir, candidateFileName));
+          var cn = candidateFileName.length;
+          var ce = FILE_SUFFIX.length;
+          var objName = candidateFileName.substr(0, cn - ce);
+          objNames.push(objName);
         }
       });
       var n = fileSet.length;
-      var erred = false;
       /* istanbul ignore if */ // Tested independently.
       if (n === 0) {
+        if (op.path.callback) {
+          doCallBack(null); // If it errors, it resolves by itself.
+        }
         op.deferred.resolve(info);
         return;
       }
+      var stopNow = false;
       fileSet.forEach(function (aFilePath) {
+        if (erred) return; // This MAY stop some runon errors.
         fs.readFile(aFilePath, 'utf8', function (err, text) {
           /* istanbul ignore if */
-          if (err || erred) {
-            // It doesn't matter that we reject the promise a zillion
-            // times after an error.
+          if (erred) return; // Don't reject a million times.
+          /* istanbul ignore if */
+          if (err) {
             op.deferred.reject(err);
             erred = true;
             return;
           }
-          info.text.push(String(text));
-          info.content.push(JSON.parse(text));
+          
+          if (op.path.callback) {
+//mm.log('--> pushilate: ', text);  
+            stopNow = doCallBack(JSON.parse(text));          
+            if (!op.path.terse && !erred) {
+              // Return an array of objectnames as the final result.
+
+              info.content.push(objNames.shift());
+            }
+          }
+          else {
+            info.content.push(JSON.parse(text));
+          }
           info.count++;
           n--;
           // When all files have been appended, return.
-          if (n === 0) {
-            mm.log.debug('- loadMultiple ---> :', info);          
+          if (n === 0 || stopNow) {
+            mm.log.debug('loadMultiple ---> :', info);
             op.deferred.resolve(info);
           }
-          // TODO!!! Stop me before I kill again.  This could
-          // load half the planet if there was a lot of matching
-          // stuff.
         });
       });
     });
@@ -193,12 +225,15 @@
   FileProvider.prototype.store =
   function store(fs, op, fileName, filePath, fileDir) {
     var mkdirp = mm.check(mm.mkdirp);
+    /*
     var options = {
       encoding: 'utf8', 
       mode: 438, // (aka 0666 in Octal)
       flag: 'w'
     };
+    */
     mkdirp(fileDir, function (err, made) {
+try {
       /* istanbul ignore if */
       if (err) {
         op.deferred.reject(err);
@@ -210,7 +245,13 @@
       }
       op.content.owner = op.path.userName;
       var text = mm.util.JSONify(op.content, 2);
-      fs.writeFile(filePath, text, options, function (err) {
+      //mm.log.status('++++++++++++ fs.writeFile: ', filePath, ' ----[', text, ']');
+      fs.writeFile(filePath, text, null, function (err) {
+        // A mysterious bug happened here. The writefile (specifically the
+        // one to a privateUser during loginCount updates) did not get to
+        // this point. It is as if fs.writeFile truncated the file then
+        // just STOPPED.  The next statement here was not reached.
+        // *** BUG NOTE *** see the note in WsSessionUser.loginUser
         /* istanbul ignore if */
         if (err) {
           op.deferred.reject(err);
@@ -222,6 +263,7 @@
             op.deferred.reject(err);
             return;
           }
+          //mm.log.debug('++++++++++++ fs.stat after writeFile: ', filePath, stat);
           var info = new StorageInfo(stat);
           info.owner = op.content.owner;
           info.collectionName = op.path.collectionName;
@@ -233,6 +275,7 @@
           op.deferred.resolve(info);
         });
       });
+} catch(xx) { mm.log.fail(xx); }
     });
   }
 

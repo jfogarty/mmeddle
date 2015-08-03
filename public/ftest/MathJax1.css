@@ -1,0 +1,29 @@
+
+body {
+    font-family: Cambria;
+}
+table {
+    border-collapse: collapse;
+}
+td {
+    -moz-border-bottom-colors: none;
+    -moz-border-left-colors: none;
+    -moz-border-right-colors: none;
+    -moz-border-top-colors: none;
+    border-color: #050;
+    border-image: none;
+    border-style: solid;
+    border-width: thin 0;
+}
+td:first-child {
+    font-size: 200%;
+    padding-right: 0.5em;
+}
+.sup {
+    bottom: 1ex;
+    font-size: 70%;
+    position: relative;
+}
+.sups {
+    font-feature-settings: "sups";
+}

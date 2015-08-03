@@ -7,8 +7,6 @@ if (typeof exports === 'object' && typeof module === 'object') {
 (function (mm) {
   var TEST_TIMEOUT = 20000; // Allow 15 seconds for the operations.
 
-  var Parser   = mm.check(mm.core.Parser);
-  var MMath    = mm.check(mm.core.MMath);
   var EggTimer = mm.check(mm.obj.EggTimer);
 
   before(mm.test.mochaTestConnect);
@@ -19,67 +17,102 @@ if (typeof exports === 'object' && typeof module === 'object') {
     it('should allow setup of a new CLI', function() {
       var cliCmds  = mm.test.client.cmds;
       var cs       = mm.test.client.cs;
-      var ws       = cs.ws;
       var mConsole = mm.test.client.mConsole;
-      
-      var mmath    = mm.check(new MMath());
-      var parser   = mm.check(new Parser(cs, ws, mmath));
-      
-      cliCmds.rootCommandSet.defaultHandler(evaluateExpression);
-      
-      mConsole.setLineHandler(handleLine, '_mochaTest CLI ->');
+  
+      cliCmds.rootCommandSet.setDefaultHandler(evaluateExpression);
+
       mConsole.onClose(function() {
         mm.log('- _mochaTest CLI Closed.');
         mm.log();
-        // process.exit(0);
+        //process.exit(0);
       });
+      
+      function readAnother() {
+        return mConsole.readLine('_mochaTest CLI ->')
+        .then(function (line) {
+          return handleLine(line)
+          .then(function () {
+            readAnother(); // Not actually recursion.
+          });
+        },
+        function(e) {
+          mm.log.fail(e);
+        });
+      }
+      readAnother(); // Start the CLI.
 
       function evaluateExpression(context) {
-        // evaluate expression
         var line = context.text;
         var expr = line.trim();
         if (expr) {
-          parser.evaluate(expr);
+          var rv = cs.ws.evaluate(expr);
+          if (rv instanceof Error) {
+            throw (rv);
+          }
+          else {
+            mm.log('- Result:', rv);
+          }
         }
         return true;
       }
 
       function handleLine(line) {
-        cliCmds.rootCommandSet.doCmd(line, cs)
+        return cliCmds.rootCommandSet.doCmd(line, cs)
         .then(function (d) {
           if (d instanceof Error) {
-            mm.log('Command error:', d);
+            mm.log('Good Command error??? :', d);
           }
+          return true;
         },
         function (e) {
-          //mm.log.error('Command failure:', e.stack);
-          mm.log.error('Command failure:', e);
+          mm.log.error('Failed:', e.message);
+          return e;
         });
-        return true; // Accept the command line.
       } // End of handler.
 
       Should.exist(cs);
     })
     
-    it('should allow some stuff to happen', function(done) {
+    //------------------------------------------------------------------------
+    it('should handle help commands', function(done) {
     try {     
       var mConsole = mm.test.client.mConsole;
-      var idleTimer = new EggTimer(3000, 'test console idle');
+      var idleTimer = new EggTimer(1000, 'test console idle');
       idleTimer.onDing(function () {
-        mm.log('-------------- Thats a wrap -------------');
-        mConsole.close();
+        mm.log('----- End CLI help tests');
+        idleTimer.stop();
         done();
       });
       
       mConsole.setIdleTimer(idleTimer);
-      var clx = mConsole.spoofInput;
-      var cli = mConsole.spoofInputChars;
+      var cli = mConsole.spoofInput;
+      //var cli = mConsole.spoofInputChars;
 
-      clx('clear all');
-      clx('help');
-      clx('help nonsenseCommand');
-      clx('help login');
+
+      cli('help');
+      cli('help nonsenseCommand');
+      cli('help login');
+      cli('.?');
+      cli('.help debug');
+      cli('.debug -?');
+    } catch (e) { mm.fail(e) }
+    })
+
+    //------------------------------------------------------------------------
+    it('should handle workspace math commands', function(done) {
+    try {     
+      var mConsole = mm.test.client.mConsole;
+      var idleTimer = new EggTimer(3000, 'test console idle');
+      idleTimer.onDing(function () {
+        mm.log('----- End CLI math workspace tests');
+        idleTimer.stop();
+        done();
+      });
       
+      mConsole.setIdleTimer(idleTimer);
+      var cli = mConsole.spoofInput;
+
+      cli('clear all');
       cli('C = B + 1');
       cli('A = 22 * 33');
       cli('B = A * A');
@@ -99,10 +132,23 @@ if (typeof exports === 'object' && typeof module === 'object') {
       
       cli('clear');
       cli('clear CC');
-      
-      cli('.?');
+    } catch (e) { mm.fail(e) }
+    })
 
-      //-------------------------------------------------------------------
+    //------------------------------------------------------------------------
+    it('should handle .debug command math commands', function(done) {
+    try {     
+      var mConsole = mm.test.client.mConsole;
+      var idleTimer = new EggTimer(1000, 'test console idle');
+      idleTimer.onDing(function () {
+        mm.log('----- End CLI .debug command tests');
+        idleTimer.stop();
+        done();
+      });
+
+      mConsole.setIdleTimer(idleTimer);
+      var cli = mConsole.spoofInput;
+      
       cli('.debug -?');
       cli('.debug');
       cli('.debug off');
@@ -120,32 +166,60 @@ if (typeof exports === 'object' && typeof module === 'object') {
       cli('.num');
       cli('sin(PI/4)');
       cli('.debug on normal');
+    } catch (e) { mm.fail(e) }
+    })
+  
+    //------------------------------------------------------------------------
+    it('should handle workspace and user commands', function(done) {
+    try {     
+      var mConsole = mm.test.client.mConsole;
+      var idleTimer = new EggTimer(2000, 'test console idle');
+      idleTimer.onDing(function () {
+        mm.log('----- End CLI workspace commands');
+        mConsole.close();
+        idleTimer.stop();
+        done();
+      });
 
+      mConsole.setIdleTimer(idleTimer);
+      var cli = mConsole.spoofInput;
+      
       cli('save');
       
+      cli('.list user');
+      cli('.list users');
+
+      cli('.list user doesNotExist');
+
+      cli('login mochaTestUser xyzzy');
+        cli('xyzzy');
+        cli('mr');
+        cli('mochaMan');
+        cli('mochaTest@fakeEmail.com');
+
+      cli('.list user mochaTestUser');
+        
+      cli('.user delete');
+      
+      //cli('load');
+      
+    } catch (e) { mm.fail(e) }
+    })
+  })      
+  
+/*    
+
       //-------------------------------------------------------------------
+*/  
+      //-------------------------------------------------------------------
+/*
+
 
       var nextCommand = function () {
-        cli('.list user');
-        cli('.list users');
-        mConsole.onPause(2000, function () {           
-          cli('.list user cliMochaTestUser');
-          cli('.deleteUser');
         });
       }
 
-      cli('.list user doesNotExist');      
-      cli('login cliMochaTestUser xyzzy');
-      mConsole.onPause(2000, function () {
-        if (mConsole.handler.prompt.indexOf('password') > 0) {
-          cli('xyzzy');
-          mConsole.onPause(function () {
-            cli('mr');
-            mConsole.onPause(function () {
-              cli('mochaMan');
-              mConsole.onPause(function () {            
-                cli('mochaTest@fakeEmail.com');
-                nextCommand();
+
               });
             });
           });
@@ -154,9 +228,6 @@ if (typeof exports === 'object' && typeof module === 'object') {
           nextCommand();
         }
       });
-    }
-    catch (e) { mm.log(e.stack) }
-    })
-  })
+*/    
 
 }(mmeddle));

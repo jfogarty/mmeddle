@@ -1,0 +1,75 @@
+
+.nowrap {
+    white-space: nowrap;
+}
+.inline-block {
+    display: inline-block;
+}
+.left {
+    float: left;
+    margin-right: 8px;
+}
+.right {
+    float: right;
+    margin-left: 8px;
+}
+.clear {
+    clear: both;
+}
+.center-text {
+    text-align: center;
+}
+.right-text {
+    text-align: right;
+}
+.top-align {
+    vertical-align: top;
+}
+.middle {
+    vertical-align: middle;
+}
+.baseline {
+    vertical-align: baseline;
+}
+.center-block, table.center {
+    margin-left: auto;
+    margin-right: auto;
+}
+blockquote, figure, p, pre, .p-margins {
+    margin-bottom: 1em;
+    margin-top: 1em;
+}
+.p-top {
+    margin-top: 1em;
+}
+table.ruled {
+    border-collapse: collapse;
+    text-align: center;
+}
+.ruled > thead > tr > th, .ruled > tbody > tr > td {
+    border: thin solid;
+    min-width: 1.5em;
+    padding: 0.2em 0.3em;
+}
+.ruled > thead, .ruled > tbody, .ruled > tfoot, .ruled > colgroup {
+    border: medium double;
+}
+table.join-align > tbody > tr > td:first-child {
+    text-align: right;
+}
+table.join-align > tbody > tr > td:first-child + td {
+    text-align: left;
+}
+.ma-block {
+    margin-bottom: 1em;
+    margin-top: 1em;
+}
+.ma-block:first-child {
+    margin-bottom: 0;
+    margin-top: 0;
+}
+@media only screen and (max-device-width: 1024px) {
+	body, fmath, .fm-math, mn, mi, mtext {
+		font-family: Helvetica,sans-serif;
+	}
+}

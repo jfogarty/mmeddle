@@ -125,48 +125,38 @@
       //slog('- Session:', session);
     });
     
-    socket.on('mmWsRq', function (rs) {
-      var sessionId = rs.sessionId;
-      mm.log.debug('- Workspace Session Request', id, rs);
+    socket.on('mmWsRq', function (rq) {
+      var sessionId = rq.sessionId;
+      mm.log.debug('- Workspace Session Request', id, rq);
       /* istanbul ignore else */ // Tested independently
       if (self.sessions[sessionId]) {
         var session = self.sessions[sessionId];
-        session.handleRq(rs, socket);
+        session.handleRq(rq, socket);
       }
       else {
-        mm.log.error('Unexpected Workspace session request', rs);
+        // When the server is restarted, but the client thinks
+        // it is still connected, it may send a request before the
+        // server has received a mmConnectRs. 
+        // TODO: ?? Just go ahead and whip up the session?
+        mm.log.error('Unexpected Workspace session request', rq);
       }
     });
 
-    // This is trash for testing REMOVEME REMOVEME REMOVEME REMOVEME
-    socket.on('my other event', function (data) {
-      slog(mm.util.inspect(data));
-      slog('-----Whoa baby!');
+    socket.on('mmWsRqAbort', function (rq) {
+      var sessionId = rq.sessionId;
+      mm.log.warn('- Workspace Request *ABORT*', id, rq);
+      /* istanbul ignore else */ // Tested independently
+      if (self.sessions[sessionId]) {
+        var session = self.sessions[sessionId];
+        session.handleRqAbort(rq, socket);
+      }
+      else {
+        mm.log.warn('Unexpected Workspace Request ABORT', rq);
+      }
     });
 
-    // This is trash for testing REMOVEME REMOVEME REMOVEME REMOVEME
-    socket.on('request-env', function (data) {
-      var reply = process.env;
-      if (mm.config.openShift) {
-        reply = {
-          id: id,
-          text: '* Environment variables are not available from this server *'
-        }
-      }
-      socket.emit('env', reply);
-      slog('-----Posted environment');
-    });
-    
     socket.on('disconnect', function () {
       slog('***** Recieved disconnect *****');
-    });
-
-    // This is trash for testing REMOVEME REMOVEME REMOVEME REMOVEME
-    socket.emit('news', { 
-        id: id,
-        hello: 'world - mMeddle with this!',
-        from: mm.envText,
-        at: _.now()
     });
 
     // Connect to a MMeddleClient running in a browser or client app.

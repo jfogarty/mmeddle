@@ -69,6 +69,17 @@ files of the format: **./storage/[owner]/[collection]/[name].mm.json**.
 The FileSystem is only used by the storage engine if the Path contains
 a `prefer: 'fs'` field, or the database provider is unavailable.
 
+### Client Storage
+
+The **ClientProvider** is actually just browser/node client remote access
+to a StorageEngine runnin on the server. The client has a browser local
+StorageClient and StorageEngine with just the ClientProvider registered in
+it. Operations are sent through the ClientSession rq/rs socket layer to
+the WsSession handler on the server. There the operations are dispatched to
+the server's storage engine, and when completed, the response is piped
+back in the response.
+
+
 ### Proxies
 
 ** THIS IS NOT YET IMPLEMENTED **.
