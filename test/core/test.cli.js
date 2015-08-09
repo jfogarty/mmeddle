@@ -77,17 +77,9 @@ if (typeof exports === 'object' && typeof module === 'object') {
     it('should handle help commands', function(done) {
     try {     
       var mConsole = mm.test.client.mConsole;
-      var idleTimer = new EggTimer(1000, 'test console idle');
-      idleTimer.onDing(function () {
-        mm.log('----- End CLI help tests');
-        idleTimer.stop();
-        done();
-      });
-      
-      mConsole.setIdleTimer(idleTimer);
+
       var cli = mConsole.spoofInput;
       //var cli = mConsole.spoofInputChars;
-
 
       cli('help');
       cli('help nonsenseCommand');
@@ -95,6 +87,8 @@ if (typeof exports === 'object' && typeof module === 'object') {
       cli('.?');
       cli('.help debug');
       cli('.debug -?');
+      mm.log('----- End CLI help tests');
+      done();
     } catch (e) { mm.fail(e) }
     })
 
@@ -102,14 +96,6 @@ if (typeof exports === 'object' && typeof module === 'object') {
     it('should handle workspace math commands', function(done) {
     try {     
       var mConsole = mm.test.client.mConsole;
-      var idleTimer = new EggTimer(3000, 'test console idle');
-      idleTimer.onDing(function () {
-        mm.log('----- End CLI math workspace tests');
-        idleTimer.stop();
-        done();
-      });
-      
-      mConsole.setIdleTimer(idleTimer);
       var cli = mConsole.spoofInput;
 
       cli('clear all');
@@ -132,6 +118,8 @@ if (typeof exports === 'object' && typeof module === 'object') {
       
       cli('clear');
       cli('clear CC');
+      mm.log('----- End CLI math workspace tests');
+      done();
     } catch (e) { mm.fail(e) }
     })
 
@@ -139,14 +127,6 @@ if (typeof exports === 'object' && typeof module === 'object') {
     it('should handle .debug command math commands', function(done) {
     try {     
       var mConsole = mm.test.client.mConsole;
-      var idleTimer = new EggTimer(1000, 'test console idle');
-      idleTimer.onDing(function () {
-        mm.log('----- End CLI .debug command tests');
-        idleTimer.stop();
-        done();
-      });
-
-      mConsole.setIdleTimer(idleTimer);
       var cli = mConsole.spoofInput;
       
       cli('.debug -?');
@@ -166,6 +146,8 @@ if (typeof exports === 'object' && typeof module === 'object') {
       cli('.num');
       cli('sin(PI/4)');
       cli('.debug on normal');
+      mm.log('----- End CLI .debug command tests');
+      done();
     } catch (e) { mm.fail(e) }
     })
   
@@ -173,15 +155,6 @@ if (typeof exports === 'object' && typeof module === 'object') {
     it('should handle workspace and user commands', function(done) {
     try {     
       var mConsole = mm.test.client.mConsole;
-      var idleTimer = new EggTimer(2000, 'test console idle');
-      idleTimer.onDing(function () {
-        mm.log('----- End CLI workspace commands');
-        mConsole.close();
-        idleTimer.stop();
-        done();
-      });
-
-      mConsole.setIdleTimer(idleTimer);
       var cli = mConsole.spoofInput;
       
       cli('save');
@@ -197,37 +170,19 @@ if (typeof exports === 'object' && typeof module === 'object') {
         cli('mochaMan');
         cli('mochaTest@fakeEmail.com');
 
-      cli('.list user mochaTestUser');
-        
-      cli('.user delete');
-      
-      //cli('load');
-      
+      mm._.delay(function() {
+        cli('.list user mochaTestUser');
+          
+        cli('.user delete');
+
+        mm._.delay(function() {
+          mm.log('----- End CLI workspace and user commands');
+          done();
+        }, 3000);
+      }, 3000)
+
     } catch (e) { mm.fail(e) }
     })
-  })      
-  
-/*    
-
-      //-------------------------------------------------------------------
-*/  
-      //-------------------------------------------------------------------
-/*
-
-
-      var nextCommand = function () {
-        });
-      }
-
-
-              });
-            });
-          });
-        }
-        else {
-          nextCommand();
-        }
-      });
-*/    
+  })
 
 }(mmeddle));
