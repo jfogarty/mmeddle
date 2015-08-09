@@ -1,4 +1,4 @@
-# mmeddle 
+# mmeddle 0.1.7
 [![Build Status][travis-image]][travis-url] 
 [![Coveralls Status][coveralls-image]][coveralls-url]
 [![NPM version][npm-image]][npm-url]

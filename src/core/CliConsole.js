@@ -9,15 +9,20 @@ module.exports = function registerCliConsole(mm) {
   var qq         = check(mm.Q);
   var EggTimer   = check(mm.obj.EggTimer);
 
+  var ASCII_DEL = 0x7F;
+  var ASCII_BS  = 0x08;
+  var ASCII_CR  = 0x0D;
+  var ASCII_LF  = 0x0A;
+
   var codeESC = 27;
-  var BS    = String.fromCharCode(0x08);                   // jshint ignore:line 
-  var CR    = String.fromCharCode(0x0D);                   // jshint ignore:line 
-  var LF    = String.fromCharCode(0x0A);                   // jshint ignore:line 
-  var NL    = String.fromCharCode(0x0A);                   // jshint ignore:line 
-  var CRLF  = String.fromCharCode(0x0D, 0x0A);             // jshint ignore:line 
-  var HOME  = String.fromCharCode(0x1b, 0x5b, 0x31, 0x7e); // jshint ignore:line 
-  var UP    = String.fromCharCode(0x1b, 0x5b, 0x41);       // jshint ignore:line 
-  var DOWN  = String.fromCharCode(0x1b, 0x5b, 0x42);       // jshint ignore:line 
+  var BS    = String.fromCharCode(ASCII_BS);               // jshint ignore:line 
+  var CR    = String.fromCharCode(ASCII_CR);               // jshint ignore:line 
+  var LF    = String.fromCharCode(ASCII_LF);               // jshint ignore:line 
+  var NL    = String.fromCharCode(ASCII_LF);               // jshint ignore:line 
+  var CRLF  = String.fromCharCode(ASCII_CR, ASCII_LF);     // jshint ignore:line 
+  var HOME  = String.fromCharCode(codeESC, 0x5b, 0x31, 0x7e); // jshint ignore:line 
+  var UP    = String.fromCharCode(codeESC, 0x5b, 0x41);    // jshint ignore:line 
+  var DOWN  = String.fromCharCode(codeESC, 0x5b, 0x42);    // jshint ignore:line 
 
   var CtrlCodes = [
     'null',  // [0x00],
@@ -312,6 +317,11 @@ self.annoyTimer.onDing(function () {
         return null;
       }
       var c1 = charCodes.shift();
+      // Handle Linux Terminal backspace.
+      if (c1 === ASCII_DEL) {
+        c1 = ASCII_BS;
+      }
+
       var cch = String.fromCharCode(c1);
       // Handle simple key codes.
       if (c1 <= codeESC) {

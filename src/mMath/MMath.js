@@ -88,6 +88,12 @@ module.exports = function registerMmath(mm) {
       mmath.tan     = { func: Math.tan, 
               desc: 'Returns the tangent of a number.' };
 
+      // Dangerous simple truncation of input. Will fail miserably
+      // when exponents are in the mix.
+      var newBigNumberUnsafe = function (xin) {
+        return new BigNumber(xin.toString().substring(0, 15));
+      }
+
       // Memoized big number factorial.
       var factorial = (function factorialCtor() {
         var f = [1, 1];
@@ -179,7 +185,7 @@ module.exports = function registerMmath(mm) {
                    else result = math.add(result, tn);
           unchanged = result.equals(lastResult);        
         } while (!unchanged);
-        var msin = Math.sin(xin);
+        var msin = newBigNumberUnsafe(Math.sin(xin));
         mm.log.debug('- big.sin({0}) Math.sin={1} delta={2}', 
            result, msin, math.abs(math.subtract(result, msin)),
            LOW);
