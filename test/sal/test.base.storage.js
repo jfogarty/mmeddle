@@ -57,7 +57,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
       return qq(storageClientList);
     }
     else {
-      var host = mm.config.startLocal ? mm.config.localUrl : mm.config.remoteUrl;
+      var host = mm.configHost();
       cs = new mm.core.ClientSession('mochaTests');
       var mmc = new mm.core.MMeddleClient(host, cs);
       cs.bindClient(mmc);
@@ -96,6 +96,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
     it('should initialize the storage engine and clients', function(){
       storageClientList.forEach(function (sc) {
         describe('#store(' + sc.prefer + ')', function(){
+          this.timeout(SAL_TIMEOUT);
           it('should create a thing in storage', function(){
             return sc.store(testCollection, exampleContent)
             .then (function f(info) {
@@ -118,6 +119,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
         })
         
         describe('#load(' + sc.prefer + ')', function(){
+          this.timeout(SAL_TIMEOUT);
           it('should read the thing back from storage', function(){
             return sc.load(testCollection, 'thing')
             .then (function f(content) {
@@ -133,6 +135,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
         })
 
         describe('#remove(' + sc.prefer + ')', function(){
+          this.timeout(SAL_TIMEOUT);
           it('should remove the thing from storage', function(){
             return sc.remove(testCollection, 'thing')
             .then (function f(bool) {
@@ -152,6 +155,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
         })
 
         describe('#loadMultiple(' + sc.prefer + ')', function(){
+          this.timeout(SAL_TIMEOUT);
           it('should read multiple things back from storage', function(){
             // The thingA* should match exactly 3 of the objects that
             // were inserted by the prior test cases.

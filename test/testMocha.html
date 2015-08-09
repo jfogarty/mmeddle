@@ -6,49 +6,50 @@
 </head>
 <body>
   <div id="mocha"></div>
-  <script src="libs/should.js"></script>
-  <script src="libs/mocha.js"></script>
-  <script>mocha.setup('bdd')</script>
+  <script type="text/javascript" src="libs/should.js"></script>
+  <script type="text/javascript" src="libs/mocha.js"></script>
+  <script type="text/javascript">mocha.setup('bdd')</script>
   
   <!-- WebPacked library(s) to test against -->
-  <script src="../dist/mmeddle.js"></script>
+  <script type="text/javascript" src="../dist/mmeddle.js"></script>
+  <script type="text/javascript" src="/dist/config.js"></script>  
 
   <!-- Mocha BDD test case sets -->
-  <script src="test.mmeddle.js"></script>
+  <script type="text/javascript" src="test.mmeddle.js"></script>
   
   <!-- NEW [under development) test case sets -->
   
   <!-- Utility test case sets -->
-  <script src="util/test.base.util.string.js"></script>
-  <script src="util/test.base.qq.js"></script>
-  <script src="util/test.base.util.dateTime.js"></script>
-  <script src="util/test.base.Logger.js"></script>
-  <script src="util/test.base.EggTimer.js"></script>
+  <script type="text/javascript" src="util/test.base.util.string.js"></script>
+  <script type="text/javascript" src="util/test.base.qq.js"></script>
+  <script type="text/javascript" src="util/test.base.util.datetime.js"></script>
+  <script type="text/javascript" src="util/test.base.Logger.js"></script>
+  <script type="text/javascript" src="util/test.base.EggTimer.js"></script>
   
   <!-- (SAL) Services Abtraction Layer test case sets -->
-  <script src="sal/test.base.ClientUser.js"></script>  
-  <script src="sal/test.base.localStorage.js"></script>
-  <script src="sal/test.base.storage.js"></script>
-  
+  <script type="text/javascript" src="sal/test.base.ClientUser.js"></script>  
+  <script type="text/javascript" src="sal/test.base.localStorage.js"></script>
+  <script type="text/javascript" src="sal/test.base.storage.js"></script>
+
   <!-- Core test case sets -->
 <!--    
   SERVER INTERACTION REQUIRED
 
-  <script src="sal/test.base.localUser.js"></script>
-  <script src="sal/test.base.localWorkspace.js">
+  <script type="text/javascript" src="sal/test.base.localUser.js"></script>
+  <script type="text/javascript" src="sal/test.base.localWorkspace.js">
     // These clear the local Storage for the domain.
     // So it is annoying when messing with the test CLI.
   </script>
 -->  
 <!--
-  <script src="sal/test.client.user.js"></script>  
-  <script src="sal/test.client.ws.js"></script>
-  <script src="sal/test.cli.js"></script>  
+  <script type="text/javascript" src="sal/test.client.user.js"></script>  
+  <script type="text/javascript" src="sal/test.client.ws.js"></script>
+  <script type="text/javascript" src="sal/test.cli.js"></script>  
 -->
 
   <!-- Add additional browser compatible test case sets here -->
 
-  <script>
+  <script type="text/javascript" >
     // Run from command line against PhantomJS browser simulator with:
     // > node_modules\.bin\mocha-phantomjs -R list test/testMocha.html
     if (window.mochaPhantomJS) {

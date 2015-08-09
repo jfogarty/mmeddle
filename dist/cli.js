@@ -80,7 +80,7 @@ if (typeof exports === 'object' && typeof module === 'object') {
     }
     mm.log.debug('----- CLI Configuration -----\n', mm.config);
 
-    var host = mm.config.startLocal ? mm.config.localUrl : mm.config.remoteUrl;
+    var host = mm.configHost();
     var appName = mm.config.inNode ? 'CLI' : 'WebCLI';
     var cs = new ClientSession(appName);
     var mmc = new MMeddleClient(host, cs);

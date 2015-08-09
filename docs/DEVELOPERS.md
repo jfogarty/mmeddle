@@ -53,7 +53,7 @@ It includes all source, images and test cases for building and testing mMeddle.
 **bin\cli.js** is a text mode node.js client that runs standalone or is
 enhanced (significantly) by having access to a mMeddle server. **server.js**
 is the mMeddle server you can run locally. The mMeddle browser client
-application is started using http://localhost:8080 when the server is running.
+application is started using http://localhost:8085 when the server is running.
 This provides access to the browser test cases, the **webCli** (a browser based
 version of the **cli.js**) and its **mmeddle.min.js** minimized twin.
 
@@ -131,18 +131,20 @@ through such issues from time to time.
 
 ### Other tools you will need or want
 
-- **Firefox** and **Firebug**: the primary client browser and dev tool used in testing
+- **Firefox** and **Opera**: the client browser and dev tools used in testing
 - **Markdown viewer**: extension for Firefox or equivalent for chrome
 - **mongoDB**: get it if you will do more than trivial testing
 - **imagemagick**: required if you rebuild the sprite based icons
 - **gimp**: or an equivalent if you plan to mess with icon or toolbar images
 
-**Firefox and Firebug**: Other browsers and their dev interfaces can be used
-as well, but I focus on Firefox first. We must run well in **Chrome** and
-**Safari**, especially on iPads and other fondle-slabs. I don't care much
-about trying to support **Internet Explorer** as it continues to be the bane
-of existence for browser compatibility - at least as of IE 11. 
-Life is too short.
+**Firefox and Opera**: Both of these browsers have excellent development
+tool sets. I used to use the **FireBug** extension on Firefox, but the built
+in version is now as good or better (and has out of the box localStorage
+inspection). I tend to focus on Firefox first. We must run well in 
+**Opera**, **Chrome** and **Safari**, especially on iPads and other fondle-
+slabs. I don't care much about trying to support **Internet Explorer** as 
+it continues to be the bane of existence for browser compatibility - at least
+as of IE 11 (I am as yet uninterested in Edge). Life is too short.
 
 **Markdown viewer**: The docs are either `.md` markdown files, or 
 generated .html created by `jsdoc`. Your life is better if you can
@@ -240,7 +242,7 @@ The test reporters can be selected from :
     MMEDDLE_TESTREPORTER=list
 
 As noted above, 'all' tests require a background mMeddle server. You
-should start alocal server (**127.0.0.1:8080**) in its own shell using:
+should start alocal server (**127.0.0.1:8085**) in its own shell using:
 
     npm start
 or
@@ -314,8 +316,10 @@ Browser BVT tests are started from [test/testMocha.html][openshift-mm-bvt-url]
 (this link is to the test server).  To do more than rudimentary testing
 you must run a mMeddle server.
 
-Use http://127.0.0.1:8080/test/webcli.html to start the web based text
-mode cli. You can reach the online version at [test/webcli.html][openshift-mm-cli-url] or [test/webcli.min.html][openshift-mm-climin-url].
+Use http://127.0.0.1:8085/test/webcli.html to start the web based text
+mode cli. You can reach the online version at 
+[test/webcli.html][openshift-mm-cli-url] or
+[test/webcli.min.html][openshift-mm-climin-url].
 
 Note that the CLI uses browser localStorage to hold the current workspace and
 user login information. The localStorage domains will be different depending
@@ -340,7 +344,7 @@ The mMeddle server (server.js) is started in the traditional way with:
     node server
 
 This is an `Express` web server which exposes the entire development
-tree as static content on **//localhost:8080**. The `index.html` page has links
+tree as static content on **//localhost:8085**. The `index.html` page has links
 to various things of interest.
 
 Interaction with the client is almost exclusively through `socket.io`
@@ -351,7 +355,7 @@ session MMSIDs in browser localStorage and in server `wsSessions`.
 ### Testing With the mMeddle Server
 
 Some BVTs will run without a server, but many will not.  Start `server.js`
-in its own shell and make sure your firewalls allow access to localhost:8080.
+in its own shell and make sure your firewalls allow access to localhost:8085.
 
 The server also supports directly running a single node.js client app (such as
 `bin\cli.js`) within the same shell (use: `-a appName.js`) and even within the
@@ -361,9 +365,10 @@ same process through the MockSock socket.io simulator (add the `-m` flag).
 
 Here are some important server environment variables you need to know:
 
-    MMEDDLE_PORT: port used by local server [8080]
+    MMEDDLE_PORT: port used by local server [8085]
     MMEDDLE_IPADDR: IP address used by local server [127.0.0.1]
-    MONGODB_DB_URL: Set the mongo database connection url [mongodb://localhost/mydb]    
+    MONGODB_DB_URL: Set the mongo database connection url 
+    [mongodb://localhost/mydb]    
 
     OPENSHIFT_NODEJS_IP: ip address used by the OpenShift test servers
     OPENSHIFT_NODEJS_PORT: port used by the OpenShift test servers
@@ -412,8 +417,8 @@ output routines will be suppressed which limits test coverage.
 - Make sure that your **MongoDB** service is up and running or you will get
 only `FileProvider` coverage.
 
-You can examine the annotated source by browsing to `./coverage/lcov-report/index.html`
-or run
+You can examine the annotated source by browsing to
+`./coverage/lcov-report/index.html` or run
 
     gulp showcoverage
     
@@ -468,8 +473,8 @@ that number.
 The [github/mmeddle][github-mm-url] repository is linked
 to the [Travis-CI/mmeddle][travis-url] service. Every commit
 pushed to the **master** branch triggers an npm install and cloud build of the 
-default **npm test** (gulp test task). When this succeeds **npm run coverage** is run,
-and the new code coverage statistics are pushed to
+default **npm test** (gulp test task). When this succeeds **npm run coverage** 
+is run, and the new code coverage statistics are pushed to
 [coveralls/mmeddle][coveralls-url]. See the `./.travis.yml` file for this.
 
 The build and code coverage push update the little badges in the upper left 
@@ -537,18 +542,24 @@ statements' to your code. Each day these apps start a new log file.
 You can also use **\`mm.log.debug [obj]** to output objects directly to the
 cli log file. You need a **administrator: true,** line in your 
 **./config/user-[alias].config** to enable use of this command.
-- Use the Firefox Firebug test environment for browser debugging. This
+- Use the Firefox dev tools test environment for browser debugging. This
 is quite good with the webcli, and not bad with AngularJS apps.
 - Use node-inspector for debugging the server (and other node applications).
 
 
 ### Debugging Unit Tests
 
-I debug unit tests for node using node-inspector on Chrome on a Windows system, so your experience may differ.  Start `node-inspector` in its own shell and leave it running, then:
+I debug unit tests for node using node-inspector on Chrome on a Windows system, 
+so your experience may differ.  Start `node-inspector` in its own shell and 
+leave it running, then:
 
     node-debug --debug-brk node_modules\mocha\bin\_mocha -u bdd -r should
 
-The `_mocha` selects the *real* .js file for the mocha engine, instead of the stub that launches a separate test process. Note that there are a lot of checked exceptions thrown and there is a timer used by mocha that may annoy you. Often it is easier to just debug an scratch function without having the Mocha infrastructure getting in the way.
+The `_mocha` selects the *real* .js file for the mocha engine, instead of the 
+stub that launches a separate test process. Note that there are a lot of checked 
+exceptions thrown and there is a timer used by mocha that may annoy you. Often 
+it is easier to just debug an scratch function without having the Mocha 
+infrastructure getting in the way.
 
 **Note:** My console log always starts with the message:
 > Error: Injection failed: no require in current frame
@@ -563,24 +574,32 @@ gets the job done. Good luck.
 
 ### Debugging Browser Unit Tests
 
-Debugging for the browser consists of opening `test\testMocha.html` under your favorite browser and using its script debugging tools. I prefer **Mozilla Firefox** with the **Firebug console** add-in. Don't forget to run the **gulp bundle** task first or you will be debugging an old version (I've never done that).
+Debugging for the browser consists of opening `test\testMocha.html` under your 
+favorite browser and using its script debugging tools. I prefer **Mozilla Firefox
+** although the **Opera** CSS inspector works better for me. Don't forget to run 
+the **gulp bundle** task first or you will be debugging an old version (I've 
+never done that).
 
-The Mocha page is nice in that you can select and drill down into test suites anmd rerun the tests individually. Clicking a test's **it()** text shows the source of the test.
+The Mocha page is nice in that you can select and drill down into test suites 
+anmd rerun the tests individually. Clicking a test's **it()** text shows the 
+source of the test.
 
 ## Windows Development (sigh)
 
-I write code on Windows and need to keep the development environment Windows friendly (or
-at least no more unfriendly than necessary). 
+I often write code on Windows and want to keep the development environment 
+Windows friendly (or at least no more unfriendly than necessary). 
 
 In **git config** if you use Windows, you should set
 
     git config core.autocrlf input
 
-The files in the repository should not contain CRLF endings, and you should use an
-editor on Windows that doesn't put them on by default (I use Notepad++).
+The files in the repository should not contain CRLF endings, and you should use 
+an editor on Windows that doesn't put them on by default (I use Notepad++).
 
-I use **gulp** and put some effort into making sure that any scripts are equivalent
-on Windows and *nix versions. The Travis-CI integration service helps with this.
+
+I use **gulp** and put some effort into making sure that any scripts are 
+equivalent on Windows and *nix versions. The Travis-CI integration service helps
+with this.
 
 ### Windows and file paths longer than 255 characters
 
@@ -636,8 +655,8 @@ From the command line (in the chrome installation directory):
     
 ### NodeJS Testing of Equation Graphics
 
-`MNode` objects draw to `DisplayContext` objects. The gmDC can be used
-for testing on Node as long as you have independently installed
+One version of `MNode` objects draw to `DisplayContext` objects. The gmDC can
+be used for testing on Node as long as you have independently installed
 [`GraphicsMagick`][graphicsMagick-url] or [`ImageMagick`][imageMagick-url].
 This creates .png files as the result of performing expression `.render()`
 operations. You will need to enable this by setting 
@@ -654,7 +673,8 @@ you should be able to see its version from the command line. For example:
     Copyright: Copyright (C) 1999-2015 ImageMagick Studio LLC
     License: http://www.imagemagick.org/script/license.php
     Features: DPC Modules OpenMP
-    Delegates (built-in): bzlib cairo freetype jbig jng jp2 jpeg lcms lqr openexr pangocairo png ps rsvg tiff webp xml zlib
+    Delegates (built-in): bzlib cairo freetype jbig jng jp2 jpeg lcms lqr 
+    openexr pangocairo png ps rsvg tiff webp xml zlib
 
 You will note this is running on Windows, but of course its easier on almost
 any other OS.

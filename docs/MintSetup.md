@@ -44,7 +44,7 @@ because of it.
 
     sudo npm install -g node-gyp
     
-	sudo npm install -g jsonlint
+	  sudo npm install -g jsonlint
     sudo npm install -g phantomjs
 
     sudo apt-get install -y imagemagick
@@ -63,6 +63,23 @@ of the main APIs used in mMeddle.
 I edit primarily with **Sublime Text**.  To view the .md (markdown) files add
 ** Add Markdown Viewer 1.8+** to Firefox.
 
+
+### Chrome
+
+```
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+
+ sudo apt-get install hardinfo
+```
+
+
+### Assorted stuff
+
+```
+   sudo apt-get install hardinfo
+   sudo apt-get install clipit
+   sudo apt-get install guake
+```
 
 ## Raw Console Notes
 

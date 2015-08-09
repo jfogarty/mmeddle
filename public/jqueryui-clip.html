@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8">
+  <title>clip demo</title>
+  <link rel="stylesheet" href="/css/jquery-ui.css">
+  <link rel="stylesheet" href="/css/jquery-ui.theme.css">
+  <style>
+  #toggle {
+    width: 100px;
+    height: 100px;
+    background: #ccc;
+  }
+  </style>
+  <script src="/lib/jquery.js"></script>
+  <script src="/lib/jquery-ui.js"></script>
+</head>
+<body>
+ 
+<p>Click anywhere to toggle the box.</p>
+<div id="toggle"></div>
+ 
+<script>
+$( document ).click(function() {
+  $( "#toggle" ).toggle( "clip" );
+});
+</script>
+ 
+</body>
+</html>

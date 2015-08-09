@@ -1,6 +1,6 @@
 {
   "name": "mmeddle",
-  "version": "0.1.5",
+  "version": "0.1.7",
   "description": "a symbolic math workspace for browsers and Node.js",
   "author": "John Fogarty <johnhenryfogarty@gmail.com> (https://github.com/jfogarty)",
   "contributors": [],

@@ -21,6 +21,26 @@ poor schmoe the troubles you've just worked through and life will be better
 because of it.
 
 
+## Windows Development (sigh)
+
+We need to keep the mMeddle development environment Windows friendly (or at least no more unfriendly than necessary). If we cannot build on Windows (or the
+hurdles to do so are too high) then a huge set of very competent developers will
+be unable to extend mMeddle. This would be a shame and would be a failure on our part. 
+
+In **git config** if you use Windows, you should set
+
+    git config core.autocrlf input
+
+The files in the repository should not contain CRLF endings, and you should use 
+an editor on Windows that doesn't put them on by default (I use Notepad++).
+
+I use **gulp** and put some effort into making sure that any scripts are 
+equivalent on Windows and *nix versions. The Travis-CI integration service helps
+with this.
+
+
+## The Main Installs
+
 - Install **Node 0.10.38**. 
 - Node 0.12 is NOT stable for Windows development,
 because many useful tools have not been properly updated to work on it under
@@ -260,7 +280,7 @@ your GTK and JPEGs are x64. Take a guess at how I know. The following is BAD:
 The browsers I had installed when I last updated this document are:
 
 - Firefox 39.0 (my primary development browser)
-	- with Firebug 2.0.11
+	- with Dev Tools enabled (with Storage option on)
 	- Markdown Viewer 1.8.1-signed
 - Chrome 43.0.2357.132 
 - Opera 30.0.1835.88
@@ -299,6 +319,48 @@ command completion:
 
 I usually have Perl and Ruby installed, so I may be taking dependencies on
 these that I am not aware of.
+
+
+## Possibly Helpful Notes
+
+### Windows and file paths longer than 255 characters
+
+Incredibly in the year 2015, Windows still has many problems with paths that
+are longer than 255 characters. Such paths are not uncommon when installing
+node_modules - especially ones for `gulp` or `grunt` tools that rely on
+lots of other modules. Usually this does not cripple you, but will have to
+do stupid things in order to remove such directories since normal windows
+commands fail. Be afraid.
+
+### Windows Node 0.12.0
+
+On Windows `Node 0.12.0` is not completely stable. You will need to install
+at least the Community edition of Visual Studio 2013 in order to allow
+rebuilds of Buffer and Validate which will be required by installation of
+many modules. 
+
+You can also expect that many modules will complain about `fsevents`
+and an occasionaly outright compilation failures due to C++ core class 
+changes. You can work around these but it is a big pain.
+
+You may save some pain by using `Node 0.10.38` instead. This is what I am 
+currently doing, but I use `NVM` to test under 0.12.0 before I do a checkin.  
+
+### Windows Node 0.12.0 and socket.io incompatibility
+
+This annoying problem currently (Apr 2015) does not allow the latest
+socket.io to install without a NanSymbol deprecated error during the
+windows compilation. Let this finish then:
+
+    cd node_modules\socket.io\node_modules\engine.io\node_modules
+    npm install ws@latest
+    
+This is ugly but works fine and lets Windows development continue.
+
+Also note that currently we are stuck on **Socket.io-0.9.16** until someone
+has the time and smarts to get **CORS** (Cross-Origin Resource Sharing)
+working with localhost in **Socket-1.3.6** or whatever is current when we
+get around to it.
 
 ## The End.
 	

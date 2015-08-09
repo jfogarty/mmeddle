@@ -23,7 +23,7 @@ module.exports = function(mm) {
       var self = this;    
       self.dirName = dirName;
       mm.log.debug('- mMeddleServer dirName: [{0}]', dirName);
-      var defaultPort = mm.util.mmEnvOption('PORT', 8080); 
+      var defaultPort = mm.util.mmEnvOption('PORT', mm.config.localPort); 
       var defaultIpAddr = mm.util.mmEnvOption('IPADDR', '127.0.0.1'); 
       self.ipaddress = mm.util.envOption('OPENSHIFT_NODEJS_IP', defaultIpAddr);
       self.port      = mm.util.envOption('OPENSHIFT_NODEJS_PORT', defaultPort);

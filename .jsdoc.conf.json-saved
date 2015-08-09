@@ -1,0 +1,20 @@
+{
+    "tags": {
+        "allowUnknownTags": true
+    },
+    "source": {
+        "excludePattern": ""
+    },
+    "plugins": ["plugins/markdown"],
+    "markdown": {
+        "tags": ["summary", "property"],
+        "excludeTags": ["author"]
+    },
+    "templates": {
+        "cleverLinks": true,
+        "monospaceLinks": true,
+        "default": {
+            "outputSourceFiles": true
+        }
+    }
+}

@@ -101,7 +101,7 @@ module.exports = function setupClientTestSupport(mm) {
       var clientName = 'MochaTests';
       var cs = new ClientSession(clientName);
 
-      var host = mm.config.startLocal ? mm.config.localUrl : mm.config.remoteUrl;
+      var host = mm.configHost();
       var mmc = new MMeddleClient(host, cs);
       mm.test.client.cs = cs;
       mm.test.client.mmc = mmc;
@@ -163,7 +163,7 @@ module.exports = function setupClientTestSupport(mm) {
       }
       
       // Do the actual connection.
-      connectedP = mm.test.client.mmc.connectWorkspace('local')
+      connectedP = mm.test.client.mmc.connectWorkspace()
       .then(function() {
         mm.log('- Connected to server {0}', mm.test.client.mmc.host);
         mm.test.client.cs.emitLogMessage(

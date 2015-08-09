@@ -114,12 +114,12 @@ xxXXXxx
 }
 
 /* ------------------------------------------------------------------------ */
-.equation .mmeqb {
-  font-family: "Symbola";
-  font-size: 14px;
-  display: inline-block;
+.equation .mmeqb,
+.equation .mmeqbi,
+.equation .mmeqbbi {
   color: #900;
-  border: 1px solid #900; 
+  display: inline-block;
+  border: 1px solid #900;
   border-top-color: #FC9;
   border-left-color: #FC9;
   border-radius:3px;
@@ -129,40 +129,23 @@ xxXXXxx
   padding: 0px 0px;
   box-sizing: border-box;
   line-height: 1.2;
+  margin-left: 3px;
+  margin-right: 3px;
+}
+
+.equation .mmeqb {
+  font-family: "Symbola";
+  font-size: 14px;
 }
 
 .equation .mmeqbi {
   font-family: "Symbola-italic";
   font-size: 14px;
-  display: inline-block;
-  color: #900;
-  border: 1px solid #900; 
-  border-top-color: #FC9;
-  border-left-color: #FC9;
-  border-radius:3px;
-  -webkit-border-radius:3px;
-  text-align: center;
-  vertical-align: middle;
-  padding: 0px 0px;
-  box-sizing: border-box;
-  line-height: 1.2;
 }
 
 .equation .mmeqbbi {
   font-family: "Symbola-bolditalic";
   font-size: 14px;
-  display: inline-block;
-  color: #900;
-  border: 1px solid #900; 
-  border-top-color: #FC9;
-  border-left-color: #FC9;
-  border-radius:3px;
-  -webkit-border-radius:3px;
-  text-align: center;
-  vertical-align: middle;
-  padding: 0px 0px;
-  box-sizing: border-box;
-  line-height: 1.2;
 }
 
 .equation .mmeqbbig

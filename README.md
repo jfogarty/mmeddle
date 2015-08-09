@@ -31,9 +31,9 @@ For the next few months this project is closed to external developers.
 mMeddle provides a community service for engineers, scientists, students and
 teachers to work with and share mathematical problems, definitions and
 solutions. It focuses on symbolic algebraic math with integration of units,
-dimensions, and other elements to assist users in solving real world
-problems. Users can easily develop and document solutions to share with 
-others as live mathematics rather than dead symbols on a page.
+dimensions, and other elements to assist in solving real world problems.
+Users develop and document solutions to share with others using live mathematics
+rather than dead symbols on a page.
 
 ## Features
 * Follows [semantic versioning](http://semver.org/) for releases
@@ -58,7 +58,5 @@ others as live mathematics rather than dead symbols on a page.
 [Developers](docs/DEVELOPERS.md)
 
 [The current mMeddle test server (OpenShift hosted)][openshift-mm-url]
-
-[The current API (OpenShift hosted)][openshift-mm-api-url]
 
 #### End of document.

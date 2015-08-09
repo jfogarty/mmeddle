@@ -476,6 +476,13 @@ self.annoyTimer.onDing(function () {
       }
     }
 
+    function updateBrowserPrompt() {
+      if (inBrowser) {
+        consolePrompt.innerHTML = self.prompt;
+        consoleInput.type = self.pwdMode ? 'password' : 'text';
+      }
+    }
+
     // Displays the prompt, current input, and positions  the cursor.
     function showPrompt(reprompt) {
       /* istanbul ignore else */ 
@@ -497,8 +504,7 @@ self.annoyTimer.onDing(function () {
 //      }
       }
       else {
-        consolePrompt.innerHTML = self.prompt;
-        consoleInput.type = self.pwdMode ? 'password' : 'text';
+        updateBrowserPrompt();
       }
 
       return self;
@@ -873,8 +879,13 @@ self.annoyTimer.onDing(function () {
       if (obj && obj.field) {
         return qq(obj);
       }
+      var currentPrompt  = self.prompt;
+      var currentPwdMode = self.pwdMode;
       return self.readLine(query, isPwd)
       .then(function(answer) {
+        self.prompt  = currentPrompt;
+        self.pwdMode = currentPwdMode;
+        updateBrowserPrompt();
         if (answer) {
           if (obj) {
             obj[field] = answer;
